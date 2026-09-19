@@ -9,13 +9,13 @@ import { Card, SectionHead, Seg, Empty, Avatar, CsvButton } from '../components/
 import { tsRel } from '../lib'
 
 const PROVIDERS = [
-  { id: 'gmail',   name: 'Gmail',   color: '#ea4335', desc: 'Google account · read-only metadata scope' },
-  { id: 'outlook', name: 'Outlook', color: '#0a78d4', desc: 'Microsoft 365 · read-only metadata scope' },
+  { id: 'gmail',   name: 'Gmail',   color: '#ea4335', desc: 'Live · Google OAuth · read-only gmail.readonly' },
+  { id: 'outlook', name: 'Outlook', color: '#0a78d4', desc: 'Not available yet (needs Microsoft OAuth)' },
 ]
 
 export default function EmailPage() {
   const {
-    mailboxes, emails, contactById,
+    mailboxes, emails, contactById, googleClientId,
     connectMailbox, disconnectMailbox, syncMailbox, logEmailTouch, triageEmailAsLead, ignoreEmail,
   } = useCrm()
   const nav = useNavigate()
@@ -85,6 +85,10 @@ export default function EmailPage() {
                     </button>
                     <button className="btn btn-danger btn-sm" onClick={() => disconnectMailbox(p.id)}><Unplug size={13} /></button>
                   </>
+                ) : p.id === 'outlook' ? (
+                  <span className="chip" style={{ opacity: .7 }} title="Microsoft OAuth connector not built yet">Coming soon</span>
+                ) : !googleClientId ? (
+                  <button className="btn btn-primary btn-sm" onClick={() => nav('/settings')}>Set up live mode</button>
                 ) : (
                   <button className="btn btn-primary btn-sm" disabled={!!busy} onClick={() => connect(p.id)}>
                     {busy === 'connect:' + p.id ? <><Loader2 size={13} className="animate-spin" /> Authorizing…</> : 'Connect'}
@@ -96,7 +100,7 @@ export default function EmailPage() {
         })}
       </div>
       <p className="text-[11.5px] flex items-center gap-1.5 -mt-2" style={{ color: 'var(--faint)' }}>
-        <ShieldCheck size={12} /> Simulated OAuth for the demo — no real credentials ever leave this app, and every sync lands in the audit log.
+        <ShieldCheck size={12} /> Gmail connects with READ-ONLY Google OAuth using your own Client ID — tokens stay in this browser and every sync lands in the audit log.
       </p>
 
       {/* stats + filter */}

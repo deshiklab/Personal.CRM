@@ -60,7 +60,7 @@ function Connections() {
             </div>
             <div className="flex justify-end gap-2">
               <button className="btn btn-ghost btn-sm" disabled={testing || !f.server}
-                onClick={async () => { setTesting(true); await testConnection(); setTesting(false); toast('Connection OK — 2 collections found') }}>
+                onClick={async () => { setTesting(true); await testConnection(); setTesting(false) }}>
                 {testing ? <RefreshCw size={13} className="spin" /> : <ShieldCheck size={13} />} Test connection
               </button>
               <button className="btn btn-primary btn-sm" disabled={!f.server || !f.username}
@@ -77,7 +77,7 @@ function Connections() {
             <div className="flex-1">
               <div className="font-bold text-[14.5px]">Google Workspace</div>
               <div className="text-[11.5px]" style={{ color: 'var(--faint)' }}>
-                {gcal.connected ? `Calendar ${gcal.mode === 'live' ? 'live' : 'demo'} · synced ${gcal.lastSync ? tsRel(gcal.lastSync) : 'never'}` : 'Calendar · People · Drive backup'}
+                {gcal.connected ? `Calendar ${gcal.mode === 'live' ? 'LIVE' : 'connected'} · synced ${gcal.lastSync ? tsRel(gcal.lastSync) : 'never'}` : 'Calendar · People · Drive backup'}
               </div>
             </div>
             {gcal.connected ? <Pill color="#34d399">On</Pill> : <Pill color="#fbbf24">Off</Pill>}
@@ -259,10 +259,10 @@ function DangerZone() {
   return (
     <Card className="p-5 mt-4 mb-2 flex items-center justify-between flex-wrap gap-3">
       <div>
-        <div className="font-bold text-[13.5px]">Reset demo data</div>
+        <div className="font-bold text-[13.5px]">Reset to sample dataset</div>
         <div className="text-[12px]" style={{ color: 'var(--muted)' }}>Restore all contacts, tasks, events and settings to the original sample set.</div>
       </div>
-      <button className="btn btn-ghost btn-sm" onClick={() => { if (confirm('Reset everything to the demo dataset?')) resetAll() }}>
+      <button className="btn btn-ghost btn-sm" onClick={() => { if (confirm('Reset everything to the sample dataset?')) resetAll() }}>
         <RotateCcw size={13} /> Reset
       </button>
     </Card>
@@ -270,7 +270,7 @@ function DangerZone() {
 }
 
 
-/* ── Google Workspace hub (live OAuth or demo) ── */
+/* ── Google Workspace hub (live OAuth with your own Client ID) ── */
 function GoogleHub() {
   const {
     gcal, googleClientId, googleMode, saveGoogleClientId, connectGoogleLive, disconnectGoogle,
@@ -310,7 +310,7 @@ function GoogleHub() {
           <div className="font-bold text-[15px]">Google Workspace</div>
           <div className="text-[11.5px]" style={{ color: 'var(--faint)' }}>Calendar sync · People import · Drive backup — one OAuth connection, in-browser only</div>
         </div>
-        <Pill color={live ? '#34d399' : '#fbbf24'}>{live ? 'LIVE MODE' : 'DEMO MODE'}</Pill>
+        <Pill color={live ? '#34d399' : '#94a3b8'}>{live ? 'LIVE MODE' : 'SETUP NEEDED'}</Pill>
       </div>
 
       {/* client id config */}
@@ -335,7 +335,7 @@ function GoogleHub() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <Service icon={Calendar} color="#38bdf8" title="Google Calendar"
-          status={gcal.connected ? `connected (${gcal.mode || 'demo'}) · ${gcal.lastSync ? 'synced ' + tsRel(gcal.lastSync) : 'never synced'}` : 'import events ±30/60 days'}>
+          status={gcal.connected ? `connected (${gcal.mode || 'live'}) · ${gcal.lastSync ? 'synced ' + tsRel(gcal.lastSync) : 'never synced'}` : 'import events ±30/60 days'}>
           {live && <Btn k="cal" className="btn btn-primary btn-sm" onClick={run('cal', connectGoogleLive)}>Connect</Btn>}
           <Btn k="calsync" className="btn btn-primary btn-sm" onClick={run('calsync', syncGoogleCalendar)}><RefreshCw size={13} /> Sync events</Btn>
           {gcal.connected && <Btn k="caldisc" onClick={run('caldisc', disconnectGoogle)}><X size={13} /> Disconnect</Btn>}

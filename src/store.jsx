@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import * as seed from './data/seed'
 import { uid, todayISO, daysAheadISO, diffDays, daysUntil } from './lib'
 import * as goog from './lib/google'
+import * as icslib from './lib/ics'
 
 const KEY = 'pcrm-v1'
 const load = () => { try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s) } catch {} return null }
@@ -39,6 +40,7 @@ export function CrmProvider({ children }) {
   const [googleClientId, setGoogleClientId] = useState(init?.googleClientId || '')
   const [gtoken, setGtoken] = useState(null)
   const [driveState, setDriveState] = useState(init?.driveState || { fileId: null, lastBackup: null, lastRestore: null, lastContactsSync: null })
+  const [icsFeeds, setIcsFeeds] = useState(init?.icsFeeds || [])
   const [webhooks, setWebhooks]   = useState(init?.webhooks || {
     url: '', on: { lead: true, contact: false, task_done: true, touch: false }, log: [],
   })
@@ -55,10 +57,10 @@ export function CrmProvider({ children }) {
     try {
       localStorage.setItem(KEY, JSON.stringify({
         contacts, tasks, events, notes, tags, groups, rules, audit,
-        activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks,
+        activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds,
       }))
     } catch {}
-  }, [contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks])
+  }, [contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds])
 
   /* ── toasts ── */
   const toast = (msg, tone = 'ok') => {
@@ -242,10 +244,21 @@ export function CrmProvider({ children }) {
 
   /* ── connections ── */
   const saveCarddav = cfg => { setCarddav(cfg); logAudit('user', 'Saved CardDAV credentials', cfg.server, `User: ${cfg.username}`) }
-  const testConnection = () => new Promise(res => setTimeout(() => res(true), 1100))
-  const connectGcal = email => {
-    setGcal({ connected: true, email, lastSync: new Date().toISOString() })
-    logAudit('system', 'Connected Google Calendar', email, 'OAuth consent granted · read/write')
+  const testConnection = async () => {
+    if (!carddav?.server) return false
+    try {
+      await fetch(carddav.server, { method: 'OPTIONS', mode: 'no-cors' })
+      logAudit('system', 'CardDAV server reachable', carddav.server, 'Browser reachability probe (no-cors)')
+      toast('Server is reachable — full CardDAV apply needs the server to allow your origin')
+      return true
+    } catch {
+      toast('Server not reachable from this browser — check the URL/network', 'warn')
+      return false
+    }
+  }
+  const connectGcal = async () => {
+    if (googleMode !== 'live') { toast('Live-only: paste your Google Client ID in Settings → Google hub (guide included)', 'warn'); return false }
+    return connectGoogleLive()
   }
   const disconnectGcal = () => {
     setGcal({ connected: false, email: null, lastSync: null })
@@ -253,9 +266,9 @@ export function CrmProvider({ children }) {
   }
 
   /* ── import ── */
-  /* ── google workspace: live OAuth when a Client ID is set, demo otherwise ── */
-  const saveGoogleClientId = id => { setGoogleClientId(id.trim()); toast(id.trim() ? 'Google Client ID saved — live mode enabled' : 'Client ID cleared — demo mode', 'ok') }
-  const googleMode = googleClientId ? 'live' : 'demo'
+  /* ── google workspace: live OAuth only (no simulators) — needs your Client ID ── */
+  const saveGoogleClientId = id => { setGoogleClientId(id.trim()); toast(id.trim() ? 'Google Client ID saved — live mode enabled' : 'Client ID cleared — live mode off', 'ok') }
+  const googleMode = googleClientId ? 'live' : 'local'
 
   const ensureToken = async () => {
     if (gtoken && gtoken.exp > Date.now() + 60e3) return gtoken.t
@@ -276,7 +289,7 @@ export function CrmProvider({ children }) {
 
   const syncGoogleCalendar = async () => {
     try {
-      if (googleMode !== 'live') throw new Error('demo')
+      if (googleMode !== 'live') { toast('Paste your Google Client ID in Settings → Google hub to sync the real calendar', 'warn'); return false }
       const token = await ensureToken()
       const items = await goog.fetchCalendarEvents(token)
       let added = 0
@@ -293,20 +306,8 @@ export function CrmProvider({ children }) {
       logActivity(`Synced Google Calendar — ${added} new event${added === 1 ? '' : 's'}`)
       toast(`📅 ${added ? `${added} event${added > 1 ? 's' : ''} imported from Google` : 'Google Calendar already up to date'}`)
     } catch (e) {
-      /* demo mode: import a small sample batch */
-      const demo = [
-        { title: 'Dentist appointment', off: 4, time: '09:15', endTime: '10:00' },
-        { title: 'Flight DAC → CXB', off: 9, time: '07:40', endTime: '08:35' },
-        { title: 'SkyBridge partner call', off: 2, time: '16:00', endTime: '16:45', contact: 'Arjun Mehta' },
-      ]
-      const newEvents = demo.filter(d => !events.some(x => x.title === d.title)).map(d => ({
-        id: uid(), title: d.title, date: daysAheadISO(d.off), time: d.time, endTime: d.endTime,
-        type: 'meeting', contactId: contacts.find(c => c.name === d.contact)?.id || null, gcal: 'synced', location: '',
-      }))
-      if (newEvents.length) setEvents(es => [...es, ...newEvents].sort((a, b) => a.date.localeCompare(b.date)))
-      setGcal(g => ({ ...g, connected: true, mode: 'demo', lastSync: new Date().toISOString() }))
-      logAudit('system', 'Synced Google Calendar (demo)', `${newEvents.length} sample events`, 'Set a Client ID for live sync')
-      toast(`📅 Demo sync: ${newEvents.length ? `${newEvents.length} sample events imported` : 'already up to date'}`)
+      toast(`Google Calendar sync failed: ${goog.friendlyGoogleError(e)}`, 'warn')
+      return false
     }
   }
 
@@ -321,14 +322,8 @@ export function CrmProvider({ children }) {
         return
       } catch (e) { toast(`People API failed: ${e.message}`, 'warn'); return }
     }
-    const demoRows = [
-      { name: 'Raihan Kabir', phone: '+880 1555-102030', email: 'raihan.k@gmail.com', org: 'Pathao' },
-      { name: 'Elaine Chow', phone: '+65 8123 4455', email: 'elaine.chow@temasek.sg', org: 'Temasek' },
-      { name: 'Nadia Islam', phone: '', email: 'nadia@branding.co', org: 'Branding Co' },
-    ]
-    const batch = commitImport(demoRows, 'google-contacts · demo')
-    setDriveState(ds => ({ ...ds, lastContactsSync: new Date().toISOString() }))
-    toast(`👥 Demo: ${batch.added} added · ${batch.updated} updated · ${batch.skipped} unchanged`)
+    toast('Paste your Google Client ID in Settings → Google hub to import real People contacts', 'warn')
+    return false
   }
 
   const buildBackup = () => JSON.stringify({
@@ -349,14 +344,14 @@ export function CrmProvider({ children }) {
         return
       } catch (e) { toast(`Drive backup failed: ${e.message}`, 'warn'); return }
     }
-    /* demo: download a real JSON snapshot */
+    /* local file download — a real backup, just not on Drive */
     const a = document.createElement('a')
     a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }))
     a.download = 'personal-crm-backup.json'
     document.body.appendChild(a); a.click(); a.remove()
     setDriveState(ds => ({ ...ds, lastBackup: new Date().toISOString(), fileId: null }))
-    logAudit('system', 'Backup downloaded (demo)', 'personal-crm-backup.json', `${Math.round(json.length / 1024)} KB · set a Client ID to push to Drive`)
-    toast('☁️ Demo backup downloaded as JSON — add a Client ID to sync to Drive')
+    logAudit('system', 'Backup downloaded (local file)', 'personal-crm-backup.json', `${Math.round(json.length / 1024)} KB · add a Client ID to push to Drive`)
+    toast('☁️ Real backup downloaded as JSON — add a Client ID to push it to Drive')
   }
 
   const restoreAll = parsed => {
@@ -376,7 +371,7 @@ export function CrmProvider({ children }) {
   }
 
   const driveRestoreNow = async () => {
-    if (googleMode !== 'live') { toast('Demo mode: use “Restore from file” below', 'warn'); return }
+    if (googleMode !== 'live') { toast('Drive restore is live-only — use “Restore from file” below for the local copy', 'warn'); return }
     try {
       const token = await ensureToken()
       const f = driveState.fileId || (await goog.findBackupFile(token))?.id
@@ -388,9 +383,48 @@ export function CrmProvider({ children }) {
 
   const disconnectGoogle = () => {
     setGtoken(null)
-    setGcal(g => ({ ...g, connected: false, mode: 'demo' }))
+    setGcal(g => ({ ...g, connected: false, mode: null }))
     logAudit('user', 'Google disconnected', 'Token discarded')
     toast('Google disconnected', 'warn')
+  }
+
+  /* ── read-only calendar feed subscriptions (real calendars, no OAuth) ── */
+  const addIcsFeed = (url, opts = {}) => {
+    const feed = { id: uid(), url: url.trim(), viaProxy: !!opts.viaProxy, lastSync: null, lastCount: 0, error: null, lastVia: null }
+    setIcsFeeds(fs => [...fs, feed])
+    logAudit('user', 'Subscribed to calendar feed', feed.url, feed.viaProxy ? 'relay allowed' : 'direct only')
+    return feed
+  }
+  const removeIcsFeed = id => {
+    const feed = icsFeeds.find(f => f.id === id)
+    setIcsFeeds(fs => fs.filter(f => f.id !== id))
+    setEvents(es => es.filter(e => e.feedId !== id))
+    if (feed) logAudit('user', 'Removed calendar feed', feed.url)
+  }
+  const syncIcsFeed = async idOrFeed => {
+    const feed = typeof idOrFeed === 'object' ? idOrFeed : icsFeeds.find(f => f.id === idOrFeed)
+    if (!feed) return false
+    try {
+      const { text, via } = await icslib.fetchICS(feed.url, { allowProxy: feed.viaProxy })
+      const rows = icslib.parseICS(text)
+      let added = 0
+      const newEvents = []
+      rows.forEach(r => {
+        if (events.some(x => x.title === r.title && x.date === r.date && x.time === r.time)) return
+        newEvents.push({ id: uid(), title: r.title, date: r.date, time: r.time, endTime: r.endTime || r.time, type: 'meeting', contactId: null, gcal: 'ics', location: r.location || '', feedId: feed.id })
+        added++
+      })
+      if (newEvents.length) setEvents(es => [...es, ...newEvents].sort((a, b) => a.date.localeCompare(b.date)))
+      setIcsFeeds(fs => fs.map(f => f.id === feed.id ? { ...f, lastSync: new Date().toISOString(), lastCount: rows.length, error: null, lastVia: via } : f))
+      logAudit('system', 'Synced calendar feed', `${rows.length} feed events`, `${added} new imported${via === 'relay' ? ' · via relay' : ''}`)
+      logActivity(`Synced calendar feed — ${added} new event${added === 1 ? '' : 's'}`)
+      toast(`🗓️ ${added ? `${added} new event${added > 1 ? 's' : ''} from feed` : 'Feed already up to date'}${via === 'relay' ? ' (via relay)' : ''}`)
+      return true
+    } catch (e) {
+      setIcsFeeds(fs => fs.map(f => f.id === feed.id ? { ...f, error: e.message || 'failed', lastSync: new Date().toISOString() } : f))
+      toast(`Feed sync failed: ${e.message}${e.needsProxy ? ' — tick “route via relay” and retry' : ''}`, 'warn')
+      return false
+    }
   }
 
   /* ── outbound webhooks (Zapier / Make / n8n bridge) ── */
@@ -431,7 +465,9 @@ export function CrmProvider({ children }) {
 
   /* ── email integration (8b — mock Gmail/Outlook connector) ── */
   const connectMailbox = async provider => {
-    if (provider === 'gmail' && googleClientId) {
+    if (provider === 'outlook') { toast('Outlook connector needs Microsoft OAuth — not available yet', 'warn'); return false }
+    if (!googleClientId) { toast('Live Gmail needs your Google Client ID — Settings → Google hub (guide included)', 'warn'); return false }
+    if (provider === 'gmail') {
       try {
         const token = await ensureToken()
         const [msgs, profile] = await Promise.all([
@@ -453,22 +489,8 @@ export function CrmProvider({ children }) {
         return false
       }
     }
-    return legacyConnectMailbox(provider)
+    return false
   }
-
-  const legacyConnectMailbox = provider => new Promise(res => setTimeout(() => {
-    const address = provider === 'gmail' ? 'bitscol@gmail.com' : 'bitscol@outlook.com'
-    const incoming = seed.MAIL_SEED.filter(m => m.provider === provider).map(m => ({
-      ...m, id: uid(), status: 'pending',
-      matchedContactId: contacts.find(c => c.email && c.email.toLowerCase() === m.email.toLowerCase())?.id || null,
-    }))
-    setMailboxes(mb => ({ ...mb, [provider]: { connected: true, address, lastSync: new Date().toISOString() } }))
-    setEmails(es => [...es, ...incoming])
-    logAudit('system', `Connected ${provider === 'gmail' ? 'Gmail' : 'Outlook'}`, address, `${incoming.length} messages scanned`)
-    logActivity(`Connected ${provider} mailbox (${incoming.length} messages scanned)`)
-    toast(`📬 ${provider === 'gmail' ? 'Gmail' : 'Outlook'} connected — ${incoming.length} messages scanned`)
-    res(true)
-  }, 1400))
 
   const disconnectMailbox = provider => {
     setMailboxes(mb => ({ ...mb, [provider]: { connected: false, address: '', lastSync: null } }))
@@ -479,16 +501,9 @@ export function CrmProvider({ children }) {
 
   const syncMailbox = async provider => {
     if (mailboxes[provider]?.mode === 'live') return connectMailbox(provider)
-    return legacySyncMailbox(provider)
+    toast(provider === 'outlook' ? 'Outlook connector needs Microsoft OAuth — not available yet' : 'Connect Gmail live first (Settings → Google hub)', 'warn')
+    return false
   }
-
-  const legacySyncMailbox = provider => new Promise(res => setTimeout(() => {
-    setMailboxes(mb => ({ ...mb, [provider]: { ...mb[provider], lastSync: new Date().toISOString() } }))
-    const n = emails.filter(e => e.provider === provider).length
-    logAudit('system', `Synced ${provider} mailbox`, `${n} messages`, 'No new mail')
-    toast(`Mailbox up to date — ${n} messages scanned`)
-    res(true)
-  }, 1100))
 
   const logEmailTouch = id => {
     const e = emails.find(x => x.id === id)
@@ -662,7 +677,7 @@ export function CrmProvider({ children }) {
     mailboxes, emails, connectMailbox, disconnectMailbox, syncMailbox, logEmailTouch, triageEmailAsLead, ignoreEmail,
     googleClientId, googleMode, saveGoogleClientId, connectGoogleLive, syncGoogleCalendar, syncGoogleContacts,
     driveState, driveBackupNow, driveRestoreNow, restoreAll, disconnectGoogle,
-    webhooks, saveWebhooks, testWebhook,
+    webhooks, saveWebhooks, testWebhook, icsFeeds, addIcsFeed, syncIcsFeed, removeIcsFeed,
     commitImport, rollbackImport, resolveAuditConflict, updateFrequency, snoozeFollowUp, unsnooze, resetAll,
     notifState, notifPrefs, buildNotifications, dismissNotif, snoozeNotif, unsnoozeNotif, markNotifRead, markAllNotifsRead, toggleNotifPref,
     widgetPrefs, toggleWidget, moveWidget, resetWidgets, DEFAULT_WIDGET_ORDER,

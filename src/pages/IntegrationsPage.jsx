@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Plug, Calendar, Users, HardDrive, Mail, PhoneCall, FileUp, FileDown, Send, CheckCircle2,
-  AlertTriangle, Loader2, ExternalLink, Zap, KeyRound
+  AlertTriangle, Loader2, ExternalLink, Zap, KeyRound, RefreshCw, Trash2
 } from 'lucide-react'
 import { useCrm } from '../store'
 import { SectionHead, Card, Pill, Empty } from '../components/ui'
@@ -17,18 +17,22 @@ export default function IntegrationsPage() {
   const {
     gcal, googleMode, mailboxes, webhooks, saveWebhooks, testWebhook,
     contacts, events, contactById, commitImport, toast, driveState,
+    icsFeeds, addIcsFeed, syncIcsFeed, removeIcsFeed,
   } = useCrm()
   const nav = useNavigate()
   const [url, setUrl] = useState(webhooks.url)
   const [pinging, setPinging] = useState(false)
+  const [feedUrl, setFeedUrl] = useState('')
+  const [feedRelay, setFeedRelay] = useState(false)
+  const [feedBusy, setFeedBusy] = useState(false)
   const vcfRef = useRef(null)
 
   const SERVICE_ROWS = [
-    { icon: Calendar, color: '#38bdf8', name: 'Google Calendar', ok: gcal.connected, detail: gcal.connected ? `${gcal.mode || 'demo'} · synced ${gcal.lastSync ? tsRel(gcal.lastSync) : '—'}` : 'connect in Settings → Google hub' },
+    { icon: Calendar, color: '#38bdf8', name: 'Google Calendar', ok: gcal.connected, detail: gcal.connected ? `LIVE · synced ${gcal.lastSync ? tsRel(gcal.lastSync) : '—'}` : 'connect in Settings → Google hub' },
     { icon: Users, color: '#a78bfa', name: 'Google Contacts', ok: !!driveState.lastContactsSync, detail: driveState.lastContactsSync ? `last import ${tsRel(driveState.lastContactsSync)}` : 'sync via Settings → Google hub' },
     { icon: HardDrive, color: '#34d399', name: 'Drive backup', ok: !!driveState.lastBackup, detail: driveState.lastBackup ? `backed up ${tsRel(driveState.lastBackup)}` : 'backups in Settings → Google hub' },
-    { icon: Mail, color: '#ea4335', name: 'Gmail', ok: mailboxes.gmail.connected, warn: mailboxes.gmail.connected && mailboxes.gmail.mode !== 'live', detail: mailboxes.gmail.connected ? `${mailboxes.gmail.mode === 'live' ? 'LIVE · ' : 'demo · '}${mailboxes.gmail.address}` : googleMode === 'live' ? 'Client ID set — connect from Email screen' : 'demo — add Client ID for live Gmail' },
-    { icon: Mail, color: '#0a78d4', name: 'Outlook', ok: mailboxes.outlook.connected, warn: mailboxes.outlook.connected, detail: mailboxes.outlook.connected ? `demo · ${mailboxes.outlook.address}` : 'demo connector for now' },
+    { icon: Mail, color: '#ea4335', name: 'Gmail', ok: mailboxes.gmail.connected, detail: mailboxes.gmail.connected ? `LIVE · ${mailboxes.gmail.address}` : googleMode === 'live' ? 'Client ID set — connect from Email screen' : 'OFF — set your Client ID (guide in Settings)' },
+    { icon: Mail, color: '#0a78d4', name: 'Outlook', ok: mailboxes.outlook.connected, detail: mailboxes.outlook.connected ? `LIVE · ${mailboxes.outlook.address}` : 'not available yet (needs Microsoft OAuth)' },
   ]
 
   return (
@@ -168,6 +172,42 @@ export default function IntegrationsPage() {
           <p className="text-[11px] mt-3" style={{ color: 'var(--faint)' }}>
             The .ics imports into Apple Calendar, Outlook, Google (Settings → Import), and any CalDAV client.
           </p>
+
+          {/* read-only real calendar subscriptions */}
+          <div className="mt-4 pt-4" style={{ borderTop: '1px dashed var(--border)' }}>
+            <div className="text-[12.5px] font-extrabold mb-1">Subscribe to a real calendar feed (read-only)</div>
+            <p className="text-[11.5px] mb-2" style={{ color: 'var(--muted)' }}>
+              Paste any public <b style={{ color: 'var(--text)' }}>.ics / iCal URL</b> — e.g. Google Calendar → Settings → your calendar → “Secret address in iCal format”, an iCloud public-calendar link, or a team events feed.
+              New feed events land on your Calendar marked <b style={{ color: 'var(--text)' }}>FEED</b>.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <input className="input flex-1 min-w-[240px]" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics"
+                value={feedUrl} onChange={e => setFeedUrl(e.target.value)} />
+              <label className="flex items-center gap-1.5 text-[11.5px] cursor-pointer" style={{ color: 'var(--muted)' }}
+                title="Google/iCloud block direct browser reads (CORS). A public read-only relay can fetch PUBLIC feeds only — never private or secret URLs.">
+                <input type="checkbox" checked={feedRelay} onChange={e => setFeedRelay(e.target.checked)} />
+                route via relay if blocked
+              </label>
+              <button className="btn btn-primary btn-sm" disabled={!feedUrl.trim() || feedBusy}
+                onClick={async () => { setFeedBusy(true); const f = addIcsFeed(feedUrl, { viaProxy: feedRelay }); await syncIcsFeed(f); setFeedBusy(false); setFeedUrl('') }}>
+                {feedBusy ? <Loader2 size={13} className="animate-spin" /> : <Plug size={13} />} Subscribe & sync
+              </button>
+            </div>
+            {!!icsFeeds.length && (
+              <div className="mt-3 flex flex-col gap-2">
+                {icsFeeds.map(f => (
+                  <div key={f.id} className="flex flex-wrap items-center gap-2 text-[12px] rounded-xl px-3 py-2" style={{ background: 'var(--cardbg)', border: '1px solid var(--border)' }}>
+                    <span className="truncate flex-1 min-w-[180px]" title={f.url}>{f.url}</span>
+                    {f.lastVia && <Pill color="#818cf8">{f.lastVia}</Pill>}
+                    <span style={{ color: 'var(--faint)' }}>{f.lastSync ? `${f.lastCount} feed events · ${tsRel(f.lastSync)}` : 'never synced'}</span>
+                    {f.error && <span style={{ color: '#f87171' }}>⚠ {f.error}</span>}
+                    <button className="btn btn-ghost btn-sm" title="Re-sync feed" onClick={() => syncIcsFeed(f.id)}><RefreshCw size={12} /></button>
+                    <button className="btn btn-ghost btn-sm" title="Remove feed + its imported events" onClick={() => removeIcsFeed(f.id)}><Trash2 size={12} /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </Card>
 
         {/* ── deep actions ── */}

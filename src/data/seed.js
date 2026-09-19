@@ -99,18 +99,18 @@ const E = (id, title, dayOffset, time, endTime, type, contactId = null, gcal = '
   time, endTime, type, contactId, gcal, location,
 })
 export const EVENTS = [
-  E('e1','Team standup',0,'10:00','10:30','meeting',null,'synced'),
+  E('e1','Team standup',0,'10:00','10:30','meeting',null,'local'),
   E('e2','Call Vikram — wish happy birthday 🎂',0,'18:00','18:20','call','c6','local'),
-  E('e3','Design sync with Priya',1,'11:30','12:15','meeting','c7','synced'),
-  E('e4','Pitch review — SkyBridge',3,'14:00','15:00','meeting','c5','synced','Gulshan Club'),
+  E('e3','Design sync with Priya',1,'11:30','12:15','meeting','c7','local'),
+  E('e4','Pitch review — SkyBridge',3,'14:00','15:00','meeting','c5','local','Gulshan Club'),
   E('e5','Doctor follow-up (Sadia\'s referral)',4,'09:30','10:00','personal',null,'local'),
-  E('e6','Client call: TradePort renewal',6,'16:00','16:45','call','c13','synced'),
-  E('e7','Dhaka Founders Meetup',8,'18:30','20:30','meeting',null,'synced','Gulshan Club'),
+  E('e6','Client call: TradePort renewal',6,'16:00','16:45','call','c13','local'),
+  E('e7','Dhaka Founders Meetup',8,'18:30','20:30','meeting',null,'local','Gulshan Club'),
   E('e8','Call Sunita — reconnect',9,'15:00','15:30','follow-up','c20','local'),
-  E('e9','Cricket friendly match',12,'08:00','10:00','personal','c10','synced','Mirpur Ground 2'),
-  E('e10','Design review',-2,'13:00','14:00','meeting','c9','synced'),
-  E('e11','Intro call: Mehedi (Airtel)',-5,'12:00','12:30','call','c8','synced'),
-  E('e12','Quarterly planning',14,'10:00','12:00','meeting',null,'synced'),
+  E('e9','Cricket friendly match',12,'08:00','10:00','personal','c10','local','Mirpur Ground 2'),
+  E('e10','Design review',-2,'13:00','14:00','meeting','c9','local'),
+  E('e11','Intro call: Mehedi (Airtel)',-5,'12:00','12:30','call','c8','local'),
+  E('e12','Quarterly planning',14,'10:00','12:00','meeting',null,'local'),
 ]
 
 /* ── Notes ────────────────────────────────────────────────── */
@@ -175,19 +175,3 @@ export const IMPORTS = [
 export const CARDDAV = null
 export const GCAL = { connected: false, email: null, lastSync: null }
 
-/* ── Mock mailboxes for Email Integration (8b) ────────────── */
-const M = (id, provider, dir, name, email, subject, snippet, minsAgo) =>
-  ({ id, provider, dir, name, email, subject, snippet, ts: tsAgo(minsAgo) })
-
-export const MAIL_SEED = [
-  M('m1',  'gmail',   'in',  'Vikram Rao',      'vikram@finedge.io',     'Re: Proposal — Q4 enterprise plan', 'Thanks for the deck! Two questions on seat pricing before we sign the SOW…', 60 * 5),
-  M('m2',  'gmail',   'out', 'Vikram Rao',      'vikram@finedge.io',     'Re: Proposal — Q4 enterprise plan', 'Per active rep, billed annually. Happy to walk procurement through it Thursday…', 60 * 3),
-  M('m3',  'gmail',   'in',  'Tanvir Ahmed',    'tanvir@tigerit.com.bd', 'Deployment window this weekend?', 'SRE wants the migration done off-peak. Can you hold Sat 02:00–04:00…', 60 * 26),
-  M('m4',  'gmail',   'in',  'Arjun Mehta',     'arjun@skybridge.vc',    'Deck receieved — scheduling partner review', 'Strong numbers. Looping in Meera for the partner call next Tuesday…', 60 * 50),
-  M('m5',  'gmail',   'out', 'Priya Sharma',      'priya.designs@gmail.com','Brand refresh — v2 boards', 'V2 is in Figma under "Aurora". Loved the palette direction, minor spacing notes…', 60 * 75),
-  M('m6',  'gmail',   'in',  'Dhaka Design Week','sponsors@dhakadesignweek.com', 'Sponsor slot available — Main Hall', 'A platinum slot opened for the closing keynote. BDT 250k, includes booth 12…', 60 * 30),
-  M('m7',  'gmail',   'in',  'Tania Rahman',    'tania.r@fastmail.fm',   'Intro: fintech founders dinner', 'Zunayed mentioned you — we are hosting 12 founders on Oct 3rd. In?…', 60 * 12),
-  M('m8',  'outlook', 'in',  'Rahim Uddin',     'rahim.u@gmail.com',     'Eid plans?', 'Ammu asked if you are joining the village trip this year. Let me know soon…', 60 * 40),
-  M('m9',  'outlook', 'in',  'Farhan Ahmed',    'farhan.plays@gmail.com','Saturday nets session', 'Booked the academy turf 7–9am. Bring your kit — and that ledger you promised…', 60 * 20),
-  M('m10', 'outlook', 'in',  'Sarah Chen',      's.chen@northwind.global','NDA + pilot paperwork', 'Legal cleared the pilot. Attached are the countersigned docs for the 90-day trial…', 60 * 8),
-]

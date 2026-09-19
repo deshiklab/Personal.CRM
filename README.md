@@ -17,7 +17,7 @@ All data lives in your browser's `localStorage` — nothing ever leaves your mac
 | Dashboard | `/#/` | Drag-reorderable widget grid (persisted): KPIs, growth sparkline, tasks kanban mini, stay-in-touch queue, sync health, birthdays, tag cloud, overdue countdown, 12-week heatmap |
 | Contacts | `/#/contacts` | Full-data table, multi-filter (group/tags/search/starred/interests/socials), sortable columns; **drawer** with anniversaries, gift ideas, interests, introducer hop-links, **social profile chips** (LinkedIn/X/IG/FB/WhatsApp/site), and the **Reach-out row**: Call `tel:`, WhatsApp `wa.me`, Gmail compose, **Share card** (real `.vcf`) |
 | Tasks | `/#/tasks` | Kanban with search, priority filters, sorts, hide-done; cards show descriptions, tags, subtask progress bars; click a card → **detail modal**: inline edit everything, checklist subtasks, duplicate, delete, activity trail |
-| Email | `/#/email` | **Live Gmail** (with your OAuth Client ID) or demo mailbox: scanning, contact matching, triage → lead capture, one-click touchpoint logging |
+| Email | `/#/email` | **Live Gmail only** (your OAuth Client ID, read-only): inbox scanning, contact matching, triage → lead capture, one-click touchpoint logging. No fake mailboxes |
 | Calendar | `/#/calendar` | Month/week/day grids, drag-to-move events, birthdays inline, **`.ics` export**, every event gets a zero-auth **“Add to Google Calendar”** link |
 | Birthdays | `/#/birthdays` | Auto “Wish 🎂” task rule ≤7 days out, month strip, anniversaries, gift ideas |
 | Follow-Ups | `/#/follow-ups` | Cadence engine per relationship type (client/lead/friend/mentor…), snooze, quick "log contact" |
@@ -28,8 +28,8 @@ All data lives in your browser's `localStorage` — nothing ever leaves your mac
 | Tags | `/#/tags` | Manager: merge, bulk-assign, usage counts |
 | Import | `/#/import` | **vCard/CSV paste → dedupe → diff preview → commit → rollback**, everything auditable |
 | History | `/#/history` | Every import/sync batch with per-record diffs and **one-click rollback** |
-| Integrations | `/#/integrations` | Connection board + the four third-party bridges below |
-| Settings | `/#/settings` | **Google Workspace hub** (Calendar/People/Drive/Gmail, live+demo), CardDAV, automation rules, audit log, data reset |
+| Integrations | `/#/integrations` | Connection board + the four third-party bridges below + **read-only ICS calendar-feed subscriptions** (public Google/iCloud feeds, optional opt-in relay) |
+| Settings | `/#/settings` | **Google Workspace hub** (Calendar/People/Drive/Gmail, live-only with guided setup), CardDAV, automation rules, audit log, sample reset |
 | Quick Capture | FAB (everywhere) | One-tap lead, voice-note parsing, bulk paste via import pipeline |
 | Global Search | `⌘K` | Command palette over contacts/tasks/notes/events/tags |
 
@@ -67,9 +67,9 @@ With a Google Client ID saved: **Connect Gmail** in `/email` pulls the last 21 d
 
 ---
 
-## 🔑 Google Workspace: demo → live
+## 🔑 Google Workspace: live-only, guided setup
 
-Ships in **demo mode** (simulated syncs) because live mode needs *your* OAuth Client ID — no app can legitimately ship Google credentials. ~5 minutes to unlock:
+Google connections are **100% live — zero simulators**. Because live mode needs *your* OAuth Client ID (no app can legitimately ship Google credentials), the app ships with a built-in setup wizard instead of fake syncs. ~5 minutes to unlock:
 
 1. [console.cloud.google.com](https://console.cloud.google.com) → **New project** (any name)
 2. **APIs & Services → Library** → enable: *Google Calendar API*, *People API*, *Google Drive API*, *Gmail API*
@@ -99,7 +99,7 @@ Tokens are requested in-browser and held **in memory only** (never persisted, ne
 6. **Get your phone's contacts in** — export `.vcf` from your phone/icloud → Import page
 7. **Backups** — Integrations → export `.vcf`; or live Google Drive backup in Settings
 
-Reset everything to the fresh demo state: **Settings → Reset demo data**.
+Reset everything to the fresh sample state: **Settings → Reset to sample dataset**.
 
 ---
 
@@ -136,7 +136,7 @@ src/
 ├── components/                      # Sidebar, Topbar, GlobalSearch, QuickCapture, ui kit, dashboard widgets
 ├── pages/                           # the 17 screens above
 ├── lib/                             # google.js (GIS OAuth + APIs), vcard.js, ics.js, csv.js
-└── data/seed.js                     # realistic fictional demo dataset
+└── data/seed.js                     # realistic fictional sample dataset
 ```
 
 The production build inlines everything into one HTML file via `vite-plugin-singlefile` — that's why `demo-standalone.html` runs offline with zero assets.
@@ -147,20 +147,20 @@ The production build inlines everything into one HTML file via `vite-plugin-sing
 
 - **Storage:** browser `localStorage` (key `pcrm-state-v1`) — survives restarts, per-origin
 - **Exports:** CSV (contacts/tasks/events), `.vcf` (contacts), `.ics` (events), JSON backup files
-- **Restore:** import pipeline / Google Drive restore / demo reset
+- **Restore:** import pipeline / Google Drive restore / sample reset
 - **Privacy:** no analytics, no telemetry, no third-party calls except bridges you explicitly configure
 
 ---
 
 ## 🙋 FAQ
 
-**Why is Google in demo mode by default?** Live Google connections need an OAuth Client ID that belongs to your Google Cloud account — legitimately impossible to bake into an app. Follow the [setup above](#-google-workspace-demo--live).
+**Why does Google say SETUP NEEDED?** Live Google connections need an OAuth Client ID that belongs to your Google Cloud account — legitimately impossible to bake into an app. Follow the [setup above](#-google-workspace-live-only-guided-setup).
 
 **Do I need to keep my computer on for webhooks?** The webhook fires when *you do something in the app* — it POSTs from your browser tab, not from any server. No always-on backend needed.
 
 **Why HashRouter (`/#/...` URLs)?** Makes the app bulletproof on any static host or `file://` — no server-side rewrite rules needed.
 
-**Data safety?** Nothing leaves localStorage unless you wire a bridge; Rollback button on every import; one-key demo reset.
+**Data safety?** Nothing leaves localStorage unless you wire a bridge (or allow the opt-in public-feed relay for ICS subscriptions); Rollback button on every import; one-key sample reset.
 
 ---
 
