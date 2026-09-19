@@ -1,100 +1,167 @@
-# ⚡ Personal CRM — BiTsCol Workspace
+# ⚡ Personal CRM
 
-A fully client-side Personal CRM built with **React 19 + Vite 6 + Tailwind CSS 4**.
-No backend required — all data lives in `localStorage` (key `pcrm-v1`) and is seeded with a realistic 24-contact Dhaka-based demo dataset on first run.
+A complete, offline-first **personal relationship manager** — contacts, kanban tasks, calendar, notes, groups, analytics, and **real third-party bridges** (webhooks, vCard, ICS, Gmail) — in a single React app that **runs with zero backend**.
 
-**Cross-cutting features:** 📱 installable PWA with true-offline shell (manifest + service worker precache — verified to reload with the network cut) · 🌗 dark↔light theme toggle (Topbar, persisted, flash-free boot) · ⬇ one-click CSV export on every data screen (Excel-ready BOM, RFC-4180 quoting) · ⌘K global search with **matched-via facets** (interests, company, introducer) · ⚡ global Quick Capture FAB.
+- **Try instantly:** download [`demo-standalone.html`](demo-standalone.html) → double-click → the whole app runs from one file. No install, no server.
+- **Live demo:** https://deshiklab.github.io/Personal.CRM/ *(once Pages is enabled — 2 clicks, see [Deployment](#-deployment))*
+- **Run the source:** `npm install && npm run dev` → http://localhost:5173
 
-**People graph fields:** every contact carries `introducedBy` ("met through" — clickable in the drawer, with reverse "introduced you to" links) and `interests[]` (inline-editable topic chips, instantly searchable).
+All data lives in your browser's `localStorage` — nothing ever leaves your machine unless you explicitly wire up a bridge.
 
 ---
 
-## Quick start
+## ✅ What's inside (17 screens)
+
+| Area | Route | What you get |
+|---|---|---|
+| Dashboard | `/#/` | Drag-reorderable widget grid (persisted): KPIs, growth sparkline, tasks kanban mini, stay-in-touch queue, sync health, birthdays, tag cloud, overdue countdown, 12-week heatmap |
+| Contacts | `/#/contacts` | Full-data table, multi-filter (group/tags/search/starred/interests/socials), sortable columns; **drawer** with anniversaries, gift ideas, interests, introducer hop-links, **social profile chips** (LinkedIn/X/IG/FB/WhatsApp/site), and the **Reach-out row**: Call `tel:`, WhatsApp `wa.me`, Gmail compose, **Share card** (real `.vcf`) |
+| Tasks | `/#/tasks` | Kanban with search, priority filters, sorts, hide-done; cards show descriptions, tags, subtask progress bars; click a card → **detail modal**: inline edit everything, checklist subtasks, duplicate, delete, activity trail |
+| Email | `/#/email` | **Live Gmail** (with your OAuth Client ID) or demo mailbox: scanning, contact matching, triage → lead capture, one-click touchpoint logging |
+| Calendar | `/#/calendar` | Month/week/day grids, drag-to-move events, birthdays inline, **`.ics` export**, every event gets a zero-auth **“Add to Google Calendar”** link |
+| Birthdays | `/#/birthdays` | Auto “Wish 🎂” task rule ≤7 days out, month strip, anniversaries, gift ideas |
+| Follow-Ups | `/#/follow-ups` | Cadence engine per relationship type (client/lead/friend/mentor…), snooze, quick "log contact" |
+| Notifications | `/#/notifications` | Unified inbox — tasks, follow-ups, birthdays, events, system — with per-category preferences |
+| Groups | `/#/groups` | Color-coded relationship groups |
+| Network | `/#/graph` | Drag nudge relationship map with connector finding ("who links X and Y") |
+| Analytics | `/#/analytics` | 3/6/12-month windows: acquisition bars, completion gauge + turnaround, most-contacted ranking, tag donut, weekly rhythm, auto-insights |
+| Tags | `/#/tags` | Manager: merge, bulk-assign, usage counts |
+| Import | `/#/import` | **vCard/CSV paste → dedupe → diff preview → commit → rollback**, everything auditable |
+| History | `/#/history` | Every import/sync batch with per-record diffs and **one-click rollback** |
+| Integrations | `/#/integrations` | Connection board + the four third-party bridges below |
+| Settings | `/#/settings` | **Google Workspace hub** (Calendar/People/Drive/Gmail, live+demo), CardDAV, automation rules, audit log, data reset |
+| Quick Capture | FAB (everywhere) | One-tap lead, voice-note parsing, bulk paste via import pipeline |
+| Global Search | `⌘K` | Command palette over contacts/tasks/notes/events/tags |
+
+---
+
+## 🔌 Third-party bridges (real, tested)
+
+Everything works from a pure browser client — **no API key needed except optional Google**:
+
+### 1. Outbound webhooks → Zapier / Make / n8n
+`/integrations`: paste any catch-hook URL, arm events (**lead added**, **contact added**, **task completed**, **touch logged**), hit **Send test ping**. The app POSTs a clean JSON payload:
+
+```json
+{ "source": "personal-crm", "event": "contact", "ts": "2026-09-20T10:15:00.000Z",
+  "data": { "name": "…", "email": "…", "phone": "…" } }
+```
+
+- Sent as a CORS-simple request (`text/plain`) — you get the real HTTP status when the hook allows it, otherwise *“delivered (unverified)”* (the hook still receives it).
+- 20-entry delivery log with per-attempt status.
+- Verified end-to-end against live hook receivers.
+
+### 2. vCard (.vcf) both ways
+- **Export all contacts** or **share one card** (native share sheet on phone, download on desktop) as vCard 3.0.
+- **Import any `.vcf`** — iCloud/Google Contacts/phone exports flow through the same dedupe → diff → rollback pipeline as CSV paste.
+
+### 3. Calendar bridges
+- **`.ics` export** of the whole event book → Apple Calendar, Outlook, Google (Settings → Import), CalDAV clients.
+- Per-event **prefilled Google Calendar template links** (`calendar.google.com/render`) — zero auth, any account.
+
+### 4. Deep actions (zero setup)
+Every contact: `tel:` dialer, `wa.me` chat (no API), Gmail compose URL, Web Share of the vCard.
+
+### 5. Live Gmail
+With a Google Client ID saved: **Connect Gmail** in `/email` pulls the last 21 days (sender, subject, snippet) via the Gmail API — reusing the Google Workspace token.
+
+---
+
+## 🔑 Google Workspace: demo → live
+
+Ships in **demo mode** (simulated syncs) because live mode needs *your* OAuth Client ID — no app can legitimately ship Google credentials. ~5 minutes to unlock:
+
+1. [console.cloud.google.com](https://console.cloud.google.com) → **New project** (any name)
+2. **APIs & Services → Library** → enable: *Google Calendar API*, *People API*, *Google Drive API*, *Gmail API*
+3. **OAuth consent screen** → External → app name → your email → Save; leave in **Testing**
+4. **Test users** → add your Gmail *(required, or you get `access_denied`)*
+5. **Credentials → Create OAuth client ID → Web application** → *Authorized JavaScript origins*: add your app origin (e.g. `http://localhost:5173`, or your hosting URL `https://yourname.github.io`), create, copy the `…apps.googleusercontent.com` ID
+6. In the app: **Settings → Google Workspace hub → "Google OAuth Client ID"** → Save → Connect live. Expect Google's *"App isn't verified"* screen → **Advanced → Continue** (normal for Testing mode).
+
+Tokens are requested in-browser and held **in memory only** (never persisted, never sent anywhere else). Scopes: `calendar.readonly`, `contacts.readonly`, `gmail.readonly`, `drive.file`.
+
+| Service | What live mode does |
+|---|---|
+| Calendar | Imports primary-calendar events (±30/60d), dedupes by title+date, links contacts by name |
+| People | Imports contacts through the dedupe/diff/rollback pipeline (source `google-contacts`) |
+| Drive | Creates/updates `personal-crm-backup.json` (app-created files only) + restore |
+| Gmail | Pulls recent threads for touchpoint scanning & lead triage |
+
+---
+
+## 🧭 User guide (the 60-second tour)
+
+1. **Add your first real lead** — Quick Capture (FAB bottom-right, or `C` wherever you are)
+2. **Search anything** — `⌘K` (contacts, tasks, notes, events, tags)
+3. **Stay warm with people** — Follow-Ups tells you who goes cold next; log contact with one click and the cadence resets
+4. **Brain-dump contacts at scale** — Import page: paste vCards or CSV rows from anywhere (phone export, LinkedIn, spreadsheet) → review the diff → commit → instant rollback if wrong
+5. **Wire your automations** — Integrations page: paste a Zapier catch-hook → things you do in the CRM start appearing in your other apps
+6. **Get your phone's contacts in** — export `.vcf` from your phone/icloud → Import page
+7. **Backups** — Integrations → export `.vcf`; or live Google Drive backup in Settings
+
+Reset everything to the fresh demo state: **Settings → Reset demo data**.
+
+---
+
+## 🚀 Deployment
+
+### Easiest (recommended): GitHub Pages
+1. Make the repo **public** *(Settings → General → Danger Zone)*
+2. **Settings → Pages** → Source: *Deploy from a branch* → `gh-pages` · `/ (root)` → Save
+3. Live at `https://<you>.github.io/Personal.CRM/` in ~60s
+
+The `gh-pages` branch already contains the single-file build (CI-free). Rebuild after edits: `npm run build && cp dist/index.html index.html` on that branch.
+
+### Alternative hosts
+- **Netlify Drop:** [app.netlify.com/drop](https://app.netlify.com/drop) → drag the repo's `crm-deploy.zip` (or the `dist/` folder)
+- **Vercel / Cloudflare Pages:** New project → import this repo (build command `npm run build`, output `dist`)
+- **Local static serve:** `python3 -m http.server --directory dist` after `npm run build`
+
+---
+
+## 🛠️ Development
 
 ```bash
-npm install          # install dependencies
-npm run dev          # dev server → http://localhost:5173
-npm run build        # production build → dist/ (single-file via viteSingleFile)
+npm install          # deps
+npm run dev          # dev server (vite, hot reload) :5173
+npm run build        # production → dist/index.html (single-file, all inlined)
+node verify-integrations.mjs   # Playwright suite: 23 checks incl. REAL webhook delivery
 ```
 
-**Zero-install option:** open `../personal-crm-standalone.html` in any browser —
-it's the entire app inlined into one file (HashRouter, works over `file://`).
+**Stack:** React 18 • Vite 6 • Tailwind 4 • lucide-react • HashRouter (file:// deploys "just work") • zero secrets in repo • PWA manifest + offline cache.
 
-## PWA / offline install
+```
+src/
+├── App.jsx, main.jsx, store.jsx     # router, context store (all domain logic)
+├── components/                      # Sidebar, Topbar, GlobalSearch, QuickCapture, ui kit, dashboard widgets
+├── pages/                           # the 17 screens above
+├── lib/                             # google.js (GIS OAuth + APIs), vcard.js, ics.js, csv.js
+└── data/seed.js                     # realistic fictional demo dataset
+```
 
-`npm run build` emits `dist/` with `manifest.webmanifest`, `sw.js` and `public/icons/*`.
-Serve `dist/` over HTTP(S) (e.g. `npx vite preview`) and the app becomes installable:
-Chrome/Edge show an install prompt (also surfaced as a Topbar **Install** button via
-`beforeinstallprompt`); on iOS use Share → Add to Home Screen. The service worker
-precaches the single-file shell, so once visited, **the app loads fully offline**.
+The production build inlines everything into one HTML file via `vite-plugin-singlefile` — that's why `demo-standalone.html` runs offline with zero assets.
 
 ---
 
-## Feature map
+## 🧪 Backups & data model
 
-| Area | Route | Highlights |
-|---|---|---|
-| Dashboard | `/` | Customizable widget grid (add/remove/reorder/hide, persisted), growth sparkline, task kanban mini, stay-in-touch, sync health, birthdays, top tags, overdue countdown, 12-week activity heatmap |
-| Contacts | `/contacts` | Search/filter (incl. interests & socials), star, drawer with anniversaries, gift ideas, **social profile chips** (LinkedIn/X/IG/FB/WhatsApp/web, add/remove inline), interests editor, introducer hop-links, **direct-action row**: Call (`tel:`), WhatsApp (`wa.me`), Gmail compose, share/download the contact as a real `.vcf` card |
-| Tasks | `/tasks` | Advanced kanban: search, priority filters, sorts, hide-done; cards show description, tags, priority, avatars, **subtask progress bars**; **click any card for the detail view** — inline edit of every field, checklist subtasks, description, tags, activity trail, duplicate & delete |
-| Notes | `/notes` | Pinned notes, contact links, editor panel |
-| Email | `/email` | **Live Gmail** (reuses the Google token, `gmail.readonly` scope) or demo mailbox: scanning, contact matching, triage → lead capture, one-click touchpoint logging |
-| Calendar | `/calendar` | Month grid with drag-to-move events + tasks, birthdays inline, **.ics export of the whole book**, every event gets zero-auth **Add to Google Calendar** template links |
-| Birthdays & Occasions | `/birthdays` | Auto "Wish X 🎂" task rule ≤7 days out, month strip, anniversaries, gift-idea autosave |
-| Follow-Ups | `/follow-ups` | Cadence engine per relationship type, snooze, "log contact" |
-| Inbox | `/notifications` | Notification center: tasks/follow-ups/birthdays/events/system, read/snooze/dismiss, per-category prefs, sidebar badge |
-| Groups | `/groups` | Colored relationship groups |
-| Network | `/graph` | Force-style relationship map, connector finders |
-| Analytics | `/analytics` | 3/6/12-month window: contacts-added bars, task-completion gauge + turn-around, most-contacted ranking, tag donut, weekly rhythm, network composition, auto-generated insights |
-| Tags | `/tags` | Tag manager: merge, bulk-assign, usage counts |
-| Import | `/import` | vCard/CSV paste → diff preview → commit |
-| History | `/history` | Full import batches with per-record diffs and one-click **rollback** |
-| **Integrations** | `/integrations` | Connection board (LIVE/DEMO/OFF per pipe) + four real bridges below |
-| Settings | `/settings` | **Google Workspace hub** — Calendar sync, People (contacts) import, Drive backup; CardDAV; rules; audit log; demo reset |
+- **Storage:** browser `localStorage` (key `pcrm-state-v1`) — survives restarts, per-origin
+- **Exports:** CSV (contacts/tasks/events), `.vcf` (contacts), `.ics` (events), JSON backup files
+- **Restore:** import pipeline / Google Drive restore / demo reset
+- **Privacy:** no analytics, no telemetry, no third-party calls except bridges you explicitly configure
 
-## Google Workspace connection
+---
 
-Settings → **Google Workspace**. Two modes:
-- **Demo (default):** simulated syncs (sample events/contacts, JSON backup download + file restore).
-- **Live:** paste your own **Google OAuth Client ID** (console.cloud.google.com → APIs → enable *Calendar API*, *People API*, *Drive API* → Credentials → OAuth client (Web) → add this origin). The app then runs **browser-side OAuth** (Google Identity Services, no server/secret) with scopes `calendar.readonly`, `contacts.readonly`, `gmail.readonly`, `drive.file` — tokens stay in memory only for the session.
-  - *Calendar* — imports primary-calendar events (±30/60 days), dedupes by title+date, links contacts by name.
-  - *People* — imports contacts through the dedupe/diff/**rollback** pipeline (source `google-contacts`).
-  - *Drive* — creates/updates `personal-crm-backup.json` (drive.file scope = app-created files only) and restores from it.
-## Third-party bridges (no server, no secrets)
+## 🙋 FAQ
 
-Everything works from the pure browser client — no API key needed except optional Google:
+**Why is Google in demo mode by default?** Live Google connections need an OAuth Client ID that belongs to your Google Cloud account — legitimately impossible to bake into an app. Follow the [setup above](#-google-workspace-demo--live).
 
-| Bridge | How it works | Where |
-|---|---|---|
-| **Outbound webhooks** | Paste any Zapier/Make/n8n catch-hook; the app POSTs `{source, event, ts, data}` on *lead added*, *contact added*, *task completed*, *touch logged*. Sent as a CORS-simple request — real HTTP status when the hook allows it, “delivered (unverified)” otherwise. Test-ping button + 20-entry delivery log. | `/integrations` |
-| **Phone / address book (.vcf)** | Export the whole CRM (or a single contact) as vCard 3.0; import any `.vcf` (iCloud/Google/phone export) through the same dedupe/diff/rollback pipeline as CSV paste. | `/integrations`, contact drawer |
-| **Calendar (.ics + template links)** | One-click `.ics` of all events (imports into Apple/Outlook/Google/CalDAV). Every event also gets a prefilled `calendar.google.com/render` link — zero auth, works in any account. | `/calendar`, event detail |
-| **Deep actions** | `tel:` dialer, `wa.me` chat, Gmail compose URL, and Web-Share-API card sharing with download fallback. | contact drawer |
-| **Live Gmail** | When a Google Client ID is configured, “Connect Gmail” pulls the last 21 days of mail (From/Subject/Snippet) via the Gmail API — same token path as Calendar/People/Drive. | `/email` |
+**Do I need to keep my computer on for webhooks?** The webhook fires when *you do something in the app* — it POSTs from your browser tab, not from any server. No always-on backend needed.
 
-| **Quick Capture** | FAB (everywhere) | Mobile-first bottom sheet: one-tap lead (name+number), voice-to-text capture with smart parsing (lead/task/note) + simulator fallback, bulk paste via the import pipeline (rollback-able) |
-| Global search | `⌘K` | Palette over contacts/tasks/notes/events/tags with deep links |
+**Why HashRouter (`/#/...` URLs)?** Makes the app bulletproof on any static host or `file://` — no server-side rewrite rules needed.
 
-## Project structure
+**Data safety?** Nothing leaves localStorage unless you wire a bridge; Rollback button on every import; one-key demo reset.
 
-```
-personal-crm/
-├── src/
-│   ├── main.jsx            # HashRouter bootstrap
-│   ├── App.jsx             # routes + global overlays
-│   ├── store.jsx           # single context store (all actions, audit, toasts)
-│   ├── lib.js              # date/format helpers
-│   ├── index.css           # Tailwind 4 + design tokens
-│   ├── data/seed.js        # demo dataset (contacts, tasks, events, imports…)
-│   ├── components/         # Sidebar, Topbar, GlobalSearch, QuickCapture,
-│   │                       # dashboardWidgets, ui primitives
-│   └── pages/              # 16 route screens
-├── vite.config.js          # react + @tailwindcss/vite + viteSingleFile
-└── package.json
-```
+---
 
-## Notes
-
-- `jsdom` / `playwright` in devDependencies are headless-verification tooling only; the app itself is runtime-clean.
-- Reset demo data any time from **Settings → Reset demo data**.
-- Dark theme only, by design (design tokens in `index.css`).
+Built for **BiTsCol**. MIT-style do-what-you-want — it's a personal tool, make it yours.
