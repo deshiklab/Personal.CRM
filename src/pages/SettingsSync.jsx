@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { RefreshCw, Plus, Trash2, ShieldCheck, Globe, Calendar, Play, RotateCcw, CheckCircle2, X, KeyRound, Users, HardDrive, CloudDownload, Upload, Loader2 } from 'lucide-react'
+import { RefreshCw, Plus, Trash2, ShieldCheck, Globe, Calendar, Play, RotateCcw, CheckCircle2, X, KeyRound, Users, HardDrive, CloudDownload, Upload, Loader2, Copy, ClipboardCheck, ListChecks, ChevronDown, ExternalLink } from 'lucide-react'
 import { useCrm } from '../store'
 import { SectionHead, Card, Modal, Field, Toggle, Pill, Empty } from '../components/ui'
 import { tsRel } from '../lib'
@@ -331,6 +331,8 @@ function GoogleHub() {
         </div>
       </div>
 
+      {!live && <GoogleSetupGuide toast={toast} />}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <Service icon={Calendar} color="#38bdf8" title="Google Calendar"
           status={gcal.connected ? `connected (${gcal.mode || 'demo'}) · ${gcal.lastSync ? 'synced ' + tsRel(gcal.lastSync) : 'never synced'}` : 'import events ±30/60 days'}>
@@ -367,5 +369,58 @@ function GoogleHub() {
         <ShieldCheck size={12} /> In-browser OAuth (Google Identity Services). Tokens live only in memory for the session; the Drive scope can only touch files this app created.
       </p>
     </Card>
+  )
+}
+
+/* ── guided live-mode setup (no account on our side — Google requires YOUR project) ── */
+function GoogleSetupGuide({ toast }) {
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  const [open, setOpen] = useState(true)
+  const [copied, setCopied] = useState(false)
+  const copyOrigin = async () => {
+    try { await navigator.clipboard.writeText(origin); setCopied(true); setTimeout(() => setCopied(false), 1600) }
+    catch { toast('Select and copy the URL manually', 'warn') }
+  }
+  const Step = ({ n, children }) => (
+    <div className="flex gap-3 items-start">
+      <span className="w-5 h-5 rounded-full grid place-items-center flex-none text-[10.5px] font-extrabold mt-[1px]"
+        style={{ background: 'var(--i2)22', color: 'var(--i2)' }}>{n}</span>
+      <div className="text-[12.5px] leading-relaxed" style={{ color: 'var(--muted)' }}>{children}</div>
+    </div>
+  )
+  const L = ({ href, children }) => (
+    <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold underline underline-offset-2" style={{ color: 'var(--i2)' }}>
+      {children}<ExternalLink size={11} />
+    </a>
+  )
+  return (
+    <div className="card mb-5 overflow-hidden" style={{ borderRadius: 16, borderStyle: 'dashed' }}>
+      <button className="w-full flex items-center gap-2.5 p-4 text-left" onClick={() => setOpen(o => !o)}>
+        <ListChecks size={16} style={{ color: 'var(--i2)' }} />
+        <span className="font-bold text-[13.5px]">Go live in ~5 minutes — step-by-step guide</span>
+        <span className="ml-auto text-[11px] font-semibold" style={{ color: 'var(--faint)' }}>{open ? 'hide' : 'show'}</span>
+        <ChevronDown size={14} style={{ color: 'var(--faint)', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
+      </button>
+      {open && (
+        <div className="px-4 pb-4 flex flex-col gap-3 border-t pt-4 fadein" style={{ borderColor: 'rgba(255,255,255,.06)' }}>
+          <Step n={1}>Open <L href="https://console.cloud.google.com/projectcreate">Google Cloud Console</L> and create a new project (any name, e.g. "Personal CRM").</Step>
+          <Step n={2}>Go to <L href="https://console.cloud.google.com/apis/library">APIs & Services → Library</L> and enable all four:<br />
+            <b style={{ color: 'var(--text)' }}>Google Calendar API · People API · Google Drive API · Gmail API</b></Step>
+          <Step n={3}>Open the <L href="https://console.cloud.google.com/apis/credentials/consent">OAuth consent screen</L> → <b style={{ color: 'var(--text)' }}>External</b> → fill app name + your email → Save. Keep it in <b style={{ color: 'var(--text)' }}>Testing</b> status. Then under <b style={{ color: 'var(--text)' }}>Test users</b>, add your own Gmail address (required by Google, otherwise sign-in is refused).</Step>
+          <Step n={4}>Go to <L href="https://console.cloud.google.com/apis/credentials">Credentials → Create Credentials → OAuth client ID</L> → type <b style={{ color: 'var(--text)' }}>Web application</b>. Under <b style={{ color: 'var(--text)' }}>Authorized JavaScript origins</b>, add exactly this URL:
+            <div className="flex items-center gap-2 mt-2 p-2 rounded-lg" style={{ background: 'var(--cardbg2)', fontFamily: 'monospace', fontSize: 12 }}>
+              <span className="truncate flex-1" style={{ color: 'var(--text)' }}>{origin}</span>
+              <button className="btn btn-ghost btn-sm flex-none" onClick={copyOrigin}>
+                {copied ? <ClipboardCheck size={13} style={{ color: '#34d399' }} /> : <Copy size={13} />} {copied ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+          </Step>
+          <Step n={5}>Copy the resulting <b style={{ color: 'var(--text)' }}>xxxxx.apps.googleusercontent.com</b> ID, paste it in the field above, press <b style={{ color: 'var(--text)' }}>Enable live mode</b> → Connect. Google will show an “app isn't verified” screen — that's normal for Testing apps: click <b style={{ color: 'var(--text)' }}>Advanced → Continue to Personal CRM</b>.</Step>
+          <p className="text-[11px] pl-8" style={{ color: 'var(--faint)' }}>
+            Why so many steps? Google only issues credentials from a project <i>you</i> own — there is no legitimate way for an app to ship with its own. You do this once; every sign-in afterwards takes seconds.
+          </p>
+        </div>
+      )}
+    </div>
   )
 }

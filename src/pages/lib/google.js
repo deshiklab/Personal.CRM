@@ -126,15 +126,3 @@ export const fetchGmailMessages = async (token, max = 20) => {
 
 export const fetchGmailProfile = token =>
   gapi(token, 'https://gmail.googleapis.com/gmail/v1/users/me/profile')
-
-/* GIS error → actionable fix (shown in toasts) */
-export const friendlyGoogleError = e => {
-  const m = String(e?.message || e || '')
-  if (/origin_mismatch/i.test(m)) return 'Origin not allowed — add this site URL to "Authorized JavaScript origins" of your OAuth client (see the setup guide ↑)'
-  if (/access_denied/i.test(m)) return 'Access denied — add your Gmail as a Test user in the OAuth consent screen (Testing mode)'
-  if (/invalid_client/i.test(m) || /client_id/i.test(m)) return 'Client ID looks wrong — check it ends with ".apps.googleusercontent.com"'
-  if (/popup_closed|Sign-in window closed/i.test(m)) return 'Sign-in window closed before finishing'
-  if (/popup_blocked/i.test(m)) return 'Popup was blocked by the browser — allow popups for this site and retry'
-  if (/scope/i.test(m)) return 'Scope issue — make sure Calendar, People, Drive AND Gmail APIs are all enabled in the project'
-  return m
-}
