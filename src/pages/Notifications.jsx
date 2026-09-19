@@ -1,0 +1,199 @@
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Bell, CheckSquare, HeartHandshake, Cake, Calendar, ShieldAlert, Check, Clock, X, RotateCcw, PlusSquare, BellRing, History } from 'lucide-react'
+import { useCrm } from '../store'
+import { SectionHead, Card, Stat, Avatar, Pill, Toggle, Empty, CsvButton } from '../components/ui'
+import { todayISO, daysAheadISO } from '../lib'
+
+const TYPES = {
+  task:       { label: 'Tasks',     icon: CheckSquare,     color: '#38bdf8' },
+  'follow-up':{ label: 'Follow-ups',icon: HeartHandshake,  color: '#fb7185' },
+  birthday:   { label: 'Birthdays', icon: Cake,            color: '#f472b6' },
+  event:      { label: 'Events',    icon: Calendar,        color: '#a78bfa' },
+  system:     { label: 'System',    icon: ShieldAlert,     color: '#fbbf24' },
+}
+const PRIO_COLOR = { high: '#fb7185', med: '#fbbf24', low: '#94a3b8' }
+
+export default function Notifications() {
+  const crm = useCrm()
+  const { buildNotifications, markAllNotifsRead, notifPrefs } = crm
+  const [filter, setFilter] = useState('all')
+
+  const all = useMemo(() => buildNotifications(), [crm.contacts, crm.tasks, crm.events, crm.audit, crm.notifState, crm.notifPrefs])
+  const active = all.filter(n => n.active)
+  const unread = active.filter(n => !n.read)
+  const snoozed = all.filter(n => n.enabled && n.snoozedUntil && !n.dismissed)
+  const dismissed = all.filter(n => n.enabled && n.dismissed)
+  const mutedTypes = Object.entries(notifPrefs).filter(([, v]) => !v).map(([k]) => k)
+
+  let list = active
+  if (filter === 'unread') list = unread
+  else if (TYPES[filter]) list = active.filter(n => n.type === filter)
+
+  return (
+    <div className="max-w-[1100px] mx-auto">
+      <SectionHead kicker="Beyond the core · 2" title="Notification Center"
+        sub="One inbox for task due-dates, follow-up nudges, birthdays, events and sync conflicts — resolve items at the source and they clear themselves."
+        right={<div className="flex items-center gap-2">
+          <CsvButton filename="notifications.csv" rows={crm.buildNotifications()} headers={[
+            { label: 'Type', get: r => r.type }, { label: 'Priority', get: r => r.priority },
+            { label: 'Title', get: r => r.title }, { label: 'Detail', get: r => r.body },
+            { label: 'Reference date', get: r => r.ts },
+          ]} />
+          {unread.length > 0 && <button className="btn btn-ghost btn-sm" onClick={() => { markAllNotifsRead(unread.map(n => n.key)); crm.toast('All marked as read') }}><Check size={13} /> Mark all read</button>}
+        </div>} />
+
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-5">
+        <Stat icon={BellRing} label="Unread" value={unread.length} tone="#fb7185" />
+        <Stat icon={Bell} label="In inbox" value={active.length} tone="#818cf8" />
+        <Stat icon={Clock} label="Snoozed" value={snoozed.length} tone="#fbbf24" />
+        <Stat icon={X} label="Muted categories" value={mutedTypes.length} tone="#94a3b8" />
+      </div>
+
+      <div className="flex items-center gap-1.5 mb-4 flex-wrap">
+        {[['all', 'All'], ['unread', `Unread · ${unread.length}`], ...Object.entries(TYPES).map(([k, t]) => [k, t.label])].map(([id, l]) => (
+          <button key={id} className={`chip chip-btn ${filter === id ? 'on' : ''}`} onClick={() => setFilter(id)}>{l}</button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-4 items-start">
+        <div className="flex flex-col gap-2">
+          {list.length === 0 && <Card><Empty icon={Bell} title="All clear ✨">Nothing {filter === 'all' ? 'needs your attention' : 'in this bucket'} right now.</Empty></Card>}
+          {list.map(n => <NotifCard key={n.key} n={n} />)}
+
+          {snoozed.length > 0 && filter === 'all' && (
+            <>
+              <div className="text-[11px] font-bold uppercase tracking-[.09em] mt-4 mb-1 px-1" style={{ color: 'var(--faint)' }}>Snoozed</div>
+              {snoozed.map(n => <NotifCard key={n.key} n={n} snoozed />)}
+            </>
+          )}
+          {dismissed.length > 0 && filter === 'all' && (
+            <>
+              <div className="text-[11px] font-bold uppercase tracking-[.09em] mt-4 mb-1 px-1" style={{ color: 'var(--faint)' }}>Dismissed</div>
+              {dismissed.map(n => <NotifCard key={n.key} n={n} dismissedCard />)}
+            </>
+          )}
+        </div>
+
+        <PrefsCard mutedTypes={mutedTypes} />
+      </div>
+    </div>
+  )
+}
+
+function NotifCard({ n, snoozed, dismissedCard }) {
+  const crm = useCrm()
+  const navigate = useNavigate()
+  const t = TYPES[n.type]
+  const contact = n.contactId && crm.contactById[n.contactId]
+
+  const touch = () => crm.markNotifRead(n.key)
+  const openEntity = () => {
+    touch()
+    if (n.type === 'task') navigate(`/tasks?focus=${n.taskId}`)
+    else if (n.type === 'event') navigate(`/calendar?event=${n.eventId}`)
+    else if (n.type === 'system') navigate('/history?tab=sync')
+    else if (contact) navigate(`/contacts?open=${contact.id}`)
+  }
+
+  return (
+    <Card className="p-3.5 flex items-start gap-3" style={{ opacity: dismissedCard ? .55 : 1 }}>
+      <span className="w-9 h-9 rounded-xl grid place-items-center flex-none mt-0.5" style={{ background: t.color + '1c', color: t.color }}>
+        <t.icon size={16} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-semibold text-[13.5px]">{n.title}</span>
+          <span className="dot" style={{ background: PRIO_COLOR[n.priority] }} title={`${n.priority} priority`} />
+          {!n.read && !snoozed && !dismissedCard && <span className="chip" style={{ fontSize: 9.5, background: '#818cf81c', color: '#c7d2fe', borderColor: '#818cf840' }}>UNREAD</span>}
+          {snoozed && <Pill color="#fbbf24"><Clock size={10} /> until {n.snoozedUntil.slice(5)}</Pill>}
+        </div>
+        <div className="text-[12px] mt-0.5" style={{ color: 'var(--muted)' }}>{n.body}</div>
+
+        {!dismissedCard && (
+          <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
+            {n.type === 'task' && (
+              <>
+                <button className="btn btn-primary btn-sm" onClick={() => { touch(); crm.updateTask(n.taskId, { column: 'done' }); crm.toast('Task marked done') }}><Check size={12} /> Mark done</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => { touch(); crm.updateTask(n.taskId, { due: daysAheadISO(1) }); crm.toast('Due date pushed to tomorrow') }}>Push +1d</button>
+                <button className="btn btn-ghost btn-sm" onClick={openEntity}>Open</button>
+              </>
+            )}
+            {n.type === 'follow-up' && (
+              <>
+                <button className="btn btn-primary btn-sm" onClick={() => { touch(); crm.markContacted(n.contactId) }}><Check size={12} /> Log contact</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => { touch(); crm.createFollowUpTask(n.contactId); crm.dismissNotif(n.key) }}><PlusSquare size={12} /> To task</button>
+                <button className="btn btn-ghost btn-sm" onClick={openEntity}>Profile</button>
+              </>
+            )}
+            {n.type === 'birthday' && (
+              <>
+                <button className="btn btn-primary btn-sm" onClick={() => {
+                  touch()
+                  const first = contact?.name.split(' ')[0] || 'them'
+                  crm.addTask({ title: `Wish ${first} a happy birthday 🎂`, column: 'todo', priority: 'med', due: n.ts || todayISO(), contactId: n.contactId })
+                  crm.dismissNotif(n.key); crm.toast('Birthday wish task created')
+                }}><Cake size={12} /> Wish task</button>
+                <button className="btn btn-ghost btn-sm" onClick={openEntity}>Profile</button>
+              </>
+            )}
+            {n.type === 'event' && <button className="btn btn-primary btn-sm" onClick={openEntity}><Calendar size={12} /> Open in calendar</button>}
+            {n.type === 'system' && (
+              <button className="btn btn-primary btn-sm" onClick={openEntity}><History size={12} /> Review conflict</button>
+            )}
+            <span className="flex-1" />
+            {!snoozed && (
+              <>
+                <button className="btn btn-ghost btn-sm" title="Snooze 1 day" onClick={() => { touch(); crm.snoozeNotif(n.key, 1) }}><Clock size={12} /> 1d</button>
+                <button className="btn btn-ghost btn-sm" title="Snooze 3 days" onClick={() => { touch(); crm.snoozeNotif(n.key, 3) }}>3d</button>
+                <button className="btn btn-ghost btn-sm" title="Dismiss" onClick={() => { touch(); crm.dismissNotif(n.key) }}><X size={12} /></button>
+              </>
+            )}
+            {snoozed && <button className="btn btn-ghost btn-sm" onClick={() => crm.unsnoozeNotif(n.key)}><RotateCcw size={12} /> Unsnooze</button>}
+          </div>
+        )}
+        {dismissedCard && (
+          <div className="mt-2">
+            <button className="btn btn-ghost btn-sm" onClick={() => crm.dismissNotif(n.key, false)}><RotateCcw size={12} /> Restore to inbox</button>
+          </div>
+        )}
+      </div>
+      {contact && <Avatar name={contact.name} size={30} className="flex-none mt-0.5" />}
+    </Card>
+  )
+}
+
+function PrefsCard({ mutedTypes }) {
+  const { notifPrefs, toggleNotifPref, toast } = useCrm()
+  const testPush = async () => {
+    if (!('Notification' in window)) return toast('Browser notifications unsupported here', 'warn')
+    if (Notification.permission === 'granted') {
+      new Notification('Personal CRM', { body: 'Reminders work! You’ll see nudges for tasks, follow-ups and birthdays here.' })
+      toast('Test notification sent')
+    } else if (Notification.permission === 'default') {
+      const p = await Notification.requestPermission()
+      toast(p === 'granted' ? 'Permission granted — test again' : 'Permission declined', p === 'granted' ? 'ok' : 'warn')
+    } else {
+      toast('Notifications are blocked in this browser', 'warn')
+    }
+  }
+  return (
+    <Card className="p-4">
+      <h3 className="font-bold text-[13.5px] mb-1">Push preferences</h3>
+      <p className="text-[11.5px] mb-3" style={{ color: 'var(--faint)' }}>Muted categories are hidden from the inbox and the sidebar badge.</p>
+      <div className="flex flex-col gap-2.5">
+        {Object.entries(TYPES).map(([k, t]) => (
+          <div key={k} className="flex items-center gap-2.5">
+            <t.icon size={14} style={{ color: notifPrefs[k] !== false ? t.color : 'var(--faint)' }} />
+            <span className="text-[12.5px] font-medium flex-1">{t.label}</span>
+            <Toggle on={notifPrefs[k] !== false} onChange={v => toggleNotifPref(k, v)} />
+          </div>
+        ))}
+      </div>
+      {mutedTypes.length > 0 && (
+        <p className="text-[11.5px] mt-3" style={{ color: 'var(--faint)' }}>Currently muted: {mutedTypes.map(k => TYPES[k].label).join(', ')}</p>
+      )}
+      <button className="btn btn-ghost btn-sm w-full mt-4" onClick={testPush}><BellRing size={13} /> Send test notification</button>
+    </Card>
+  )
+}
