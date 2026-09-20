@@ -36,7 +36,13 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - uses: android-actions/setup-android@v3
+      # github runners already ship a full Android SDK ($ANDROID_HOME + sdkmanager) —
+      # just accept licenses and make sure the platform this project targets (36) is present
+      - name: Prepare Android SDK (preinstalled)
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Show signing SHA-1 (this is what your Google Cloud "Android OAuth client" must contain)
         run: |
