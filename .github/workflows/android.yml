@@ -1,0 +1,84 @@
+name: Build Android APK
+
+# Builds a signed debug APK (shared repo keystore → one stable SHA-1, matches
+# the Android OAuth client you create once in Google Cloud). Tap "Run workflow"
+# in GitHub → Actions, then download the APK artifact.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['src/**', 'package.json', 'capacitor.config.json', 'android/**', '.github/workflows/android.yml']
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      KEYSTORE_AVAILABLE: ${{ secrets.KEYSTORE_BASE64 != '' && 'true' || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install JS deps
+        run: npm ci || npm install
+
+      - name: Build web bundle
+        run: npm run build
+
+      - name: Sync Capacitor → android project
+        run: npx cap sync android
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Show signing SHA-1 (this is what your Google Cloud "Android OAuth client" must contain)
+        run: |
+          echo "package: com.bitscol.personalcrm"
+          keytool -list -v -keystore android/debug.keystore -alias androiddebugkey -storepass android | grep -E "SHA1:|SHA256:"
+
+      - name: Assemble debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: personal-crm-android-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      # ── optional signed release build, only when keystore secrets exist ──
+      - name: Decode release keystore (if secret present)
+        if: env.KEYSTORE_AVAILABLE == 'true'
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/release.keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+
+      - name: Assemble release APK (only with signing secrets)
+        if: env.KEYSTORE_AVAILABLE == 'true'
+        env:
+          KEYSTORE_FILE: release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          cd android
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Upload signed release APK
+        if: env.KEYSTORE_AVAILABLE == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: personal-crm-android-release
+          path: android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 30

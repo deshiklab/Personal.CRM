@@ -272,6 +272,11 @@ export function CrmProvider({ children }) {
 
   const ensureToken = async () => {
     if (gtoken && gtoken.exp > Date.now() + 60e3) return gtoken.t
+    if (goog.isNative()) {
+      const { t, exp } = await goog.requestNativeToken(googleClientId)
+      setGtoken({ t, exp })
+      return t
+    }
     const t = await goog.requestToken(googleClientId)
     setGtoken({ t, exp: Date.now() + 3500e3 })
     return t
@@ -382,6 +387,7 @@ export function CrmProvider({ children }) {
   }
 
   const disconnectGoogle = () => {
+    goog.nativeSignOut()
     setGtoken(null)
     setGcal(g => ({ ...g, connected: false, mode: null }))
     logAudit('user', 'Google disconnected', 'Token discarded')

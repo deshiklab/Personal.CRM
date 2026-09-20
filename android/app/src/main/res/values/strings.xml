@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Personal CRM</string>
+    <string name="title_activity_main">Personal CRM</string>
+    <string name="package_name">com.bitscol.personalcrm</string>
+    <string name="custom_url_scheme">com.bitscol.personalcrm</string>
+</resources>

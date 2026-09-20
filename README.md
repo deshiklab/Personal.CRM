@@ -67,6 +67,25 @@ With a Google Client ID saved: **Connect Gmail** in `/email` pulls the last 21 d
 
 ---
 
+## 📱 Android app (fully local + Google only)
+
+The entire CRM ships as a native Android app via **Capacitor** — the same React codebase runs in a
+system WebView with native Google Sign-In.
+
+**What it does:** everything works 100% offline-first (all data lives locally on the phone).
+The ONLY network calls are to Google: **Drive backup/restore** (app-owned file, `drive.file`
+scope), **Calendar** and **Contacts** import (read-only). No servers, no tracking.
+
+| Step | Detail |
+|---|---|
+| 1 · Get the APK | Easiest: GitHub → **Actions → Build Android APK → Run workflow** → download the `personal-crm-android-debug` artifact. Or locally: `npm install && npm run android:sync && npm run android:open` (Android Studio) → ▶ Run |
+| 2 · Google setup | Follow the SAME in-app guide (**Settings → Google hub**) — on Android it adds one step: create an **Android OAuth client** with package `com.bitscol.personalcrm` + this SHA-1 (the repo's shared debug keystore): `DE:E4:74:EA:F9:4A:35:E7:16:16:95:48:1F:88:0B:39:F0:B2:B0:2E` |
+| 3 · Install & connect | Allow “install unknown apps” on the phone → Settings → Google hub → paste your Web Client ID → **Connect** → the native Google account picker appears |
+| Release signing | Add repo secrets `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` → the same workflow also emits a signed **release APK** |
+
+Why native sign-in? Google **blocks OAuth inside WebViews**, so the APK uses `@capgo/capacitor-social-login`
+(native Google Sign-In SDK); the web build keeps using Google Identity Services. One Web OAuth Client ID serves both.
+
 ## 🔑 Google Workspace: live-only, guided setup
 
 Google connections are **100% live — zero simulators**. Because live mode needs *your* OAuth Client ID (no app can legitimately ship Google credentials), the app ships with a built-in setup wizard instead of fake syncs. ~5 minutes to unlock:
