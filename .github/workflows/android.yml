@@ -36,13 +36,24 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      # github runners already ship a full Android SDK ($ANDROID_HOME + sdkmanager) —
-      # just accept licenses and make sure the platform this project targets (36) is present
+      # github runners ship a full Android SDK ($ANDROID_HOME); locate sdkmanager
+      # robustly (PATH varies between runner images) + force-download fallback
       - name: Prepare Android SDK (preinstalled)
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
-          yes | sdkmanager --licenses > /dev/null || true
-          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          ls "$ANDROID_HOME/platforms" || true
+          SDKMAN=$(command -v sdkmanager || true)
+          [ -n "$SDKMAN" ] || SDKMAN="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMAN" ]; then
+            echo "sdkmanager not found — downloading cmdline-tools"
+            curl -fsSL -o /tmp/tools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+            unzip -q /tmp/tools.zip -d /tmp/ct
+            SDKMAN=/tmp/ct/cmdline-tools/bin/sdkmanager
+          fi
+          echo "using: $SDKMAN"
+          yes | "$SDKMAN" --sdk_root="$ANDROID_HOME" --licenses > /dev/null || true
+          "$SDKMAN" --sdk_root="$ANDROID_HOME" "platform-tools" "platforms;android-36" "build-tools;36.0.0" || \
+            sudo "$SDKMAN" --sdk_root="$ANDROID_HOME" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Show signing SHA-1 (this is what your Google Cloud "Android OAuth client" must contain)
         run: |
