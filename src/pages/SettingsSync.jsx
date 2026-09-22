@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { RefreshCw, Plus, Trash2, ShieldCheck, Globe, Calendar, Play, RotateCcw, CheckCircle2, X, KeyRound, Users, HardDrive, CloudDownload, Upload, Loader2, Copy, ClipboardCheck, ListChecks, ChevronDown, ExternalLink } from 'lucide-react'
+import { RefreshCw, Plus, Trash2, ShieldCheck, Globe, Calendar, Play, RotateCcw, CheckCircle2, X, KeyRound, Users, HardDrive, CloudDownload, Upload, CloudUpload, Loader2, Copy, ClipboardCheck, ListChecks, ChevronDown, ExternalLink } from 'lucide-react'
 import { useCrm } from '../store'
 import { SectionHead, Card, Modal, Field, Toggle, Pill, Empty } from '../components/ui'
 import { tsRel } from '../lib'
-import * as goog from '../lib/google'
 
 const SOURCES = ['Google Contacts', 'Google Calendar', 'CardDAV (iCloud)', 'vCard file (.vcf)', 'Outlook (CSV)']
 const DIRECTIONS = ['Import', 'Export', 'Two-way']
@@ -274,7 +273,7 @@ function DangerZone() {
 /* ── Google Workspace hub (live OAuth with your own Client ID) ── */
 function GoogleHub() {
   const {
-    gcal, googleClientId, googleMode, saveGoogleClientId, connectGoogleLive, disconnectGoogle,
+    gcal, googleClientId, googleMode, saveGoogleClientId, connectGoogleLive, disconnectGoogle, syncing, syncState, syncReport, syncNow, setSyncEnabled,
     syncGoogleCalendar, syncGoogleContacts, driveState, driveBackupNow, driveRestoreNow, restoreAll, toast,
   } = useCrm()
   const [cid, setCid] = useState(googleClientId || '')
@@ -334,7 +333,7 @@ function GoogleHub() {
 
       {!live && <GoogleSetupGuide toast={toast} />}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         <Service icon={Calendar} color="#38bdf8" title="Google Calendar"
           status={gcal.connected ? `connected (${gcal.mode || 'live'}) · ${gcal.lastSync ? 'synced ' + tsRel(gcal.lastSync) : 'never synced'}` : 'import events ±30/60 days'}>
           {live && <Btn k="cal" className="btn btn-primary btn-sm" onClick={run('cal', connectGoogleLive)}>Connect</Btn>}
@@ -364,7 +363,31 @@ function GoogleHub() {
                 </label>
               </>}
         </Service>
+
+        <Service icon={CloudUpload} color="#f472b6" title="Multi-device sync"
+          status={syncState.enabled
+            ? (syncState.lastSyncAt ? `rev ${syncState.lastRev} · synced ${tsRel(syncState.lastSyncAt)}` : 'on — press Sync now')
+            : 'off — one personal-crm-sync.json in your Drive'}>
+          <Toggle on={syncState.enabled} onChange={setSyncEnabled} disabled={!live} />
+          <Btn k="syncdev" className="btn btn-primary btn-sm" disabled={!live || !syncState.enabled}
+            onClick={run('syncdev', () => syncNow({ manual: true }))}>
+            {syncing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} Sync now
+          </Btn>
+          {syncReport?.conflicts > 0 && (
+            <span className="chip" style={{ color: '#fbbf24', borderColor: '#fbbf2444', background: '#fbbf2414' }}
+              title="Same record was edited on two devices since the last sync — newest device copy won">
+              {syncReport.conflicts} conflict{syncReport.conflicts > 1 ? 's' : ''} auto-resolved
+            </span>
+          )}
+        </Service>
       </div>
+
+      <p className="text-[11px] mt-3" style={{ color: 'var(--faint)' }}>
+        Multi-device sync keeps <b style={{ color: 'var(--text)' }}>contacts · tasks · events · notes · tags · groups · rules · emails</b> aligned
+        between this app on every device (phone APK, installed PWA, browser tab) through one <b style={{ color: 'var(--text)' }}>personal-crm-sync.json</b> in your Drive —
+        three-way merged, so edits and deletes never clobber each other. Auto-syncs every minute and whenever the app regains focus.
+        Manual <b style={{ color: 'var(--text)' }}>Drive backup</b> above stays a separate, full archive.
+      </p>
 
       <p className="text-[11px] mt-4 flex items-center gap-1.5" style={{ color: 'var(--faint)' }}>
         <ShieldCheck size={12} /> In-browser OAuth (Google Identity Services). Tokens live only in memory for the session; the Drive scope can only touch files this app created.
@@ -374,12 +397,8 @@ function GoogleHub() {
 }
 
 /* ── guided live-mode setup (no account on our side — Google requires YOUR project) ── */
-const APK_SHA1 = 'DE:E4:74:EA:F9:4A:35:E7:16:16:95:48:1F:88:0B:39:F0:B2:B0:2E'
-const APK_PACKAGE = 'com.bitscol.personalcrm'
-
 function GoogleSetupGuide({ toast }) {
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
-  const native = goog.isNative()
   const [open, setOpen] = useState(true)
   const [copied, setCopied] = useState(false)
   const copyOrigin = async () => {
@@ -412,34 +431,15 @@ function GoogleSetupGuide({ toast }) {
           <Step n={2}>Go to <L href="https://console.cloud.google.com/apis/library">APIs & Services → Library</L> and enable all four:<br />
             <b style={{ color: 'var(--text)' }}>Google Calendar API · People API · Google Drive API · Gmail API</b></Step>
           <Step n={3}>Open the <L href="https://console.cloud.google.com/apis/credentials/consent">OAuth consent screen</L> → <b style={{ color: 'var(--text)' }}>External</b> → fill app name + your email → Save. Keep it in <b style={{ color: 'var(--text)' }}>Testing</b> status. Then under <b style={{ color: 'var(--text)' }}>Test users</b>, add your own Gmail address (required by Google, otherwise sign-in is refused).</Step>
-          {native ? (
-            <Step n={4}>In <L href="https://console.cloud.google.com/apis/credentials">Credentials</L> create <b style={{ color: 'var(--text)' }}>TWO OAuth clients in this project</b>:<br />
-              ① type <b style={{ color: 'var(--text)' }}>Web application</b> (no origins needed) — this ID is the one you paste in the field above.<br />
-              ② type <b style={{ color: 'var(--text)' }}>Android</b> with exactly:<br />
-              package name <code className="px-1 rounded" style={{ background: 'var(--cardbg2)', color: 'var(--text)' }}>{APK_PACKAGE}</code> and SHA-1 fingerprint:
-              <div className="flex items-center gap-2 mt-2 p-2 rounded-lg" style={{ background: 'var(--cardbg2)', fontFamily: 'monospace', fontSize: 10.5 }}>
-                <span className="truncate flex-1" style={{ color: 'var(--text)' }}>{APK_SHA1}</span>
-                <button className="btn btn-ghost btn-sm flex-none" onClick={async () => {
-                  try { await navigator.clipboard.writeText(APK_SHA1); toast('SHA-1 copied') } catch { toast('Copy it manually', 'warn') }
-                }}>{copied ? <ClipboardCheck size={13} style={{ color: '#34d399' }} /> : <Copy size={13} />} Copy</button>
-              </div>
-              <span style={{ color: 'var(--faint)' }}>That SHA-1 comes from this repo's shared debug keystore — every APK built from this repo signs identically. If you later sign with your own release keystore, add ITS SHA-1 (<code>gradle signingReport</code>) as a second Android client.</span>
-            </Step>
-          ) : (
-            <Step n={4}>Go to <L href="https://console.cloud.google.com/apis/credentials">Credentials → Create Credentials → OAuth client ID</L> → type <b style={{ color: 'var(--text)' }}>Web application</b>. Under <b style={{ color: 'var(--text)' }}>Authorized JavaScript origins</b>, add exactly this URL:
-              <div className="flex items-center gap-2 mt-2 p-2 rounded-lg" style={{ background: 'var(--cardbg2)', fontFamily: 'monospace', fontSize: 12 }}>
-                <span className="truncate flex-1" style={{ color: 'var(--text)' }}>{origin}</span>
-                <button className="btn btn-ghost btn-sm flex-none" onClick={copyOrigin}>
-                  {copied ? <ClipboardCheck size={13} style={{ color: '#34d399' }} /> : <Copy size={13} />} {copied ? 'Copied' : 'Copy'}
-                </button>
-              </div>
-            </Step>
-          )}
-          {native ? (
-            <Step n={5}>Paste the Web client ID, press <b style={{ color: 'var(--text)' }}>Enable live mode</b> → Connect. Your phone shows the Google account picker — sign in, accept the scopes. If you sign with your own keystore and sign-in fails with “developer error / 10”, the SHA-1 in ② doesn't match your signing key.</Step>
-          ) : (
-            <Step n={5}>Copy the resulting <b style={{ color: 'var(--text)' }}>xxxxx.apps.googleusercontent.com</b> ID, paste it in the field above, press <b style={{ color: 'var(--text)' }}>Enable live mode</b> → Connect. Google will show an “app isn't verified” screen — that's normal for Testing apps: click <b style={{ color: 'var(--text)' }}>Advanced → Continue to Personal CRM</b>.</Step>
-          )}
+          <Step n={4}>Go to <L href="https://console.cloud.google.com/apis/credentials">Credentials → Create Credentials → OAuth client ID</L> → type <b style={{ color: 'var(--text)' }}>Web application</b>. Under <b style={{ color: 'var(--text)' }}>Authorized JavaScript origins</b>, add exactly this URL:
+            <div className="flex items-center gap-2 mt-2 p-2 rounded-lg" style={{ background: 'var(--cardbg2)', fontFamily: 'monospace', fontSize: 12 }}>
+              <span className="truncate flex-1" style={{ color: 'var(--text)' }}>{origin}</span>
+              <button className="btn btn-ghost btn-sm flex-none" onClick={copyOrigin}>
+                {copied ? <ClipboardCheck size={13} style={{ color: '#34d399' }} /> : <Copy size={13} />} {copied ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+          </Step>
+          <Step n={5}>Copy the resulting <b style={{ color: 'var(--text)' }}>xxxxx.apps.googleusercontent.com</b> ID, paste it in the field above, press <b style={{ color: 'var(--text)' }}>Enable live mode</b> → Connect. Google will show an “app isn't verified” screen — that's normal for Testing apps: click <b style={{ color: 'var(--text)' }}>Advanced → Continue to Personal CRM</b>.</Step>
           <p className="text-[11px] pl-8" style={{ color: 'var(--faint)' }}>
             Why so many steps? Google only issues credentials from a project <i>you</i> own — there is no legitimate way for an app to ship with its own. You do this once; every sign-in afterwards takes seconds.
           </p>

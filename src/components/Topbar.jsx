@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { UserPlus, CalendarPlus, PlusSquare, Search, Sun, Moon, Download } from 'lucide-react'
+import { UserPlus, CalendarPlus, PlusSquare, Search, Sun, Moon, Download, Cloud, Loader2, CloudOff } from 'lucide-react'
 import { useCrm } from '../store'
-import { MONTHS } from '../lib'
+import { MONTHS, tsRel } from '../lib'
 
 const TITLES = {
   '/': 'Dashboard',
@@ -27,7 +27,7 @@ const TITLES = {
 export default function Topbar() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
-  const { theme, toggleTheme } = useCrm()
+  const { theme, toggleTheme, syncing, syncState, syncNow, googleMode } = useCrm()
   const now = new Date()
   const dateStr = `${now.toLocaleDateString('en-US', { weekday: 'short' })}, ${MONTHS[now.getMonth()].slice(0, 3)} ${now.getDate()}`
 
@@ -55,6 +55,26 @@ export default function Topbar() {
             <Download size={14} /><span className="hidden md:inline">Install</span>
           </button>
         )}
+        <button
+          className="btn btn-ghost btn-sm"
+          style={googleMode === 'live' ? { color: '#34d399' } : { color: 'var(--faint)' }}
+          title={
+            googleMode !== 'live' ? 'Multi-device sync — set up your Google Client ID (Settings → Google hub)' :
+            syncing ? 'Syncing with Google Drive…' :
+            `Multi-device sync · ${syncState.lastSyncAt ? 'synced ' + tsRel(syncState.lastSyncAt) : 'never synced yet'} · click to sync now`
+          }
+          onClick={() => {
+            if (googleMode !== 'live') return navigate('/settings')
+            syncNow({ manual: true })
+          }}>
+          {syncing ? <Loader2 size={14} className="animate-spin" /> :
+           googleMode === 'live' ? <Cloud size={14} /> : <CloudOff size={14} />}
+          <span className="hidden lg:inline">
+            {googleMode !== 'live' ? 'Sync: setup' :
+             syncing ? 'Syncing…' :
+             syncState.lastSyncAt ? tsRel(syncState.lastSyncAt) : 'Sync now'}
+          </span>
+        </button>
         <button className="icon-btn" onClick={toggleTheme} title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}>
           {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
         </button>

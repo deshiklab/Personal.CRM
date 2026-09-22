@@ -1,8 +1,9 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import * as seed from './data/seed'
 import { uid, todayISO, daysAheadISO, diffDays, daysUntil } from './lib'
 import * as goog from './lib/google'
 import * as icslib from './lib/ics'
+import * as ds from './lib/drivesync'
 
 const KEY = 'pcrm-v1'
 const load = () => { try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s) } catch {} return null }
@@ -41,6 +42,13 @@ export function CrmProvider({ children }) {
   const [gtoken, setGtoken] = useState(null)
   const [driveState, setDriveState] = useState(init?.driveState || { fileId: null, lastBackup: null, lastRestore: null, lastContactsSync: null })
   const [icsFeeds, setIcsFeeds] = useState(init?.icsFeeds || [])
+  /* multi-device sync: one personal-crm-sync.json in the user's Drive */
+  const [syncState, setSyncState] = useState(init?.syncState || {
+    deviceId: uid(), enabled: true, lastRev: 0, lastSyncAt: null, baselineData: null, baselineHash: '',
+  })
+  const [syncing, setSyncing] = useState(false)
+  const syncBusy = useRef(false)
+  const [syncReport, setSyncReport] = useState(null)     // { conflicts, fromRemote, rev }
   const [webhooks, setWebhooks]   = useState(init?.webhooks || {
     url: '', on: { lead: true, contact: false, task_done: true, touch: false }, log: [],
   })
@@ -57,10 +65,10 @@ export function CrmProvider({ children }) {
     try {
       localStorage.setItem(KEY, JSON.stringify({
         contacts, tasks, events, notes, tags, groups, rules, audit,
-        activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds,
+        activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState,
       }))
     } catch {}
-  }, [contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds])
+  }, [contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState])
 
   /* ── toasts ── */
   const toast = (msg, tone = 'ok') => {
@@ -394,6 +402,102 @@ export function CrmProvider({ children }) {
     toast('Google disconnected', 'warn')
   }
 
+  /* ── multi-device sync: single personal-crm-sync.json in the user's Drive ── */
+  const snapshotCore = () => ({
+    contacts, tasks, events, notes, tags, groups, rules, relFreq, emails,
+  })
+  const applySyncSnapshot = d => {
+    if (Array.isArray(d.contacts)) setContacts(d.contacts)
+    if (Array.isArray(d.tasks)) setTasks(d.tasks)
+    if (Array.isArray(d.events)) setEvents(d.events)
+    if (Array.isArray(d.notes)) setNotes(d.notes)
+    if (Array.isArray(d.tags)) setTags(d.tags)
+    if (Array.isArray(d.groups)) setGroups(d.groups)
+    if (Array.isArray(d.rules)) setRules(d.rules)
+    if (d.relFreq) setRelFreq(d.relFreq)
+    if (Array.isArray(d.emails)) setEmails(d.emails)
+  }
+  const deviceName = () =>
+    (goog.isNative() ? 'Android app' : (typeof matchMedia === 'function' && matchMedia('(display-mode: standalone)').matches ? 'PWA' : 'Web')) +
+    ' · ' + (syncState.deviceId || '').slice(-4)
+
+  const syncNow = async (opts = {}) => {
+    if (googleMode !== 'live') { if (opts.manual) toast('Sync needs your Google Client ID first — Settings → Google hub', 'warn'); return false }
+    if (!syncState.enabled) { if (opts.manual) toast('Multi-device sync is off — enable it in Settings → Google hub', 'warn'); return false }
+    if (syncBusy.current) return false
+    syncBusy.current = true; setSyncing(true)
+    try {
+      const token = await ensureToken()
+      let fileId = driveState.syncFileId || (await ds.findSyncFile(token))?.id || null
+      const remote = fileId ? await ds.readSync(token, fileId) : null
+      const local = snapshotCore()
+      const localHash = ds.hashOf(local)
+      const baseData = syncState.baselineData, baseHash = syncState.baselineHash
+      const rev = syncState.lastRev
+      let newRev = rev
+      let report = null
+
+      if (remote && remote.rev > rev) {
+        /* remote moved (another device synced since we did) → three-way merge */
+        const { merged, stats } = ds.mergeSnapshot(baseData || {}, local, remote.data || {})
+        const mergedHash = ds.hashOf(merged)
+        if (mergedHash !== localHash) applySyncSnapshot(merged)
+        if (mergedHash !== ds.hashOf(remote.data || {})) {
+          newRev = remote.rev + 1
+          const res = await ds.writeSync(token, { __pcrmSync: 3, rev: newRev, deviceId: syncState.deviceId, device: deviceName(), updatedAt: new Date().toISOString(), data: merged }, fileId)
+          if (!fileId) { fileId = res.id; setDriveState(s => ({ ...s, syncFileId: res.id })) }
+          report = { conflicts: stats.conflicts, fromRemote: stats.fromRemote, rev: newRev, dir: 'pushed+merged' }
+        } else {
+          newRev = remote.rev
+          report = { conflicts: stats.conflicts, fromRemote: stats.fromRemote, rev: newRev, dir: 'pulled' }
+        }
+        setSyncState(s => ({ ...s, lastRev: newRev, baselineData: merged, baselineHash: mergedHash, lastSyncAt: new Date().toISOString() }))
+        if (stats.conflicts || stats.fromRemote) {
+          logAudit('system', 'Sync pulled changes', deviceName(), `${stats.fromRemote} adopted from ${remote.device || 'another device'} · ${stats.conflicts} conflict${stats.conflicts === 1 ? '' : 's'} resolved (rev ${newRev})`)
+          toast(`☁️ Synced: ${stats.fromRemote} change${stats.fromRemote === 1 ? '' : 's'} from ${remote.device || 'another device'}${stats.conflicts ? ` · ${stats.conflicts} conflict${stats.conflicts > 1 ? 's' : ''} resolved` : ''}`)
+        } else if (opts.manual) toast('☁️ Already in sync')
+      } else if (!remote || localHash !== baseHash || rev === 0) {
+        /* nothing newer remotely — our changes need pushing (or the first run) */
+        newRev = (remote?.rev || rev) + 1
+        const res = await ds.writeSync(token, { __pcrmSync: 3, rev: newRev, deviceId: syncState.deviceId, device: deviceName(), updatedAt: new Date().toISOString(), data: local }, fileId)
+        if (!fileId) { fileId = res.id; setDriveState(s => ({ ...s, syncFileId: res.id })) }
+        setSyncState(s => ({ ...s, lastRev: newRev, baselineData: local, baselineHash: localHash, lastSyncAt: new Date().toISOString() }))
+        logAudit('system', 'Sync pushed', `rev ${newRev}`, `${local.contacts.length} contacts · ${local.tasks.length} tasks · ${local.events.length} events · ${local.notes.length} notes`)
+        if (opts.manual) toast(`☁️ Synced to Drive (rev ${newRev})`)
+        report = { conflicts: 0, fromRemote: 0, rev: newRev, dir: 'pushed' }
+      } else {
+        setSyncState(s => ({ ...s, lastSyncAt: new Date().toISOString() }))
+        if (opts.manual) toast('☁️ Already in sync')
+      }
+      setSyncReport(report)
+      return true
+    } catch (e) {
+      if (opts.manual) toast(`Sync failed: ${goog.friendlyGoogleError(e)}`, 'warn')
+      return false
+    } finally {
+      syncBusy.current = false; setSyncing(false)
+    }
+  }
+
+  const setSyncEnabled = on => {
+    setSyncState(s => ({ ...s, enabled: !!on }))
+    if (on) setTimeout(() => syncNow({ manual: true }), 50)
+  }
+
+  /* auto-sync: every minute + when the app regains focus + when back online */
+  const syncRef = useRef(null)
+  syncRef.current = syncNow
+  useEffect(() => {
+    if (!syncState.enabled || googleMode !== 'live') return
+    const tick = () => { if (navigator.onLine !== false) syncRef.current?.({}) }
+    const iv = setInterval(tick, 60e3)
+    const onVis = () => { if (document.visibilityState === 'visible') tick() }
+    const onOnline = () => tick()
+    document.addEventListener('visibilitychange', onVis)
+    window.addEventListener('online', onOnline)
+    return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onVis); window.removeEventListener('online', onOnline) }
+  }, [syncState.enabled, googleMode])
+
   /* ── read-only calendar feed subscriptions (real calendars, no OAuth) ── */
   const addIcsFeed = (url, opts = {}) => {
     const feed = { id: uid(), url: url.trim(), viaProxy: !!opts.viaProxy, lastSync: null, lastCount: 0, error: null, lastVia: null }
@@ -683,7 +787,7 @@ export function CrmProvider({ children }) {
     mailboxes, emails, connectMailbox, disconnectMailbox, syncMailbox, logEmailTouch, triageEmailAsLead, ignoreEmail,
     googleClientId, googleMode, saveGoogleClientId, connectGoogleLive, syncGoogleCalendar, syncGoogleContacts,
     driveState, driveBackupNow, driveRestoreNow, restoreAll, disconnectGoogle,
-    webhooks, saveWebhooks, testWebhook, icsFeeds, addIcsFeed, syncIcsFeed, removeIcsFeed,
+    webhooks, saveWebhooks, testWebhook, icsFeeds, addIcsFeed, syncIcsFeed, removeIcsFeed, syncing, syncState, syncReport, syncNow, setSyncEnabled,
     commitImport, rollbackImport, resolveAuditConflict, updateFrequency, snoozeFollowUp, unsnooze, resetAll,
     notifState, notifPrefs, buildNotifications, dismissNotif, snoozeNotif, unsnoozeNotif, markNotifRead, markAllNotifsRead, toggleNotifPref,
     widgetPrefs, toggleWidget, moveWidget, resetWidgets, DEFAULT_WIDGET_ORDER,
