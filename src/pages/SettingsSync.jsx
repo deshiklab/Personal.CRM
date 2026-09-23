@@ -23,6 +23,7 @@ export default function SettingsSync() {
     <div className="max-w-[1100px] mx-auto">
       <SectionHead kicker="Roadmap #9" title="Settings & Sync"
         sub="Connections, sync rules with per-rule conflict strategy, and a full audit trail." />
+      <IdentityCard />
       <GistSyncCard />
       <GoogleHub />
       <Connections />
@@ -513,6 +514,8 @@ function GistSyncCard() {
     </Card>
   )
 }
+
+import IdentityCard from './settings/IdentityCard'
 
 /* ── App lock (pincode) + local download/restore + PIN-confirmed blank reset ── */
 function AppLockCard() {

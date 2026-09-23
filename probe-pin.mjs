@@ -13,9 +13,14 @@ const dots = () => pg.locator('input[placeholder="••••"]')
 const fillPin = async v => { await dots().nth(0).fill(v) }
 const dashboardVisible = async () => (await pg.locator('text=Dashboard').count()) > 0
 
-// 1. first launch → setup screen
+// 0. first launch → registration window, then the pin setup screen
 await pg.goto(BASE + '/#/'); await pg.waitForTimeout(1200)
-;(await pg.locator('text=Set a 4–6 digit pincode').count()) ? ok('first launch shows pincode setup') : bad('setup screen missing')
+;(await pg.locator('text=Welcome to Personal CRM').count()) ? ok('first launch shows registration window') : bad('registration window missing')
+await pg.locator('input[placeholder="e.g. BiTsCol"]').fill('Test User')
+await pg.locator('input[type="email"]').first().fill('tester@example.com')
+await pg.locator('input[type="tel"]').first().fill('+880 1700-000999')
+await pg.locator('button:has-text("Continue")').click(); await pg.waitForTimeout(1000)
+;(await pg.locator('text=Set a 4–6 digit pincode').count()) ? ok('registration → pincode setup') : bad('setup screen missing')
 
 // 2. mismatched pins rejected
 await dots().nth(0).fill('1234'); await dots().nth(1).fill('1239')
@@ -67,13 +72,22 @@ body.includes('Pincode is wrong') ? ok('wipe with wrong pin rejected') : bad('wi
 await pg.locator('.fixed input').fill('5678')
 await pg.locator('.fixed button:has-text("Wipe everything")').click(); await pg.waitForTimeout(2200)
 body = await pg.textContent('body')
-;(await pg.locator('text=Set a 4–6 digit pincode').count()) ? ok('factory reset → fresh setup screen') : bad('no setup after wipe')
+;(await pg.locator('text=Welcome to Personal CRM').count())
+  ? ok('factory reset → fresh first-run (registration) screen')
+  : (await pg.locator('text=Set a 4–6 digit pincode').count())
+    ? ok('factory reset → fresh setup screen')
+    : bad('no first-run screen after wipe')
 await pg.goto(BASE + '/#/contacts'); await pg.waitForTimeout(900)
 
 // 10. skip flow on a fresh context: setup → skip → never again
 const ctx2 = await b.newContext()
 const pg2 = await ctx2.newPage()
 await pg2.goto(BASE + '/#/'); await pg2.waitForTimeout(1200)
+if (await pg2.locator('input[placeholder="e.g. BiTsCol"]').count()) {
+  await pg2.locator('input[placeholder="e.g. BiTsCol"]').fill('Test User')
+  await pg2.locator('input[type="email"]').first().fill('tester@example.com')
+  await pg2.locator('button:has-text("Continue")').click(); await pg2.waitForTimeout(800)
+}
 await pg2.click('text=Skip for now'); await pg2.waitForTimeout(900)
 ;(await pg2.locator('text=Dashboard').count()) ? ok('skip lets you in') : bad('skip failed')
 await pg2.reload(); await pg2.waitForTimeout(1100)

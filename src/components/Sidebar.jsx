@@ -5,7 +5,7 @@ import { BRAND, COPYRIGHT } from '../brand'
 import { daysUntil, tsRel } from '../lib'
 
 export default function Sidebar() {
-  const { contacts, tasks, rules, gcal, followUpStatus, buildNotifications } = useCrm()
+  const {contacts, tasks, rules, gcal, followUpStatus, buildNotifications, profile, isRegistered } = useCrm()
 
   const dueToday = tasks.filter(t => t.column !== 'done' && t.due && daysUntil(t.due) <= 0).length
   const overdue = contacts.filter(c => followUpStatus(c).state === 'overdue').length
@@ -40,7 +40,9 @@ export default function Sidebar() {
           style={{ background: 'linear-gradient(120deg,#818cf8,#38bdf8 55%,#34d399)', color: '#0a0c11', boxShadow: '0 4px 18px rgba(129,140,248,.35)' }}>⚡</div>
         <div className="hidden lg:block leading-tight">
           <div className="text-[14px] font-extrabold tracking-tight">Personal CRM</div>
-          <div className="text-[10.5px] font-semibold" style={{ color: 'var(--faint)' }}>BiTsCol workspace</div>
+          <div className="text-[10.5px] font-semibold" style={{ color: 'var(--faint)' }}>
+            {isRegistered ? `${profile.name.trim().split(/\s+/)[0]}'s workspace` : 'BiTsCol workspace'}
+          </div>
         </div>
       </div>
 

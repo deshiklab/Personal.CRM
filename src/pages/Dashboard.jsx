@@ -6,7 +6,8 @@ import { WIDGET_META, WIDGET_COMPONENTS } from '../components/dashboardWidgets'
 import { cn } from '../lib'
 
 export default function Dashboard() {
-  const { widgetPrefs, toggleWidget, moveWidget, resetWidgets, DEFAULT_WIDGET_ORDER } = useCrm()
+  const { widgetPrefs, toggleWidget, moveWidget, resetWidgets, DEFAULT_WIDGET_ORDER, profile, isRegistered } = useCrm()
+  const firstName = isRegistered ? (profile.name.trim().split(/\s+/)[0] || 'there') : 'BiTsCol'
   const [edit, setEdit] = useState(false)
 
   const order = useMemo(() => [
@@ -17,7 +18,7 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-[1200px] mx-auto">
-      <SectionHead kicker="Overview" title={<>Good day, <span className="grad-text">BiTsCol</span> 👋</>}
+      <SectionHead kicker="Overview" title={<>Good day, <span className="grad-text">{firstName}</span> 👋</>}
         sub="Reorder with arrows, hide what you don't need — your layout is saved."
         right={edit ? (
           <>

@@ -72,13 +72,31 @@
     <tr><td>GitHub Gist sync (fallback)</td><td>Your CRM data, as a private/secret Gist — only when you press sync</td><td>Your own GitHub account, using a token you create</td></tr>
     <tr><td>Google Calendar / Contacts / Gmail (live features)</td><td>Read-only requests for events, contacts or recent message headers, if you connect them</td><td>Google, under your account</td></tr>
     <tr><td>Webhooks</td><td>A small JSON payload (contact/task/lead/touch event) — only if you paste a webhook URL</td><td>The endpoint <b>you</b> configured</td></tr>
+    <tr><td>Registration (optional)</td><td>Your name, email and mobile, sent once so we can register your copy and support you — only if you leave the checkbox ticked at sign-up</td><td>BITSCOL (<a href="mailto:sales@bitscol.com">sales@bitscol.com</a>), delivered by our form provider</td></tr>
+    <tr><td>Verification codes (optional)</td><td>A one-time 6-digit code, sent to us so we can forward it to your email or phone and confirm it is really yours. We store only a <b>hash</b> of the code on your device</td><td>BITSCOL, delivered by our form provider</td></tr>
     <tr><td>Outbound links</td><td>Nothing is sent by us, but tapping Call, WhatsApp, Email or a social link opens the relevant app or website, which will see the number/handle you tapped</td><td>The app or site you chose</td></tr>
   </table>
   <p>Every item above is <b>opt-in and user-initiated</b>. Disconnecting a service and deleting its token stops it immediately.
   Credentials (Google access tokens, GitHub tokens) are stored on your device; where the platform allows, they are held in
   device-native storage rather than the app's synced data, and they are <b>not</b> included in the backup files you export.</p>
 
-  <h2>4. What we do not do</h2>
+  <h2>4. Registration, verification and what we receive</h2>
+  <p>On first launch the app asks for your name and email (mobile optional) so it can greet you personally and
+  support you if you lose access. <b>That profile is stored on your device.</b> Two things can optionally leave it:</p>
+  <ul>
+    <li><b>Registration notice.</b> If you leave the checkbox ticked, your name, email and mobile are sent once to
+    BITSCOL so we know the app is registered. Untick it and nothing is sent — registration still works.</li>
+    <li><b>Verification codes.</b> If you ask to verify your email or mobile, the app generates a one-time 6-digit
+    code and sends it to us so we can forward it to that address or number. Only a <b>salted hash</b> of the code is
+    kept on your device, never the code itself. Entering it confirms the address or number is yours.
+    Verification is recorded locally — it is not a central account and does not identify you to anyone else.</li>
+  </ul>
+  <p>These messages are delivered by a third-party form/email service acting as a processor for BITSCOL. We use the
+  details only to register your copy, verify your contact details and reply to support requests. We never sell them
+  and never use them for marketing. Email <a href="mailto:sales@bitscol.com">sales@bitscol.com</a> at any time to have
+  them deleted.</p>
+
+  <h2>5. What we do not do</h2>
   <ul>
     <li><b>No analytics or telemetry.</b> There is no usage tracking, no screen recording, no behavioural profiling.</li>
     <li><b>No advertising</b> and no advertising SDKs.</li>
@@ -87,33 +105,33 @@
     <li><b>No sale or sharing</b> of data of any kind.</li>
   </ul>
 
-  <h2>5. App lock (pincode)</h2>
+  <h2>6. App lock (pincode)</h2>
   <p>If you set a pincode, it is converted to a <b>salted SHA-256 hash</b> and stored only on your device. The plain
   pincode is never stored, never transmitted and cannot be recovered by us — if you forget it, the only way back into
   the app is to erase its local data and start fresh. The pincode is a <b>screen lock</b>: it stops someone casually
   opening the app on your device. It is not encryption of the stored database, and it is not a substitute for
   device-level security (a device passcode and full-disk encryption).</p>
 
-  <h2>6. Device backups and uninstalling</h2>
+  <h2>7. Device backups and uninstalling</h2>
   <p>Your operating system may include app data in its own backup (for example, Android's cloud backup). Where the
   platform allows, we restrict this; you can also disable it in your device settings. Uninstalling the app removes its
   local data. You can delete everything yourself at any time from <b>Settings → Local data → Reset everything to blank</b>,
   or export a copy first with <b>Download all data</b>.</p>
 
-  <h2>7. Children</h2>
+  <h2>8. Children</h2>
   <p>Personal CRM is a general-purpose productivity tool and is not directed at children under 13. We do not knowingly
   collect personal information from children.</p>
 
-  <h2>8. Data security</h2>
+  <h2>9. Data security</h2>
   <p>Because your data stays on your device, its security depends largely on that device: keep it locked with a
   passcode or biometrics, keep the OS updated, and use the in-app pincode if others can reach your phone. We
   recommend taking periodic backups using the export feature.</p>
 
-  <h2>9. Changes to this policy</h2>
+  <h2>10. Changes to this policy</h2>
   <p>If we change this policy we will update the "effective" date at the top and publish the new version at this URL.
   If a change materially reduces your privacy, we will also announce it in the app.</p>
 
-  <h2>10. Contact us</h2>
+  <h2>11. Contact us</h2>
   <p>Questions, requests or complaints about privacy:</p>
   <ul>
     <li>Email: <a href="mailto:sales@bitscol.com">sales@bitscol.com</a></li>

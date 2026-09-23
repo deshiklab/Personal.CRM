@@ -10,6 +10,14 @@ await pg.evaluate(() => {
   localStorage.setItem('pcrm-v1', JSON.stringify(s))
 })
 await pg.reload(); await pg.waitForTimeout(1200)
+// clear the registration window, then the pin offer
+if (await pg.locator('input[placeholder="e.g. BiTsCol"]').count()) {
+  await pg.locator('input[placeholder="e.g. BiTsCol"]').fill('Legacy Tester')
+  await pg.locator('input[type="email"]').first().fill('legacy@example.com')
+  await pg.locator('button:has-text("Continue")').click(); await pg.waitForTimeout(800)
+}
+const skipBtn = pg.locator('button:has-text("Skip for now")')
+if (await skipBtn.count()) { await skipBtn.first().click(); await pg.waitForTimeout(700) }
 await pg.goto('http://localhost:5173/#/contacts'); await pg.waitForTimeout(1100)
 const st = await pg.evaluate(() => JSON.parse(localStorage.getItem('pcrm-v1')))
 const c = st.contacts.find(x => x.name === 'Legacy 0')

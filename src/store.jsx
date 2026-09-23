@@ -5,6 +5,7 @@ import * as goog from './lib/google'
 import * as icslib from './lib/ics'
 import * as ds from './lib/drivesync'
 import * as gs from './lib/gistsync'
+import { notifyOwner, notifyConfigured } from './lib/notify'
 
 const KEY = 'pcrm-v1'
 const load = () => { try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s) } catch {} return null }
@@ -60,6 +61,9 @@ export function CrmProvider({ children }) {
     deviceId: uid(), enabled: true, lastRev: 0, lastSyncAt: null, baselineData: null, baselineHash: '',
   })
   const [syncing, setSyncing] = useState(false)
+  /* registered user profile (device-local): null = not registered,
+   * { skipped:true } = deliberately skipped, otherwise { name, email, mobile, verified:{} } */
+  const [profile, setProfile] = useState(init?.profile || null)
   /* app lock (per-device pincode): null = never offered | {hash:null,skipped} = skipped/off | {salt,hash} = locked */
   const [lock, setLock] = useState(init?.lock || null)
   const [sessionUnlocked, setSessionUnlocked] = useState(false)   // in-memory only
@@ -83,10 +87,10 @@ export function CrmProvider({ children }) {
     try {
       localStorage.setItem(KEY, JSON.stringify({
         contacts, tasks, events, notes, tags, groups, rules, audit,
-        activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock,
+        activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock, profile,
       }))
     } catch {}
-  }, [contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock])
+  }, [contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock, profile])
 
   /* ── toasts ── */
   const toast = (msg, tone = 'ok') => {
@@ -429,7 +433,7 @@ export function CrmProvider({ children }) {
 
   const buildBackup = () => JSON.stringify({
     app: 'personal-crm', version: 2, exportedAt: new Date().toISOString(),
-    data: { contacts, tasks, events, notes, tags, groups, rules, relFreq, audit, activity, imports, snoozes, notifState, notifPrefs, widgetPrefs, mailboxes, emails },
+    data: { contacts, tasks, events, notes, tags, groups, rules, relFreq, audit, activity, imports, snoozes, notifState, notifPrefs, widgetPrefs, mailboxes, emails, profile },
   }, null, 2)
 
   const driveBackupNow = async () => {
@@ -488,6 +492,96 @@ export function CrmProvider({ children }) {
     setGcal(g => ({ ...g, connected: false, mode: null }))
     logAudit('user', 'Google disconnected', 'Token discarded')
     toast('Google disconnected', 'warn')
+  }
+
+  /* ── user profile: registration + verification ──────────────────────────────
+   * Registration is device-local (no account, no server). The only things that
+   * can leave the device are an optional registration notification and an
+   * optional verification request to the app owner — both explicit, both fail
+   * silently, and registration works fine with the channel switched off. */
+  const isRegistered = !!profile && !profile.skipped
+
+  const registerProfile = async ({ name, email, mobile = '', notify = true }) => {
+    const p = {
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      mobile: mobile.trim(),
+      verified: { email: false, mobile: false },
+      createdAt: new Date().toISOString(),
+      notified: notify ? null : 'declined',
+    }
+    setProfile(p)
+    logAudit('user', 'Registered profile', p.name, p.email)
+    logActivity(`Registered as ${p.name}`)
+    if (notify) {
+      const res = await notifyOwner({ type: 'registration', name: p.name, email: p.email, mobile: p.mobile })
+      const status = res.ok ? 'sent' : res.reason
+      setProfile(x => (x && x.email === p.email ? { ...x, notified: status } : x))
+    }
+    toast(`Welcome, ${p.name.split(' ')[0]} 👋`)
+    return p
+  }
+
+  const updateProfile = patch => {
+    setProfile(p => (p ? { ...p, ...patch } : p))
+    if (patch.name || patch.email) logAudit('user', 'Updated profile', patch.name || profile?.name, patch.email || profile?.email)
+  }
+
+  const skipRegistration = () => setProfile({ skipped: true, at: new Date().toISOString() })
+
+  /* sign out: drops the local profile, KEEPS all CRM data */
+  const signOutProfile = () => {
+    setProfile({ skipped: true, at: new Date().toISOString() })
+    setSessionUnlocked(false)
+    logAudit('user', 'Signed out', profile?.name || 'Profile', 'Profile cleared, data kept')
+    toast('Signed out — your contacts and data are untouched', 'warn')
+  }
+
+  /* Verification without our own server: the app generates a 6-digit code and
+   * stores only its salted hash; the code itself is sent to the app owner, who
+   * forwards it to the real email/phone. Entering it proves control of that
+   * address or number. Nothing is faked — if the notification channel is off,
+   * no code is issued at all. */
+  const requestVerificationCode = async kind => {
+    if (!isRegistered) return { ok: false, reason: 'no-profile' }
+    const value = kind === 'email' ? profile.email : profile.mobile
+    if (!value) return { ok: false, reason: 'missing-' + kind }
+    if (!notifyConfigured()) return { ok: false, reason: 'not-configured' }
+
+    const code = String(Math.floor(100000 + Math.random() * 900000))
+    const salt = uid()
+    const hash = await hashPin(code, salt)
+    setProfile(x => (x ? { ...x, pendingCode: { kind, hash, salt, ts: new Date().toISOString() } } : x))
+
+    const res = await notifyOwner({
+      type: 'verification',
+      subject: `[Personal CRM] Verify ${kind} for ${profile.name}`,
+      name: profile.name, email: profile.email, mobile: profile.mobile, kind, code,
+      message: `Send this 6-digit code to the user's ${kind} (${value}) to verify it: ${code}`,
+    })
+    if (!res.ok) {
+      setProfile(x => { if (!x) return x; const n = { ...x }; delete n.pendingCode; return n })
+      return { ok: false, reason: res.reason }
+    }
+    logAudit('user', 'Requested verification code', kind, value)
+    return { ok: true }
+  }
+
+  const confirmVerificationCode = async (kind, code) => {
+    const pc = profile?.pendingCode
+    if (!pc || pc.kind !== kind) return false
+    if (Date.now() - new Date(pc.ts).getTime() > 24 * 3600e3) return false
+    if ((await hashPin(String(code).trim(), pc.salt)) !== pc.hash) return false
+    setProfile(x => {
+      if (!x) return x
+      const n = { ...x, verified: { ...(x.verified || {}), [kind]: new Date().toISOString() } }
+      delete n.pendingCode
+      return n
+    })
+    const value = kind === 'email' ? profile.email : profile.mobile
+    logAudit('user', `Verified ${kind}`, value, 'Code confirmed')
+    toast(kind === 'email' ? '✅ Email verified' : '✅ Mobile verified')
+    return true
   }
 
   /* ── app lock: per-device pincode + session unlock ──
@@ -995,6 +1089,7 @@ export function CrmProvider({ children }) {
     addEvent, moveEvent, deleteEvent,
     addTag, updateTag, deleteTag, mergeTags, bulkTag,
     addGroup, updateGroup, deleteGroup, addRule, updateRule, toggleRule, deleteRule, runRuleNow,
+    profile, isRegistered, registerProfile, updateProfile, skipRegistration, signOutProfile, requestVerificationCode, confirmVerificationCode,
     saveCarddav, testConnection, connectGcal, disconnectGcal,
     mailboxes, emails, connectMailbox, disconnectMailbox, syncMailbox, logEmailTouch, triageEmailAsLead, ignoreEmail,
     googleClientId, googleMode, saveGoogleClientId, connectGoogleLive, syncGoogleCalendar, syncGoogleContacts,

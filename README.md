@@ -21,41 +21,6 @@ any time with `npm run keystore:debug`.
 
 ---
 
-## Commercial readiness (Phase 0)
-
-Status: **in progress — code complete, two manual steps left on your side.**
-
-| Item | State |
-|---|---|
-| Publisher credit in app (BITSCOL, web/email/phone) | Done — `src/brand.js`, About screen, sidebar footer, meta tags |
-| Privacy Policy + Terms (public URLs, Play-ready) | Done — `/privacy.html`, `/terms.html` |
-| Proprietary licence + third-party notices | Done — `LICENSE`, `THIRD-PARTY-NOTICES.md` |
-| Keystores out of version control | Done — `.gitignore`, `android/debug.keystore` untracked |
-| Debug keystore regenerator (local + CI) | Done — `npm run keystore:debug` |
-| Play upload keystore generator | Ready — `npm run keystore:release` (run locally, back it up) |
-| Seed data free of real orgs / numbers / emails | Done — fictional companies, synthetic numbers, `example.com` |
-| Version 1.0.0 | Done — `package.json` + `versionCode 2 / versionName 1.0.0` |
-
-### Manual steps (cannot be automated from here)
-
-1. **Make the repository private** — GitHub → *Personal.CRM* → **Settings → General →
-   Danger Zone → Change repository visibility → Make private**.
-   The `gh-pages` branch stays public by design: it serves the app plus the two legal
-   pages, and contains no source and no keys.
-2. **Generate and back up the Play upload keystore** — run `npm run keystore:release`
-   on your own machine, store the `.jks` and both passwords in two safe places, then add
-   `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` as repo secrets.
-   Losing it means you can never update the app again.
-3. **Confirm the GitHub PAT that was previously exposed is revoked** —
-   <https://github.com/settings/tokens> — and remove it from anywhere else it was pasted.
-
-### Branching
-
-- `main` — the shipped app
-- `phase0` — commercial-readiness work (this branch) → merge into `main` when Phase 1 starts
-
----
-
 ## ✅ What's inside (17 screens)
 
 | Area | Route | What you get |

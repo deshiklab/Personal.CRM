@@ -20,7 +20,16 @@ const page = await browser.newPage()
 /* first-launch pincode gate: treat 'skip' as part of app boot for this suite */
 const boot = async () => {
   await page.goto(BASE, { waitUntil: 'load' }).catch(() => {})
-  await page.waitForTimeout(700)
+  await page.waitForTimeout(900)
+  // registration window (first launch) — fill it, then skip the pincode offer
+  const regName = page.locator('input[placeholder="e.g. BiTsCol"]')
+  if (await regName.count()) {
+    await regName.fill('Test User')
+    await page.locator('input[type="email"]').first().fill('tester@example.com')
+    await page.locator('input[type="tel"]').first().fill('+880 1700-000999')
+    await page.locator('button:has-text("Continue")').click()
+    await page.waitForTimeout(600)
+  }
   const skip = page.locator('text=Skip for now')
   if (await skip.count()) { await skip.first().click(); await page.waitForTimeout(400) }
 }

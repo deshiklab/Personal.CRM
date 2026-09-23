@@ -59,6 +59,8 @@ export default function About() {
           <b style={{ color: 'var(--text)' }}> never uploaded to a server we operate</b> — there is no backend, no account and
           no analytics. Backups and sync are optional and go straight to your own Google Drive or GitHub account, using
           credentials you control. The optional app-lock pincode is stored as a salted hash on this device only.
+          One exception, and it is your choice: at registration you can agree to send your name and email to BITSCOL,
+          and verification codes are relayed through us so we can confirm your address or number.
         </p>
         <div className="flex gap-2 flex-wrap mt-3.5">
           <Pill color="#34d399">{contacts.length} contacts</Pill>

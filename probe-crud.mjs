@@ -1,4 +1,5 @@
 import { chromium } from 'playwright'
+import { boot } from './probe-boot.mjs'
 
 const URL = 'http://localhost:5173/#'
 let pass = 0, fail = 0
@@ -12,12 +13,7 @@ pg.on('pageerror', e => errors.push(e.message))
 pg.on('console', m => { if (m.type() === 'error') errors.push(m.text()) })
 
 const state = () => pg.evaluate(() => JSON.parse(localStorage.getItem('pcrm-v1') || '{}'))
-const boot = async () => {
-  await pg.goto(URL + '/'); await pg.waitForTimeout(1200)
-  const skip = pg.locator('button:has-text("Skip for now")')
-  if (await skip.count()) { await skip.first().click(); await pg.waitForTimeout(900) }
-}
-await boot()
+await boot(pg)
 
 /* ── 1. EDIT a contact ───────────────────────────────────────────── */
 await pg.goto(URL + '/contacts'); await pg.waitForTimeout(1000)
