@@ -13,21 +13,19 @@ export const SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
 ].join(' ')
 
-/* ── platform: native Android (Capacitor) vs web (GIS popup) ──
-   Google blocks OAuth inside WebViews, so the Android app uses the native
-   Google Sign-In SDK (via @capgo/capacitor-social-login). The same Web OAuth
-   Client ID from Settings doubles as the native SDK's serverClientId. */
-import { Capacitor } from '@capacitor/core'
-
+/* ── platform helpers & native Google Sign-In (Android APK) ──
+ * IMPORTANT: do NOT statically import @capacitor/core here. This module is
+ * flattened by vite-plugin-singlefile, and a static import from a namespace
+ * that the store also * -imports resolves empty (prod bug: isNative became
+ * (void 0)). Capacitor core exposes itself on window — read it lazily. */
 export const isNative = () => {
-  try { return Capacitor.isNativePlatform() } catch { return false }
+  try { const C = window.Capacitor; return !!(C && C.isNativePlatform && C.isNativePlatform()) } catch { return false }
 }
-export const platform = () => { try { return Capacitor.getPlatform() } catch { return 'web' } }
+export const platform = () => {
+  try { const C = window.Capacitor; return (C && C.getPlatform ? C.getPlatform() : 'web') } catch { return 'web' }
+}
 
-const NATIVE_SCOPES = [
-  'profile', 'email',
-  ...SCOPES.split(' '),
-]
+const NATIVE_SCOPES = ['profile', 'email', ...SCOPES.split(' ')]
 
 export const requestNativeToken = async webClientId => {
   if (!webClientId) throw new Error('Paste the Web OAuth Client ID in Settings → Google hub first')
@@ -163,14 +161,7 @@ export const fetchGmailProfile = token =>
 
 /* GIS error → actionable fix (shown in toasts) */
 export const friendlyGoogleError = e => {
-  const code = String(e?.code ?? '')
   const m = String(e?.message || e || '')
-  /* native Android (Capacitor / Google Sign-In SDK) error codes */
-  if (code === '12501' || code === 'signin_canceled' || /sign.?in cancel|canceled by user/i.test(m)) return 'Sign-in cancelled'
-  if (code === '10' || /developer.?error/i.test(m)) return 'Android OAuth client mismatch: in Google Cloud create an ANDROID OAuth client for package com.bitscol.personalcrm with your keystore SHA-1 (guide below covers it)'
-  if (code === '7' || /network error/i.test(m)) return 'No network — Google sign-in needs internet on the phone'
-  if (code === '12500') return 'Google Sign-In failed on the device — make sure Play services is up to date'
-
   if (/origin_mismatch/i.test(m)) return 'Origin not allowed — add this site URL to "Authorized JavaScript origins" of your OAuth client (see the setup guide ↑)'
   if (/access_denied/i.test(m)) return 'Access denied — add your Gmail as a Test user in the OAuth consent screen (Testing mode)'
   if (/invalid_client/i.test(m) || /client_id/i.test(m)) return 'Client ID looks wrong — check it ends with ".apps.googleusercontent.com"'

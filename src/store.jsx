@@ -420,9 +420,12 @@ export function CrmProvider({ children }) {
     if (d.relFreq) setRelFreq(d.relFreq)
     if (Array.isArray(d.emails)) setEmails(d.emails)
   }
-  const deviceName = () =>
-    (goog.isNative() ? 'Android app' : (typeof matchMedia === 'function' && matchMedia('(display-mode: standalone)').matches ? 'PWA' : 'Web')) +
-    ' · ' + (syncState.deviceId || '').slice(-4)
+  const deviceName = () => {
+    try {
+      return (goog.isNative() ? 'Android app' : (typeof matchMedia === 'function' && matchMedia('(display-mode: standalone)').matches ? 'PWA' : 'Web')) +
+        ' · ' + (syncState.deviceId || '').slice(-4)
+    } catch { return 'this device' }
+  }
 
   /* which backend serves sync right now? GitHub Gist wins (simpler for most) */
   const syncProvider = () => (gist.token && gist.token.length > 20 ? 'gist' : (googleMode === 'live' ? 'drive' : 'none'))
@@ -488,7 +491,6 @@ export function CrmProvider({ children }) {
           toast(`☁️ Synced: ${stats.fromRemote} change${stats.fromRemote === 1 ? '' : 's'} from ${remote.device || 'another device'}${stats.conflicts ? ` · ${stats.conflicts} conflict${stats.conflicts > 1 ? 's' : ''} resolved` : ''}`)
         } else if (opts.manual) toast('☁️ Already in sync')
       } else if (!remote || localHash !== baseHash || rev === 0) {
-        /* nothing newer remotely — our changes need pushing (or the first run) */
         newRev = (remote?.rev || rev) + 1
         const payload = { __pcrmSync: 3, rev: newRev, deviceId: syncState.deviceId, device: deviceName(), updatedAt: new Date().toISOString(), data: local }
         let res
@@ -499,8 +501,8 @@ export function CrmProvider({ children }) {
           if (prov === 'gist') setGist(g => ({ ...g, gistId: res.id })); else setDriveState(s => ({ ...s, syncFileId: res.id }))
         }
         setSyncState(s => ({ ...s, lastRev: newRev, baselineData: local, baselineHash: localHash, lastSyncAt: new Date().toISOString() }))
-        logAudit('system', 'Sync pushed', `rev ${newRev}`, `${local.contacts.length} contacts · ${local.tasks.length} tasks · ${local.events.length} events · ${local.notes.length} notes`)
-        if (opts.manual) toast(`☁️ Synced to Drive (rev ${newRev})`)
+        logAudit('system', 'Sync pushed', `rev ${newRev} · ${prov === 'gist' ? 'GitHub Gist' : 'Drive'}`, `${local.contacts.length} contacts · ${local.tasks.length} tasks · ${local.events.length} events · ${local.notes.length} notes`)
+        if (opts.manual) toast(`☁️ Synced to ${prov === 'gist' ? 'GitHub Gist' : 'Drive'} (rev ${newRev})`)
         report = { conflicts: 0, fromRemote: 0, rev: newRev, dir: 'pushed' }
       } else {
         setSyncState(s => ({ ...s, lastSyncAt: new Date().toISOString() }))
