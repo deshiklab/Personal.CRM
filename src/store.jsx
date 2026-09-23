@@ -9,13 +9,25 @@ import * as gs from './lib/gistsync'
 const KEY = 'pcrm-v1'
 const load = () => { try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s) } catch {} return null }
 
+/* ── groups model ────────────────────────────────────────────────────────────
+ * A contact can belong to MANY groups. `groupIds: []` is the canonical field;
+ * the legacy single `groupId` is kept in sync (always groupIds[0]) so older
+ * backups, the CSV/vCard exporters and the graph keep working unchanged. */
+export const contactGroupIds = c =>
+  Array.isArray(c?.groupIds) ? c.groupIds.filter(Boolean)
+    : (c?.groupId ? [c.groupId] : [])
+const normalizeContact = c => {
+  const ids = [...new Set((Array.isArray(c.groupIds) ? c.groupIds : (c.groupId ? [c.groupId] : [])).filter(Boolean))]
+  return { ...c, groupIds: ids, groupId: ids[0] || null }
+}
+
 const DEFAULT_WIDGET_ORDER = ['stats','growth','taskCols','upcoming','stayInTouch','syncHealth','birthdays','topTags','overdueCountdown','taskHeatmap','activityFeed']
 const Ctx = createContext(null)
 export const useCrm = () => useContext(Ctx)
 
 export function CrmProvider({ children }) {
   const init = load()
-  const [contacts, setContacts]   = useState(init?.contacts  || seed.CONTACTS)
+  const [contacts, setContacts]   = useState(() => (init?.contacts || seed.CONTACTS).map(normalizeContact))
   const [tasks, setTasks]         = useState(init?.tasks     || seed.TASKS)
   const [events, setEvents]       = useState(init?.events    || seed.EVENTS)
   const [notes, setNotes]         = useState(init?.notes     || seed.NOTES)
@@ -96,14 +108,19 @@ export function CrmProvider({ children }) {
 
   /* ── contacts ── */
   const addContact = data => {
-    const c = { id: uid(), role: '', company: '', phone: '', email: '', birthday: null, tags: [], rel: 'acquaintance', starred: false, introducedBy: null, interests: [], socials: {}, lastContact: todayISO(), createdAt: todayISO(), ...data }
+    const c = normalizeContact({ id: uid(), role: '', company: '', phone: '', email: '', birthday: null, tags: [], rel: 'acquaintance', starred: false, introducedBy: null, interests: [], socials: {}, lastContact: todayISO(), createdAt: todayISO(), ...data })
     setContacts(cs => [c, ...cs])
     logAudit('user', 'Added contact', c.name, c.company || 'No company')
-    fireWebhook('contact', { name: c.name, email: c.email, phone: c.phone, group: data.groupId })
+    fireWebhook('contact', { name: c.name, email: c.email, phone: c.phone, group: c.groupIds[0] })
     if (c.rel === 'lead') fireWebhook('lead', { name: c.name, email: c.email, phone: c.phone, source: data.source || 'crm' })
     return c
   }
-  const updateContact = (id, patch) => setContacts(cs => cs.map(c => c.id === id ? { ...c, ...patch } : c))
+  const updateContact = (id, patch) => setContacts(cs => cs.map(c => {
+    if (c.id !== id) return c
+    if (patch.groupIds === undefined && patch.groupId === undefined) return { ...c, ...patch }
+    const ids = Array.isArray(patch.groupIds) ? patch.groupIds : (patch.groupId ? [patch.groupId] : [])
+    return normalizeContact({ ...c, ...patch, groupIds: [...new Set(ids.filter(Boolean))] })
+  }))
   const toggleStar = id => setContacts(cs => cs.map(c => c.id === id ? { ...c, starred: !c.starred } : c))
   const markContacted = id => {
     setContacts(cs => cs.map(c => c.id === id ? { ...c, lastContact: todayISO() } : c))
@@ -111,6 +128,53 @@ export function CrmProvider({ children }) {
     const c = contactById[id]
     if (c) { logActivity(`Logged contact with ${c.name}`, id); logAudit('user', 'Logged contact', c.name, 'Via follow-up tracker'); fireWebhook('touch', { name: c.name, channel: 'manual' }) }
     toast(`Marked ${c?.name?.split(' ')[0] || 'contact'} as contacted — nice!`)
+  }
+
+  /* delete a contact: tasks/events/notes are kept but unlinked, nothing cascades */
+  const deleteContact = id => {
+    const c = contactById[id]
+    if (!c) return false
+    setContacts(cs => cs.filter(x => x.id !== id))
+    setTasks(ts => ts.map(t => t.contactId === id ? { ...t, contactId: null } : t))
+    setEvents(es => es.map(e => e.contactId === id ? { ...e, contactId: null } : e))
+    setNotes(ns => ns.map(n => (n.contactIds || []).includes(id) ? { ...n, contactIds: n.contactIds.filter(x => x !== id) } : n))
+    setSnoozes(s => { const n = { ...s }; delete n[id]; return n })
+    logAudit('user', 'Deleted contact', c.name, 'Tasks & events kept but unlinked', 'warn')
+    logActivity(`Deleted contact ${c.name}`)
+    toast(`Deleted ${c.name}`, 'warn')
+    return true
+  }
+  const bulkDeleteContacts = ids => {
+    const set = new Set(ids)
+    const names = contacts.filter(c => set.has(c.id)).map(c => c.name)
+    if (!names.length) return 0
+    setContacts(cs => cs.filter(c => !set.has(c.id)))
+    setTasks(ts => ts.map(t => set.has(t.contactId) ? { ...t, contactId: null } : t))
+    setEvents(es => es.map(e => set.has(e.contactId) ? { ...e, contactId: null } : e))
+    setNotes(ns => ns.map(n => ({ ...n, contactIds: (n.contactIds || []).filter(x => !set.has(x)) })))
+    setSnoozes(s => { const n = { ...s }; ids.forEach(i => delete n[i]); return n })
+    logAudit('user', 'Bulk-deleted contacts', `${names.length} contact(s)`, names.slice(0, 6).join(', ') + (names.length > 6 ? '…' : ''), 'warn')
+    logActivity(`Deleted ${names.length} contact${names.length === 1 ? '' : 's'}`)
+    toast(`Deleted ${names.length} contact${names.length === 1 ? '' : 's'}`, 'warn')
+    return names.length
+  }
+  /* mode: 'add' | 'remove' | 'set' (set replaces the whole group list) */
+  const bulkSetGroups = (contactIds, groupIds, mode = 'add') => {
+    const set = new Set(contactIds)
+    const names = groupIds.map(id => groupById[id]?.name).filter(Boolean)
+    setContacts(cs => cs.map(c => {
+      if (!set.has(c.id)) return c
+      const cur = contactGroupIds(c)
+      const next = mode === 'add' ? [...new Set([...cur, ...groupIds])]
+        : mode === 'remove' ? cur.filter(x => !groupIds.includes(x))
+        : [...new Set(groupIds.filter(Boolean))]
+      return normalizeContact({ ...c, groupIds: next })
+    }))
+    logAudit('user', mode === 'add' ? 'Bulk added to groups' : mode === 'remove' ? 'Bulk removed from groups' : 'Bulk set groups',
+      names.join(', ') || '—', `${contactIds.length} contact(s)`)
+    toast(mode === 'add' ? `Added ${contactIds.length} contact(s) to ${names.join(', ')}`
+      : mode === 'remove' ? `Removed ${contactIds.length} contact(s) from ${names.join(', ')}`
+      : `Group set for ${contactIds.length} contact(s)`)
   }
 
   /* ── notes ── */
@@ -230,6 +294,24 @@ export function CrmProvider({ children }) {
     setGroups(gs => [...gs, g])
     logAudit('user', 'Created group', g.name)
     return g
+  }
+  const updateGroup = (id, patch) => {
+    const g = groupById[id]
+    setGroups(gs => gs.map(x => x.id === id ? { ...x, ...patch } : x))
+    if (g) logAudit('user', 'Updated group', g.name, Object.keys(patch).join(', '))
+  }
+  /* deleting a group only detaches it — contacts themselves are never deleted */
+  const deleteGroup = id => {
+    const g = groupById[id]
+    if (!g) return 0
+    const affected = contacts.filter(c => contactGroupIds(c).includes(id)).length
+    setGroups(gs => gs.filter(x => x.id !== id))
+    setContacts(cs => cs.map(c => contactGroupIds(c).includes(id)
+      ? normalizeContact({ ...c, groupIds: contactGroupIds(c).filter(x => x !== id) }) : c))
+    setRules(rs => rs.map(r => ({ ...r, scopeGroups: (r.scopeGroups || []).filter(x => x !== id) })))
+    logAudit('user', 'Deleted group', g.name, `Detached from ${affected} contact(s)`, 'warn')
+    toast(`Group "${g.name}" deleted — ${affected} contact(s) kept`, 'warn')
+    return affected
   }
 
   /* ── sync rules ── */
@@ -376,7 +458,7 @@ export function CrmProvider({ children }) {
   const restoreAll = parsed => {
     const d = parsed?.data || parsed
     if (!d || !Array.isArray(d.contacts)) { toast('That file is not a Personal CRM backup', 'warn'); return false }
-    setContacts(d.contacts); setTasks(d.tasks || []); setEvents(d.events || []); setNotes(d.notes || [])
+    setContacts(d.contacts.map(normalizeContact)); setTasks(d.tasks || []); setEvents(d.events || []); setNotes(d.notes || [])
     setTags(d.tags || []); setGroups(d.groups || []); setRules(d.rules || [])
     if (d.relFreq) setRelFreq(d.relFreq); if (d.audit) setAudit(d.audit); if (d.activity) setActivity(d.activity)
     if (d.imports) setImports(d.imports); if (d.snoozes) setSnoozes(d.snoozes)
@@ -501,7 +583,7 @@ export function CrmProvider({ children }) {
     contacts, tasks, events, notes, tags, groups, rules, relFreq, emails,
   })
   const applySyncSnapshot = d => {
-    if (Array.isArray(d.contacts)) setContacts(d.contacts)
+    if (Array.isArray(d.contacts)) setContacts(d.contacts.map(normalizeContact))
     if (Array.isArray(d.tasks)) setTasks(d.tasks)
     if (Array.isArray(d.events)) setEvents(d.events)
     if (Array.isArray(d.notes)) setNotes(d.notes)
@@ -908,11 +990,11 @@ export function CrmProvider({ children }) {
   const value = {
     contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, toasts,
     contactById, groupById, tagById, toast, followUpStatus, logActivity, logAudit,
-    addContact, updateContact, toggleStar, markContacted, addNote, updateNote, deleteNote,
+    addContact, updateContact, toggleStar, markContacted, deleteContact, bulkDeleteContacts, bulkSetGroups, contactGroupIds, addNote, updateNote, deleteNote,
     addTask, moveTask, updateTask, deleteTask, duplicateTask, createFollowUpTask,
     addEvent, moveEvent, deleteEvent,
     addTag, updateTag, deleteTag, mergeTags, bulkTag,
-    addGroup, addRule, updateRule, toggleRule, deleteRule, runRuleNow,
+    addGroup, updateGroup, deleteGroup, addRule, updateRule, toggleRule, deleteRule, runRuleNow,
     saveCarddav, testConnection, connectGcal, disconnectGcal,
     mailboxes, emails, connectMailbox, disconnectMailbox, syncMailbox, logEmailTouch, triageEmailAsLead, ignoreEmail,
     googleClientId, googleMode, saveGoogleClientId, connectGoogleLive, syncGoogleCalendar, syncGoogleContacts,

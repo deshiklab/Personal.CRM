@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Network, Search, ArrowRight, Users, X } from 'lucide-react'
 import { useCrm } from '../store'
+import { contactGroupIds } from '../store'
 import { SectionHead, Card, Avatar, Pill, Empty } from '../components/ui'
 import { initials } from '../lib'
 
@@ -26,7 +27,7 @@ function buildGraph(contacts, opts) {
   })
   if (opts.group) {
     const byG = {}
-    contacts.forEach(c => { (byG[c.groupId] = byG[c.groupId] || []).push(c.id) })
+    contacts.forEach(c => { contactGroupIds(c).forEach(gid => { (byG[gid] = byG[gid] || []).push(c.id) }) })
     Object.values(byG).forEach(m => { for (let i = 0; i < m.length; i++) for (let j = i + 1; j < m.length; j++) push(m[i], m[j], 'group') })
   }
   if (opts.tag) {
@@ -97,7 +98,7 @@ export default function GraphPage() {
   const kick = a => { alphaRef.current = Math.max(alphaRef.current, a) }
 
   const visible = useMemo(
-    () => contacts.filter(c => gfilter.length === 0 || gfilter.includes(c.groupId)),
+    () => contacts.filter(c => gfilter.length === 0 || contactGroupIds(c).some(g => gfilter.includes(g))),
     [contacts, gfilter])
   const graph = useMemo(() => buildGraph(visible, opts), [visible, opts])
   graphRef.current = graph
@@ -165,8 +166,8 @@ export default function GraphPage() {
   /* group bridges */
   const runBridge = () => {
     if (!brA || !brB || brA === brB) return
-    const mA = new Set(visible.filter(c => c.groupId === brA).map(c => c.id))
-    const mB = new Set(visible.filter(c => c.groupId === brB).map(c => c.id))
+    const mA = new Set(visible.filter(c => contactGroupIds(c).includes(brA)).map(c => c.id))
+    const mB = new Set(visible.filter(c => contactGroupIds(c).includes(brB)).map(c => c.id))
     const bridges = graph.nodes.filter(n => {
       const ns = new Set((neighborsOf[n.id] || []).map(x => x.id))
       return [...mA].some(a => ns.has(a)) && [...mB].some(b => ns.has(b))
@@ -220,7 +221,7 @@ export default function GraphPage() {
         {groups.map(g => (
           <button key={g.id} className={`chip chip-btn ${gfilter.includes(g.id) ? 'on' : ''}`}
             onClick={() => setGfilter(f => f.includes(g.id) ? f.filter(x => x !== g.id) : [...f, g.id])}>
-            <span className="dot" style={{ background: g.color }} /> {g.name} · {contacts.filter(c => c.groupId === g.id).length}
+            <span className="dot" style={{ background: g.color }} /> {g.name} · {contacts.filter(c => contactGroupIds(c).includes(g.id)).length}
           </button>
         ))}
         {gfilter.length > 0 && <button className="chip chip-btn" onClick={() => setGfilter([])}><X size={11} /> clear</button>}
@@ -261,7 +262,7 @@ export default function GraphPage() {
             {graph.nodes.map(n => {
               const p = posRef.current[n.id]
               if (!p) return null
-              const g = groupById[n.c.groupId]
+              const g = groupById[contactGroupIds(n.c)[0]]
               const color = g?.color || '#94a3b8'
               const d = dim(n.id)
               return (
@@ -334,7 +335,7 @@ export default function GraphPage() {
                 <span className="chip flex-none">{(neighborsOf[selId] || []).length} links</span>
               </div>
               <div className="flex gap-1.5 mt-2.5 flex-wrap">
-                {groupById[sel.groupId] && <Pill color={groupById[sel.groupId].color}>{groupById[sel.groupId].name}</Pill>}
+                {contactGroupIds(sel).map(gid => groupById[gid] && <Pill key={gid} color={groupById[gid].color}>{groupById[gid].name}</Pill>)}
               </div>
               {introducedBy && contactById && (
                 <div className="mt-3 text-[12.5px]" style={{ color: 'var(--muted)' }}>

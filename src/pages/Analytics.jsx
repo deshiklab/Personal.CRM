@@ -6,6 +6,7 @@ import {
   HeartHandshake, Gauge
 } from 'lucide-react'
 import { useCrm } from '../store'
+import { contactGroupIds as crmGroupIds } from '../store'
 import { Card, SectionHead, Stat, MiniBars, Avatar, CsvButton } from '../components/ui'
 import { daysSince } from '../lib'
 
@@ -138,7 +139,7 @@ export default function Analytics() {
       .filter(t => t.value > 0).sort((a, b) => b.value - a.value)
 
     /* groups */
-    const groupDist = groups.map(g => ({ label: g.name, value: contacts.filter(c => c.groupId === g.id).length, color: g.color }))
+    const groupDist = groups.map(g => ({ label: g.name, value: contacts.filter(c => crmGroupIds(c).includes(g.id)).length, color: g.color }))
 
     /* day of week */
     const dow = [0, 0, 0, 0, 0, 0, 0]

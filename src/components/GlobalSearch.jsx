@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Users, CheckSquare, StickyNote, Calendar, UsersRound, Tag, Plus, CornerDownLeft, History, Zap } from 'lucide-react'
 import { useCrm } from '../store'
+import { contactGroupIds } from '../store'
 import { Avatar, Panel } from './ui'
 import { cn } from '../lib'
 
@@ -55,7 +56,7 @@ export default function GlobalSearch() {
       type: 'contacts', id: c.id, title: c.name,
       subtitle: [c.role, c.company].filter(Boolean).join(' · ') || 'Contact',
       keywords: `${c.email || ''} ${c.phone || ''} ${(c.tags || []).map(t => tagById[t]?.name || '').join(' ')} ${(c.interests || []).join(' ')} ${c.introducedBy || ''} ${c.company || ''} ${c.role || ''} ${Object.values(c.socials || {}).join(' ')}`,
-      badge: groupById[c.groupId]?.name, to: `/contacts?open=${c.id}`,
+      badge: contactGroupIds(c).map(id => groupById[id]?.name).filter(Boolean).join(', '), to: `/contacts?open=${c.id}`,
     }))
     tasks.forEach(t => items.push({
       type: 'tasks', id: t.id, title: t.title,
@@ -77,7 +78,7 @@ export default function GlobalSearch() {
     }))
     groups.forEach(g => items.push({
       type: 'groups', id: g.id, title: g.name,
-      subtitle: g.desc || `${contacts.filter(c => c.groupId === g.id).length} contacts`,
+      subtitle: g.desc || `${contacts.filter(c => contactGroupIds(c).includes(g.id)).length} contacts`,
       keywords: '', to: `/contacts?group=${g.id}`,
     }))
     tags.forEach(t => items.push({
