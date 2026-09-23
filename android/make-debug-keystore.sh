@@ -17,4 +17,4 @@ echo "created $KEYSTORE"
 echo
 echo "If you use Google OAuth from a debug build, register this SHA-1 in"
 echo "Google Cloud Console (Android OAuth client, package com.bitscol.personalcrm):"
-keytool -list -v -keystore "$KEYSTORE" -alias androiddebugkey -storepass android 2>/dev/null | grep -E "SHA1:|SHA256:"
+keytool -list -v -keystore "$KEYSTORE" -alias androiddebugkey -storepass android 2>/dev/null | grep -E "SHA1:|SHA256:" || true
