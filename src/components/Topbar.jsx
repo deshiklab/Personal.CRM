@@ -27,7 +27,7 @@ const TITLES = {
 export default function Topbar() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
-  const { theme, toggleTheme, syncing, syncState, syncNow, googleMode } = useCrm()
+  const { theme, toggleTheme, syncing, syncState, syncNow, googleMode, syncProvider } = useCrm()
   const now = new Date()
   const dateStr = `${now.toLocaleDateString('en-US', { weekday: 'short' })}, ${MONTHS[now.getMonth()].slice(0, 3)} ${now.getDate()}`
 
@@ -57,20 +57,20 @@ export default function Topbar() {
         )}
         <button
           className="btn btn-ghost btn-sm"
-          style={googleMode === 'live' ? { color: '#34d399' } : { color: 'var(--faint)' }}
+          style={syncProvider() !== 'none' ? { color: '#34d399' } : { color: 'var(--faint)' }}
           title={
-            googleMode !== 'live' ? 'Multi-device sync — set up your Google Client ID (Settings → Google hub)' :
-            syncing ? 'Syncing with Google Drive…' :
-            `Multi-device sync · ${syncState.lastSyncAt ? 'synced ' + tsRel(syncState.lastSyncAt) : 'never synced yet'} · click to sync now`
+            syncProvider() === 'none' ? 'Multi-device sync — set up GitHub Gist or Google in Settings' :
+            syncing ? `Syncing via ${syncProvider() === 'gist' ? 'GitHub Gist' : 'Google Drive'}…` :
+            `Multi-device sync · ${syncState.lastSyncAt ? 'synced ' + tsRel(syncState.lastSyncAt) : 'never synced yet'} · via ${syncProvider()} · click to sync now`
           }
           onClick={() => {
-            if (googleMode !== 'live') return navigate('/settings')
+            if (syncProvider() === 'none') return navigate('/settings')
             syncNow({ manual: true })
           }}>
           {syncing ? <Loader2 size={14} className="animate-spin" /> :
-           googleMode === 'live' ? <Cloud size={14} /> : <CloudOff size={14} />}
+           syncProvider() !== 'none' ? <Cloud size={14} /> : <CloudOff size={14} />}
           <span className="hidden lg:inline">
-            {googleMode !== 'live' ? 'Sync: setup' :
+            {syncProvider() === 'none' ? 'Sync: setup' :
              syncing ? 'Syncing…' :
              syncState.lastSyncAt ? tsRel(syncState.lastSyncAt) : 'Sync now'}
           </span>

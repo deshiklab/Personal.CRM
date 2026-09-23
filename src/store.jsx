@@ -4,6 +4,7 @@ import { uid, todayISO, daysAheadISO, diffDays, daysUntil } from './lib'
 import * as goog from './lib/google'
 import * as icslib from './lib/ics'
 import * as ds from './lib/drivesync'
+import * as gs from './lib/gistsync'
 
 const KEY = 'pcrm-v1'
 const load = () => { try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s) } catch {} return null }
@@ -47,6 +48,8 @@ export function CrmProvider({ children }) {
     deviceId: uid(), enabled: true, lastRev: 0, lastSyncAt: null, baselineData: null, baselineHash: '',
   })
   const [syncing, setSyncing] = useState(false)
+  /* github gist is the no-OAuth sync backend: token + created gist id */
+  const [gist, setGist] = useState(init?.gist || { token: '', gistId: null })
   const syncBusy = useRef(false)
   const [syncReport, setSyncReport] = useState(null)     // { conflicts, fromRemote, rev }
   const [webhooks, setWebhooks]   = useState(init?.webhooks || {
@@ -65,10 +68,10 @@ export function CrmProvider({ children }) {
     try {
       localStorage.setItem(KEY, JSON.stringify({
         contacts, tasks, events, notes, tags, groups, rules, audit,
-        activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState,
+        activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist,
       }))
     } catch {}
-  }, [contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState])
+  }, [contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist])
 
   /* ── toasts ── */
   const toast = (msg, tone = 'ok') => {
@@ -421,15 +424,37 @@ export function CrmProvider({ children }) {
     (goog.isNative() ? 'Android app' : (typeof matchMedia === 'function' && matchMedia('(display-mode: standalone)').matches ? 'PWA' : 'Web')) +
     ' · ' + (syncState.deviceId || '').slice(-4)
 
+  /* which backend serves sync right now? GitHub Gist wins (simpler for most) */
+  const syncProvider = () => (gist.token && gist.token.length > 20 ? 'gist' : (googleMode === 'live' ? 'drive' : 'none'))
+
+  const saveGistToken = async token => {
+    const t = token.trim()
+    if (!t) { setGist({ token: '', gistId: null }); toast('GitHub token cleared — sync falls back to Drive (if live)', 'warn'); return true }
+    try {
+      await gs.testToken(t)
+      setGist(g => ({ ...g, token: t }))
+      toast('✅ GitHub connected — Gist sync enabled')
+      return true
+    } catch (e) { toast(e.message, 'warn'); return false }
+  }
+
   const syncNow = async (opts = {}) => {
-    if (googleMode !== 'live') { if (opts.manual) toast('Sync needs your Google Client ID first — Settings → Google hub', 'warn'); return false }
-    if (!syncState.enabled) { if (opts.manual) toast('Multi-device sync is off — enable it in Settings → Google hub', 'warn'); return false }
+    const prov = syncProvider()
+    if (prov === 'none') { if (opts.manual) toast('Choose a sync backend first — Settings → GitHub Gist (easiest) or Google hub', 'warn'); return false }
+    if (!syncState.enabled) { if (opts.manual) toast('Multi-device sync is off — enable it in Settings', 'warn'); return false }
     if (syncBusy.current) return false
     syncBusy.current = true; setSyncing(true)
     try {
-      const token = await ensureToken()
-      let fileId = driveState.syncFileId || (await ds.findSyncFile(token))?.id || null
-      const remote = fileId ? await ds.readSync(token, fileId) : null
+      let fileId, remote
+      if (prov === 'gist') {
+        fileId = gist.gistId || (await gs.findSyncGist(gist.token))?.id || null
+        if (fileId && fileId !== gist.gistId) setGist(g => ({ ...g, gistId: fileId }))
+        remote = fileId ? await gs.readSync(gist.token, fileId).catch(() => null) : null
+      } else {
+        const token = await ensureToken()
+        fileId = driveState.syncFileId || (await ds.findSyncFile(token))?.id || null
+        remote = fileId ? await ds.readSync(token, fileId) : null
+      }
       const local = snapshotCore()
       const localHash = ds.hashOf(local)
       const baseData = syncState.baselineData, baseHash = syncState.baselineHash
@@ -444,8 +469,14 @@ export function CrmProvider({ children }) {
         if (mergedHash !== localHash) applySyncSnapshot(merged)
         if (mergedHash !== ds.hashOf(remote.data || {})) {
           newRev = remote.rev + 1
-          const res = await ds.writeSync(token, { __pcrmSync: 3, rev: newRev, deviceId: syncState.deviceId, device: deviceName(), updatedAt: new Date().toISOString(), data: merged }, fileId)
-          if (!fileId) { fileId = res.id; setDriveState(s => ({ ...s, syncFileId: res.id })) }
+          const payload = { __pcrmSync: 3, rev: newRev, deviceId: syncState.deviceId, device: deviceName(), updatedAt: new Date().toISOString(), data: merged }
+          let res
+          try { res = prov === 'gist' ? await gs.writeSync(gist.token, payload, fileId) : await ds.writeSync(await ensureToken(), payload, fileId) }
+          catch (e) { if (e.gistGone) { setGist(g => ({ ...g, gistId: null })); res = await gs.writeSync(gist.token, payload, null) } else throw e }
+          if (!fileId) {
+            fileId = res.id
+            if (prov === 'gist') setGist(g => ({ ...g, gistId: res.id })); else setDriveState(s => ({ ...s, syncFileId: res.id }))
+          }
           report = { conflicts: stats.conflicts, fromRemote: stats.fromRemote, rev: newRev, dir: 'pushed+merged' }
         } else {
           newRev = remote.rev
@@ -459,8 +490,14 @@ export function CrmProvider({ children }) {
       } else if (!remote || localHash !== baseHash || rev === 0) {
         /* nothing newer remotely — our changes need pushing (or the first run) */
         newRev = (remote?.rev || rev) + 1
-        const res = await ds.writeSync(token, { __pcrmSync: 3, rev: newRev, deviceId: syncState.deviceId, device: deviceName(), updatedAt: new Date().toISOString(), data: local }, fileId)
-        if (!fileId) { fileId = res.id; setDriveState(s => ({ ...s, syncFileId: res.id })) }
+        const payload = { __pcrmSync: 3, rev: newRev, deviceId: syncState.deviceId, device: deviceName(), updatedAt: new Date().toISOString(), data: local }
+        let res
+        try { res = prov === 'gist' ? await gs.writeSync(gist.token, payload, fileId) : await ds.writeSync(await ensureToken(), payload, fileId) }
+        catch (e) { if (e.gistGone) { setGist(g => ({ ...g, gistId: null })); res = await gs.writeSync(gist.token, payload, null) } else throw e }
+        if (!fileId) {
+          fileId = res.id
+          if (prov === 'gist') setGist(g => ({ ...g, gistId: res.id })); else setDriveState(s => ({ ...s, syncFileId: res.id }))
+        }
         setSyncState(s => ({ ...s, lastRev: newRev, baselineData: local, baselineHash: localHash, lastSyncAt: new Date().toISOString() }))
         logAudit('system', 'Sync pushed', `rev ${newRev}`, `${local.contacts.length} contacts · ${local.tasks.length} tasks · ${local.events.length} events · ${local.notes.length} notes`)
         if (opts.manual) toast(`☁️ Synced to Drive (rev ${newRev})`)
@@ -488,7 +525,7 @@ export function CrmProvider({ children }) {
   const syncRef = useRef(null)
   syncRef.current = syncNow
   useEffect(() => {
-    if (!syncState.enabled || googleMode !== 'live') return
+    if (!syncState.enabled || syncProvider() === 'none') return
     const tick = () => { if (navigator.onLine !== false) syncRef.current?.({}) }
     const iv = setInterval(tick, 60e3)
     const onVis = () => { if (document.visibilityState === 'visible') tick() }
@@ -496,7 +533,7 @@ export function CrmProvider({ children }) {
     document.addEventListener('visibilitychange', onVis)
     window.addEventListener('online', onOnline)
     return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onVis); window.removeEventListener('online', onOnline) }
-  }, [syncState.enabled, googleMode])
+  }, [syncState.enabled, googleMode, gist.token])
 
   /* ── read-only calendar feed subscriptions (real calendars, no OAuth) ── */
   const addIcsFeed = (url, opts = {}) => {
@@ -787,7 +824,7 @@ export function CrmProvider({ children }) {
     mailboxes, emails, connectMailbox, disconnectMailbox, syncMailbox, logEmailTouch, triageEmailAsLead, ignoreEmail,
     googleClientId, googleMode, saveGoogleClientId, connectGoogleLive, syncGoogleCalendar, syncGoogleContacts,
     driveState, driveBackupNow, driveRestoreNow, restoreAll, disconnectGoogle,
-    webhooks, saveWebhooks, testWebhook, icsFeeds, addIcsFeed, syncIcsFeed, removeIcsFeed, syncing, syncState, syncReport, syncNow, setSyncEnabled,
+    webhooks, saveWebhooks, testWebhook, icsFeeds, addIcsFeed, syncIcsFeed, removeIcsFeed, syncing, syncState, syncReport, syncNow, setSyncEnabled, gist, saveGistToken, syncProvider,
     commitImport, rollbackImport, resolveAuditConflict, updateFrequency, snoozeFollowUp, unsnooze, resetAll,
     notifState, notifPrefs, buildNotifications, dismissNotif, snoozeNotif, unsnoozeNotif, markNotifRead, markAllNotifsRead, toggleNotifPref,
     widgetPrefs, toggleWidget, moveWidget, resetWidgets, DEFAULT_WIDGET_ORDER,

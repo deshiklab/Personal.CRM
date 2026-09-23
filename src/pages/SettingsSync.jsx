@@ -23,6 +23,7 @@ export default function SettingsSync() {
     <div className="max-w-[1100px] mx-auto">
       <SectionHead kicker="Roadmap #9" title="Settings & Sync"
         sub="Connections, sync rules with per-rule conflict strategy, and a full audit trail." />
+      <GistSyncCard />
       <GoogleHub />
       <Connections />
       <RuleBuilder />
@@ -273,7 +274,7 @@ function DangerZone() {
 /* ── Google Workspace hub (live OAuth with your own Client ID) ── */
 function GoogleHub() {
   const {
-    gcal, googleClientId, googleMode, saveGoogleClientId, connectGoogleLive, disconnectGoogle, syncing, syncState, syncReport, syncNow, setSyncEnabled,
+    gcal, googleClientId, googleMode, saveGoogleClientId, connectGoogleLive, disconnectGoogle, syncing, syncState, syncReport, syncNow, setSyncEnabled, gist, saveGistToken, syncProvider,
     syncGoogleCalendar, syncGoogleContacts, driveState, driveBackupNow, driveRestoreNow, restoreAll, toast,
   } = useCrm()
   const [cid, setCid] = useState(googleClientId || '')
@@ -366,10 +367,10 @@ function GoogleHub() {
 
         <Service icon={CloudUpload} color="#f472b6" title="Multi-device sync"
           status={syncState.enabled
-            ? (syncState.lastSyncAt ? `rev ${syncState.lastRev} · synced ${tsRel(syncState.lastSyncAt)}` : 'on — press Sync now')
-            : 'off — one personal-crm-sync.json in your Drive'}>
+            ? (syncState.lastSyncAt ? `rev ${syncState.lastRev} · synced ${tsRel(syncState.lastSyncAt)} · via ${syncProvider()}` : 'on — press Sync now')
+            : 'off'}>
           <Toggle on={syncState.enabled} onChange={setSyncEnabled} disabled={!live} />
-          <Btn k="syncdev" className="btn btn-primary btn-sm" disabled={!live || !syncState.enabled}
+          <Btn k="syncdev" className="btn btn-primary btn-sm" disabled={syncProvider() === 'none' || !syncState.enabled}
             onClick={run('syncdev', () => syncNow({ manual: true }))}>
             {syncing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} Sync now
           </Btn>
@@ -446,5 +447,68 @@ function GoogleSetupGuide({ toast }) {
         </div>
       )}
     </div>
+  )
+}
+
+/* ── GitHub Gist sync: the no-Google way (same engine, one PAT with gist scope) ── */
+function GistSyncCard() {
+  const { gist, saveGistToken, syncNow, syncState, syncProvider, syncing, toast } = useCrm()
+  const [tok, setTok] = useState(gist.token || '')
+  const [testing, setTesting] = useState(false)
+  const active = syncProvider() === 'gist'
+  return (
+    <Card className="p-5 mb-4">
+      <div className="flex items-center gap-3 flex-wrap mb-1">
+        <div className="w-10 h-10 rounded-xl grid place-items-center" style={{ background: '#f472b61c', color: '#f472b6' }}>
+          <CloudUpload size={19} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-bold text-[15px]">Multi-device sync via GitHub Gist <span className="text-[10.5px] font-bold uppercase tracking-wide ml-1" style={{ color: '#f472b6' }}>no Google needed</span></div>
+          <div className="text-[11.5px]" style={{ color: 'var(--faint)' }}>
+            The simplest way: one token keeps your phone app, installed PWA and browser tabs in sync through a PRIVATE secret gist on your own GitHub account.
+          </div>
+        </div>
+        <Pill color={active ? '#34d399' : '#94a3b8'}>{active ? 'ACTIVE BACKEND' : gist.token ? 'SAVED — inactive' : 'NOT SET UP'}</Pill>
+      </div>
+
+      <ol className="text-[12.5px] leading-relaxed list-decimal pl-5 mb-3 mt-2" style={{ color: 'var(--muted)' }}>
+        <li className="text-[12.5px] leading-relaxed">Open <a href="https://github.com/settings/tokens/new" target="_blank" rel="noreferrer" className="font-semibold underline underline-offset-2" style={{ color: 'var(--i2)' }}>github.com → Settings → Developer settings → Tokens (classic) → Generate new token</a></li>
+        <li className="text-[12.5px] leading-relaxed">Note: <b style={{ color: 'var(--text)' }}>personal-crm-sync</b> · any expiration · tick ONLY the <b style={{ color: 'var(--text)' }}>gist</b> scope</li>
+        <li className="text-[12.5px] leading-relaxed">Generate, copy the <code className="px-1 rounded" style={{ background: 'var(--cardbg2)', color: 'var(--text)' }}>ghp_…</code> token, paste below — done.</li>
+      </ol>
+
+      <div className="flex flex-col sm:flex-row gap-2">
+        <input className="input flex-1" type="password" autoComplete="off" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+          style={{ fontFamily: 'monospace', fontSize: 12 }} value={tok}
+          onChange={e => setTok(e.target.value)} />
+        <button className="btn btn-primary btn-sm" disabled={testing || (!tok.trim() && !gist.token) || tok.trim() === (gist.token || '')}
+          onClick={async () => { setTesting(true); await saveGistToken(tok); setTesting(false) }}>
+          {testing ? <Loader2 size={13} className="animate-spin" /> : <ShieldCheck size={13} />} {gist.token ? 'Update token' : 'Save & connect'}
+        </button>
+        {gist.token && (
+          <button className="btn btn-ghost btn-sm" onClick={() => { setTok(''); saveGistToken('') }}>
+            <X size={13} /> Clear
+          </button>
+        )}
+        {active && (
+          <button className="btn btn-ghost btn-sm" disabled={syncing} onClick={() => syncNow({ manual: true })}>
+            {syncing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} Sync now
+          </button>
+        )}
+      </div>
+
+      {active && syncState.lastSyncAt && (
+        <div className="text-[11.5px] mt-2" style={{ color: 'var(--faint)' }}>
+          Synced {tsRel(syncState.lastSyncAt)} · revision {syncState.lastRev} · gist {String(gist.gistId || '…').slice(0, 8)}
+        </div>
+      )}
+
+      <p className="text-[11px] mt-3 flex items-start gap-1.5" style={{ color: 'var(--faint)' }}>
+        <ShieldCheck size={12} className="mt-[1px] flex-none" />
+        <span>The token sits only in this browser's localStorage (like everything else in this app) and it can see ONLY gists, nothing else.
+        Revoke it any time at github.com/settings/tokens. Use the SAME token on every device you want to sync.
+        ⚠️ Pick ONE sync backend on all devices — Gist here, or Drive in the Google hub below.</span>
+      </p>
+    </Card>
   )
 }
