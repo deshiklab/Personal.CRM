@@ -105,7 +105,7 @@ export default function Contacts() {
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--faint)' }} />
-          <input className="input pl-9" placeholder="Search name, role, company…" value={q} onChange={e => setQ(e.target.value)} />
+          <input className="input" style={{ paddingLeft: 38 }} placeholder="Search name, role, company…" value={q} onChange={e => setQ(e.target.value)} />
         </div>
         <select className="input" style={{ width: 'auto' }} value={groupF} onChange={e => setGroupF(e.target.value)}>
           <option value="">All groups</option>

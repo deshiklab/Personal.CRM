@@ -6,17 +6,12 @@ import { useCrm } from '../store'
  *   mode 'setup'  — first launch: offer a pin (option + skip link)
  *   mode 'unlock' — subsequent loads: require the pin for this session
  */
-export default function LockScreen({ mode }) {
-  const { setupPin, skipPinSetup, unlockWithPin, factoryReset } = useCrm()
-  const [pin, setPin] = useState('')
-  const [pin2, setPin2] = useState('')
-  const [err, setErr] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [attempts, setAttempts] = useState(0)
-  const ref = useRef(null)
-  useEffect(() => { ref.current?.focus() }, [mode])
-
-  const PinField = ({ value, set, label, innerRef, onEnter }) => (
+/* Hoisted to module scope ON PURPOSE: a component defined inside another
+ * component gets a new identity on every render, so React remounts the <input>
+ * on each keystroke and the field loses focus — that is why every digit needed
+ * another tap. Keep this outside the component body. */
+function PinField({ value, set, label, innerRef, onEnter, onError = () => {}, nextRef }) {
+  return (
     <label className="block">
       <span className="text-[11.5px] font-semibold uppercase tracking-wide" style={{ color: 'var(--faint)' }}>{label}</span>
       <input
@@ -26,11 +21,33 @@ export default function LockScreen({ mode }) {
         type="password" inputMode="numeric" autoComplete="off" maxLength={6}
         placeholder="••••"
         value={value}
-        onChange={e => { set(e.target.value.replace(/\D/g, '')); setErr('') }}
-        onKeyDown={e => { if (e.key === 'Enter') onEnter?.() }}
+        onChange={e => {
+          const v = e.target.value.replace(/\D/g, '')
+          set(v)
+          onError('')
+          /* once a full-length pin is typed, hop to the next field so the
+             on-screen keyboard stays put instead of needing a second tap */
+          if (nextRef && v.length >= 4) nextRef.current?.focus()
+        }}
+        onKeyDown={e => {
+          if (e.key === 'Enter') onEnter?.()
+          if (e.key === 'Backspace' && !value && nextRef === undefined) e.preventDefault()
+        }}
       />
     </label>
   )
+}
+
+export default function LockScreen({ mode }) {
+  const { setupPin, skipPinSetup, unlockWithPin, factoryReset } = useCrm()
+  const [pin, setPin] = useState('')
+  const [pin2, setPin2] = useState('')
+  const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [attempts, setAttempts] = useState(0)
+  const ref = useRef(null)
+  const ref2 = useRef(null)
+  useEffect(() => { ref.current?.focus() }, [mode])
 
   const doSetup = async () => {
     if (pin.length < 4) return setErr('At least 4 digits')
@@ -58,7 +75,7 @@ export default function LockScreen({ mode }) {
 
   return (
     <div className="h-screen w-full grid place-items-center p-4" style={{ background: 'linear-gradient(160deg, var(--bg), var(--cardbg2))' }}>
-      <div className="card w-[360px] p-7 fadein" style={{ borderRadius: 20 }}>
+      <div className="card w-full max-w-[360px] p-6 sm:p-7 fadein" style={{ borderRadius: 20 }}>
         <div className="flex flex-col items-center text-center mb-5">
           <div className="w-14 h-14 rounded-2xl grid place-items-center mb-3"
             style={{ background: 'linear-gradient(140deg,#6366f1,#2dd4bf)', color: '#0b0e17' }}>
@@ -75,11 +92,11 @@ export default function LockScreen({ mode }) {
         <div className="flex flex-col gap-3">
           {mode === 'setup' ? (
             <>
-              <PinField value={pin} set={setPin} label="Choose pincode" innerRef={ref} />
-              <PinField value={pin2} set={setPin2} label="Repeat pincode" onEnter={doSetup} />
+              <PinField value={pin} set={setPin} label="Choose pincode" innerRef={ref} nextRef={ref2} onError={setErr} />
+              <PinField value={pin2} set={setPin2} label="Repeat pincode" innerRef={ref2} onEnter={doSetup} onError={setErr} />
             </>
           ) : (
-            <PinField value={pin} set={setPin} label="Pincode" innerRef={ref} onEnter={doUnlock} />
+            <PinField value={pin} set={setPin} label="Pincode" innerRef={ref} onEnter={doUnlock} onError={setErr} />
           )}
 
           {!!err && (

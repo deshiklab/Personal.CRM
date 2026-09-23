@@ -34,13 +34,13 @@ export default function RegistrationScreen() {
   return (
     <div className="h-screen w-full grid place-items-center p-4"
       style={{ background: 'linear-gradient(160deg, var(--bg), var(--cardbg2))' }}>
-      <div className="card w-[400px] max-w-full p-7 fadein" style={{ borderRadius: 20 }}>
+      <div className="card w-full max-w-[400px] p-6 sm:p-7 fadein" style={{ borderRadius: 20 }}>
         <div className="flex flex-col items-center text-center mb-5">
           <div className="w-14 h-14 rounded-2xl grid place-items-center mb-3"
             style={{ background: 'linear-gradient(140deg,#6366f1,#2dd4bf)', color: '#0b0e17' }}>
             <Zap size={26} />
           </div>
-          <h1 className="text-[18px] font-extrabold">Welcome to {BRAND.app}</h1>
+          <h1 className="text-[18px] font-extrabold text-center px-2 break-any">Welcome to {BRAND.app}</h1>
           <p className="text-[12.5px] mt-1 leading-snug" style={{ color: 'var(--muted)' }}>
             Tell us who you are so the app can greet you properly. Your details are stored on this device.
           </p>
@@ -53,7 +53,7 @@ export default function RegistrationScreen() {
             </span>
             <div className="relative mt-1.5">
               <UserRound size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--faint)' }} />
-              <input ref={ref} className="input pl-9" value={name} onChange={e => { setName(e.target.value); setErr('') }}
+              <input ref={ref} className="input" style={{ paddingLeft: 38 }} value={name} onChange={e => { setName(e.target.value); setErr('') }}
                 onKeyDown={e => e.key === 'Enter' && submit()} placeholder="e.g. BiTsCol" autoComplete="name" />
             </div>
           </label>
@@ -64,7 +64,7 @@ export default function RegistrationScreen() {
             </span>
             <div className="relative mt-1.5">
               <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--faint)' }} />
-              <input className="input pl-9" type="email" value={email} onChange={e => { setEmail(e.target.value); setErr('') }}
+              <input className="input" type="email" style={{ paddingLeft: 38 }} value={email} onChange={e => { setEmail(e.target.value); setErr('') }}
                 onKeyDown={e => e.key === 'Enter' && submit()} placeholder="you@example.com" autoComplete="email" />
             </div>
           </label>
@@ -75,7 +75,7 @@ export default function RegistrationScreen() {
             </span>
             <div className="relative mt-1.5">
               <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--faint)' }} />
-              <input className="input pl-9" type="tel" value={mobile} onChange={e => { setMobile(e.target.value); setErr('') }}
+              <input className="input" type="tel" style={{ paddingLeft: 38 }} value={mobile} onChange={e => { setMobile(e.target.value); setErr('') }}
                 onKeyDown={e => e.key === 'Enter' && submit()} placeholder="+880 1XXX-XXXXXX" autoComplete="tel" />
             </div>
           </label>

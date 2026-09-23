@@ -517,6 +517,17 @@ function GistSyncCard() {
 
 import IdentityCard from './settings/IdentityCard'
 
+
+/* Hoisted to module scope: a component declared inside another one is a new
+ * type on every render, which remounts the input and drops focus mid-typing. */
+function PinRow({ v, set, ph }) {
+  return (
+    <input className="input" type="password" inputMode="numeric" maxLength={6} autoComplete="off"
+      style={{ letterSpacing: 6, fontFamily: 'monospace' }} placeholder={ph || '••••'}
+      value={v} onChange={e => set(e.target.value.replace(/\D/g, ''))} />
+  )
+}
+
 /* ── App lock (pincode) + local download/restore + PIN-confirmed blank reset ── */
 function AppLockCard() {
   const { lock, setupPin, changePin, removePin, factoryReset, buildBackup, restoreAll, toast, lockNow } = useCrm()
@@ -571,11 +582,6 @@ function AppLockCard() {
     if (!okPin) toast('Pincode is wrong', 'warn')
   }
 
-  const PinRow = ({ v, set, ph }) => (
-    <input className="input" type="password" inputMode="numeric" maxLength={6} autoComplete="off"
-      style={{ letterSpacing: 6, fontFamily: 'monospace' }} placeholder={ph || '••••'}
-      value={v} onChange={e => set(e.target.value.replace(/\D/g, ''))} />
-  )
 
   return (
     <Card className="p-5 mt-4">

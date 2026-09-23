@@ -169,7 +169,7 @@ export default function QuickCapture() {
     <>
       {/* ── Floating Action Button ── */}
       <button onClick={() => { setOpen(true); setTab('lead') }}
-        className="fixed z-[60] flex items-center justify-center gap-2 font-bold transition-transform hover:scale-105 active:scale-95 right-4 bottom-4 w-14 h-14 rounded-full md:right-6 md:bottom-6 md:w-auto md:h-auto md:rounded-2xl md:px-5 md:py-3.5"
+        className="safe-bottom fixed z-[60] flex items-center justify-center gap-2 font-bold transition-transform hover:scale-105 active:scale-95 right-4 bottom-4 w-14 h-14 rounded-full md:right-6 md:bottom-6 md:w-auto md:h-auto md:rounded-2xl md:px-5 md:py-3.5"
         style={{ background: 'linear-gradient(120deg,var(--i1),var(--i2))', color: '#0a0c11', boxShadow: '0 10px 30px rgba(129,140,248,.4)', fontSize: 13.5 }}
         title="Quick Capture (name + number → lead)">
         <Zap size={20} />
@@ -184,7 +184,7 @@ export default function QuickCapture() {
       {open && (
         <div className="fixed inset-0 z-[70] flex items-end md:items-center justify-center" role="dialog" aria-modal="true">
           <div className="absolute inset-0" style={{ background: 'rgba(4,6,10,.66)', backdropFilter: 'blur(3px)' }} onClick={() => setOpen(false)} />
-          <div className="panel relative w-full md:max-w-lg max-h-[92vh] md:max-h-[86vh] overflow-y-auto rounded-t-3xl md:rounded-3xl p-5 md:p-6"
+          <div className="panel safe-bottom relative w-full md:max-w-lg max-h-[92vh] md:max-h-[86vh] overflow-y-auto rounded-t-3xl md:rounded-3xl p-5 md:p-6"
             style={{ borderBottom: '0', animation: 'qc-up .22s ease-out' }}>
             <style>{`@keyframes qc-up{from{transform:translateY(24px);opacity:.4}to{transform:none;opacity:1}}`}</style>
 

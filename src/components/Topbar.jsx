@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { UserPlus, CalendarPlus, PlusSquare, Search, Sun, Moon, Download, Cloud, Loader2, CloudOff } from 'lucide-react'
+import { UserPlus, CalendarPlus, PlusSquare, Search, Sun, Moon, Download, Cloud, Loader2, CloudOff, Menu } from 'lucide-react'
 import { useCrm } from '../store'
 import { MONTHS, tsRel } from '../lib'
 
@@ -25,7 +25,7 @@ const TITLES = {
   '/settings': 'Settings & Sync',
 }
 
-export default function Topbar() {
+export default function Topbar({ onMenu = () => {} }) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const { theme, toggleTheme, syncing, syncState, syncNow, googleMode, syncProvider } = useCrm()
@@ -44,13 +44,16 @@ export default function Topbar() {
   const install = async () => { if (!installEvt) return; installEvt.prompt(); await installEvt.userChoice.catch(() => {}); setInstallEvt(null) }
 
   return (
-    <header className="h-16 flex-none border-b flex items-center gap-3 px-4 md:px-6"
+    <header className="h-16 flex-none border-b flex items-center gap-2 sm:gap-3 px-2.5 sm:px-4 md:px-6 safe-top"
       style={{ borderColor: 'var(--border)', background: 'var(--topbg)', backdropFilter: 'blur(10px)' }}>
-      <div className="min-w-0">
+      <button className="icon-btn lg:hidden flex-none" onClick={onMenu} title="Open menu" aria-label="Open menu">
+        <Menu size={18} />
+      </button>
+      <div className="min-w-0 flex-1">
         <h1 className="text-[16px] font-bold tracking-tight truncate">{TITLES[pathname] || 'Personal CRM'}</h1>
         <div className="text-[11.5px] font-medium hidden sm:block" style={{ color: 'var(--faint)' }}>{dateStr}</div>
       </div>
-      <div className="ml-auto flex items-center gap-2">
+      <div className="flex items-center gap-0.5 sm:gap-2 flex-none">
         {installEvt && (
           <button className="btn btn-ghost btn-sm" onClick={install} title="Install as an app (works offline)" style={{ color: 'var(--i2)' }}>
             <Download size={14} /><span className="hidden md:inline">Install</span>
@@ -83,10 +86,10 @@ export default function Topbar() {
           <Search size={14} /><span className="hidden md:inline">Search</span>
           <kbd className="chip hidden md:inline-flex" style={{ fontSize: 10, padding: '1px 7px' }}>⌘K</kbd>
         </button>
-        <button className="btn btn-ghost btn-sm" onClick={() => navigate('/contacts?new=1')} title="Add contact">
+        <button className="btn btn-ghost btn-sm hidden sm:inline-flex" onClick={() => navigate('/contacts?new=1')} title="Add contact">
           <UserPlus size={14} /><span className="hidden sm:inline">Contact</span>
         </button>
-        <button className="btn btn-ghost btn-sm" onClick={() => navigate('/tasks?new=1')} title="New task">
+        <button className="btn btn-ghost btn-sm hidden sm:inline-flex" onClick={() => navigate('/tasks?new=1')} title="New task">
           <PlusSquare size={14} /><span className="hidden sm:inline">Task</span>
         </button>
         <button className="btn btn-primary btn-sm" onClick={() => navigate('/calendar?new=1')} title="New event">

@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import Topbar from './components/Topbar'
 import GlobalSearch from './components/GlobalSearch'
@@ -27,6 +28,10 @@ import Notifications from './pages/Notifications'
 
 export default function App() {
   const { lock, sessionUnlocked, profile } = useCrm()
+  const { pathname } = useLocation()
+  const [navOpen, setNavOpen] = useState(false)
+  /* never leave the mobile drawer hanging across a route change */
+  useEffect(() => { setNavOpen(false) }, [pathname])
   /* gate order: register (first launch, skippable) → pincode setup → unlock.
      Registration comes first so the owner notification carries a real name. */
   if (!profile) return <RegistrationScreen />
@@ -36,9 +41,9 @@ export default function App() {
   if (lock.hash && !sessionUnlocked) return <LockScreen mode="unlock" />
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar />
+      <Sidebar open={navOpen} onClose={() => setNavOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0">
-        <Topbar />
+        <Topbar onMenu={() => setNavOpen(true)} />
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           <Routes>
             <Route path="/" element={<Dashboard />} />
