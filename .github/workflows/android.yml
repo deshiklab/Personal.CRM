@@ -55,6 +55,15 @@ jobs:
           "$SDKMAN" --sdk_root="$ANDROID_HOME" "platform-tools" "platforms;android-36" "build-tools;36.0.0" || \
             sudo "$SDKMAN" --sdk_root="$ANDROID_HOME" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
+      # The debug keystore is NOT committed (see .gitignore). Regenerate it if missing
+      # so the debug build can be signed. Debug keys are never used for distribution.
+      - name: Ensure debug keystore exists
+        run: |
+          if [ ! -f android/debug.keystore ]; then
+            echo "no debug keystore — generating one"
+            ./android/make-debug-keystore.sh android/debug.keystore
+          fi
+
       - name: Show signing SHA-1 (this is what your Google Cloud "Android OAuth client" must contain)
         run: |
           echo "package: com.bitscol.personalcrm"

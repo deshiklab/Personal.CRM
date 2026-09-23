@@ -1,12 +1,23 @@
 # ⚡ Personal CRM
 
-A complete, offline-first **personal relationship manager** — contacts, kanban tasks, calendar, notes, groups, analytics, and **real third-party bridges** (webhooks, vCard, ICS, Gmail) — in a single React app that **runs with zero backend**.
+> **Personal CRM** — a private, offline-first personal relationship manager.
+> **© 2026 BITSCOL · [www.bitscol.com](https://www.bitscol.com) · [sales@bitscol.com](mailto:sales@bitscol.com) · +880 1711-853769**
 
-- **Try instantly:** download [`demo-standalone.html`](demo-standalone.html) → double-click → the whole app runs from one file. No install, no server.
-- **Live demo:** https://deshiklab.github.io/Personal.CRM/ *(once Pages is enabled — 2 clicks, see [Deployment](#-deployment))*
-- **Run the source:** `npm install && npm run dev` → http://localhost:5173
+---
 
-All data lives in your browser's `localStorage` — nothing ever leaves your machine unless you explicitly wire up a bridge.
+## Legal
+
+This is **proprietary software, licensed not sold** — see [`LICENSE`](LICENSE).
+Open-source components are credited in [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md) and in the app at
+**About → Open-source credits**.
+
+- **Privacy Policy:** <https://deshiklab.github.io/Personal.CRM/privacy.html>
+- **Terms of Use:** <https://deshiklab.github.io/Personal.CRM/terms.html>
+
+**Release signing.** Never commit keystores. Generate the Play upload keystore once with
+`npm run keystore:release` (writes `android/upload-keystore.jks`, which is git-ignored) and back it up —
+losing it means you can never publish another update to this app. Debug keystores can be regenerated
+any time with `npm run keystore:debug`.
 
 ---
 

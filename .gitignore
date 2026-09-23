@@ -1,3 +1,31 @@
+# dependencies
 node_modules/
+
+# build output
 dist/
+
+# signing material — NEVER commit keystores or credentials
+*.keystore
+*.jks
+android/release.keystore
+android/debug.keystore
+!android/make-debug-keystore.sh
+
+# secrets
+.env
+.env.*
+*.pem
+*.key
+
+# probes / scratch
+probe-*.mjs
+!probe-crud.mjs
+!probe-pin.mjs
+!probe-legacy.mjs
+screenshots/
+
+# editors / OS
+.DS_Store
+.vscode/
+.idea/
 *.log

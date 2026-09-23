@@ -15,6 +15,7 @@ const TITLES = {
   '/follow-ups': 'Follow-Up Tracker',
   '/notifications': 'Notification Center',
   '/groups': 'Groups',
+  '/about': 'About',
   '/graph': 'Relationship Map',
   '/analytics': 'Analytics & Insights',
   '/tags': 'Tags Manager',

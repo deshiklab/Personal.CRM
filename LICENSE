@@ -1,0 +1,47 @@
+Copyright © 2026 BITSCOL (www.bitscol.com). All rights reserved.
+
+Personal CRM — End User Licence Agreement (summary)
+
+Personal CRM, including its source code, design, graphics, documentation and
+build output, is the proprietary property of BITSCOL. It is LICENSED, NOT SOLD.
+
+This repository is private. Access to it does not grant any licence to the
+software except as described below.
+
+GRANT
+  BITSCOL grants you a personal, non-exclusive, non-transferable, revocable
+  licence to install and use Personal CRM on devices you own or control, for
+  your own personal or internal business use.
+
+YOU MAY NOT
+  · copy, modify, translate or create derivative works of the software;
+  · reverse engineer, decompile or disassemble it, except to the extent such a
+    restriction is prohibited by applicable law;
+  · remove or alter any copyright, trademark or proprietary notices;
+  · rent, lease, sublicense, resell, publish or redistribute the software or
+    any part of it;
+  · use it to build a competing product or to train machine-learning models on
+    its code or assets.
+
+YOUR DATA
+  You retain all rights to the contacts, notes and other content you enter into
+  the software. BITSCOL claims no ownership of it.
+
+THIRD-PARTY COMPONENTS
+  The software incorporates open-source components, each licensed under its own
+  terms. See THIRD-PARTY-NOTICES.md and the in-app About → Open-source credits
+  screen.
+
+WARRANTY & LIABILITY
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. IN NO EVENT
+  SHALL BITSCOL BE LIABLE FOR ANY LOSS OF DATA OR OTHER DAMAGES ARISING OUT OF
+  THE USE OR INABILITY TO USE THE SOFTWARE.
+
+The complete terms are published at:
+  https://deshiklab.github.io/Personal.CRM/terms.html
+
+CONTACT
+  BITSCOL
+  Web:    https://www.bitscol.com
+  Email:  sales@bitscol.com
+  Mobile: +880 1711-853769

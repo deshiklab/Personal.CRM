@@ -1,7 +1,9 @@
 {
   "name": "personal-crm",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "BITSCOL (https://www.bitscol.com)",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +11,10 @@
     "preview": "vite preview",
     "android:sync": "npm run build && npx cap sync android",
     "android:open": "npx cap open android",
-    "android:apk": "cd android && ./gradlew assembleDebug"
+    "android:apk": "cd android && ./gradlew assembleDebug",
+    "android:aab": "cd android && ./gradlew bundleRelease",
+    "keystore:debug": "./android/make-debug-keystore.sh",
+    "keystore:release": "./scripts/make-release-keystore.sh"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",

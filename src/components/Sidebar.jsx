@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, CheckSquare, Calendar, HeartHandshake, UsersRound, Tag, FileUp, Settings2, StickyNote, Network, History, Bell, Gift, BarChart3, Mail, Plug } from 'lucide-react'
+import {LayoutDashboard, Users, CheckSquare, Calendar, HeartHandshake, UsersRound, Tag, FileUp, Settings2, StickyNote, Network, History, Bell, Gift, BarChart3, Mail, Plug, Info } from 'lucide-react'
 import { useCrm } from '../store'
+import { BRAND, COPYRIGHT } from '../brand'
 import { daysUntil, tsRel } from '../lib'
 
 export default function Sidebar() {
@@ -29,6 +30,7 @@ export default function Sidebar() {
     { to: '/history', label: 'History', icon: History },
     { to: '/integrations', label: 'Integrations', icon: Plug },
     { to: '/settings', label: 'Settings', icon: Settings2 },
+    { to: '/about', label: 'About', icon: Info },
   ]
 
   return (
@@ -71,6 +73,14 @@ export default function Sidebar() {
             <span className="dot" style={{ background: enabledRules ? '#34d399' : '#6b7382' }} />
             {enabledRules}/{rules.length} rules active
           </div>
+        </div>
+        <div className="mt-2.5 text-center leading-tight">
+          <NavLink to="/about" className="block" style={{ textDecoration: 'none' }}>
+            <div className="text-[10.5px] font-bold" style={{ color: 'var(--muted)' }}>
+              {BRAND.app} · v{BRAND.version}
+            </div>
+            <div className="text-[10px]" style={{ color: 'var(--faint)' }}>{COPYRIGHT}</div>
+          </NavLink>
         </div>
       </div>
     </aside>

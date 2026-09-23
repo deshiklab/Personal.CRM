@@ -19,6 +19,7 @@ import TagsManager from './pages/TagsManager'
 import CalendarPage from './pages/CalendarPage'
 import Birthdays from './pages/Birthdays'
 import SettingsSync from './pages/SettingsSync'
+import About from './pages/About'
 import IntegrationsPage from './pages/IntegrationsPage'
 import FollowUps from './pages/FollowUps'
 import Notifications from './pages/Notifications'
@@ -53,6 +54,7 @@ export default function App() {
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/integrations" element={<IntegrationsPage />} />
             <Route path="/settings" element={<SettingsSync />} />
+            <Route path="/about" element={<About />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
