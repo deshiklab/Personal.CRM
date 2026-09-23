@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { RefreshCw, Plus, Trash2, ShieldCheck, Globe, Calendar, Play, RotateCcw, CheckCircle2, X, KeyRound, Users, HardDrive, CloudDownload, Upload, CloudUpload, Loader2, Copy, ClipboardCheck, ListChecks, ChevronDown, ExternalLink } from 'lucide-react'
+import { RefreshCw, Plus, Trash2, ShieldCheck, Globe, Calendar, Play, RotateCcw, CheckCircle2, X, KeyRound, Users, HardDrive, CloudDownload, Upload, CloudUpload, Loader2, Lock, ShieldAlert, Copy, ClipboardCheck, ListChecks, ChevronDown, ExternalLink } from 'lucide-react'
 import { useCrm } from '../store'
 import { SectionHead, Card, Modal, Field, Toggle, Pill, Empty } from '../components/ui'
 import { tsRel } from '../lib'
@@ -29,6 +29,7 @@ export default function SettingsSync() {
       <RuleBuilder />
       <RulesTable />
       <AuditLog />
+      <AppLockCard />
       <DangerZone />
     </div>
   )
@@ -509,6 +510,180 @@ function GistSyncCard() {
         Revoke it any time at github.com/settings/tokens. Use the SAME token on every device you want to sync.
         ⚠️ Pick ONE sync backend on all devices — Gist here, or Drive in the Google hub below.</span>
       </p>
+    </Card>
+  )
+}
+
+/* ── App lock (pincode) + local download/restore + PIN-confirmed blank reset ── */
+function AppLockCard() {
+  const { lock, setupPin, changePin, removePin, factoryReset, buildBackup, restoreAll, toast, lockNow } = useCrm()
+  const [modal, setModal] = useState('')      // 'set' | 'change' | 'remove' | 'wipe'
+  const [a, setA] = useState('')              // first/new pin
+  const [b, setB] = useState('')              // confirm new pin
+  const [oldPin, setOldPin] = useState('')    // current pin
+  const [busy, setBusy] = useState(false)
+  const fileRef = { current: null }
+  const close = () => { setModal(''); setA(''); setB(''); setOldPin('') }
+  const hasPin = !!lock?.hash
+  const valid = a.length >= 4 && b.length >= 4
+
+  const download = () => {
+    const json = buildBackup()
+    const el = document.createElement('a')
+    el.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }))
+    el.download = `personal-crm-data-${new Date().toISOString().slice(0, 10)}.json`
+    document.body.appendChild(el); el.click(); el.remove()
+    toast('⬇️ Full data downloaded as JSON — keep it somewhere safe')
+  }
+
+  const restoreFile = f => {
+    const r = new FileReader()
+    r.onload = () => { try { restoreAll(JSON.parse(r.result)) } catch { toast('Could not parse that backup file', 'warn') } }
+    r.readAsText(f)
+  }
+
+  const okSet = async () => {
+    if (a !== b) return toast('The two pincodes do not match', 'warn')
+    setBusy(true); await setupPin(a); setBusy(false); close()
+  }
+  const okChange = async () => {
+    if (a !== b) return toast('The two pincodes do not match', 'warn')
+    setBusy(true)
+    const okPin = await changePin(oldPin, a)
+    setBusy(false)
+    if (!okPin) return toast('Current pincode is wrong', 'warn')
+    close()
+  }
+  const okRemove = async () => {
+    setBusy(true)
+    const okPin = await removePin(oldPin)
+    setBusy(false)
+    if (!okPin) return toast('Pincode is wrong', 'warn')
+    close()
+  }
+  const okWipe = async () => {
+    setBusy(true)
+    const okPin = await factoryReset(oldPin)   // reloads the app on success
+    setBusy(false)
+    if (!okPin) toast('Pincode is wrong', 'warn')
+  }
+
+  const PinRow = ({ v, set, ph }) => (
+    <input className="input" type="password" inputMode="numeric" maxLength={6} autoComplete="off"
+      style={{ letterSpacing: 6, fontFamily: 'monospace' }} placeholder={ph || '••••'}
+      value={v} onChange={e => set(e.target.value.replace(/\D/g, ''))} />
+  )
+
+  return (
+    <Card className="p-5 mt-4">
+      <div className="flex items-center gap-3 flex-wrap mb-3">
+        <div className="w-10 h-10 rounded-xl grid place-items-center" style={{ background: hasPin ? '#34d3991c' : '#94a3b81c', color: hasPin ? '#34d399' : '#94a3b8' }}>
+          <Lock size={18} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-bold text-[15px]">App lock (pincode)</div>
+          <div className="text-[11.5px]" style={{ color: 'var(--faint)' }}>
+            {hasPin ? 'On — pincode required at every start and after 15 min in the background. Sessions exist only in memory.' : 'Off — your app opens straight away.'}
+          </div>
+        </div>
+        <Pill color={hasPin ? '#34d399' : '#94a3b8'}>{hasPin ? 'LOCKED ON START' : 'NOT SET'}</Pill>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {hasPin ? (
+          <>
+            <button className="btn btn-primary btn-sm" onClick={() => setModal('change')}><KeyRound size={13} /> Change pincode</button>
+            <button className="btn btn-ghost btn-sm" onClick={lockNow}><Lock size={13} /> Lock now</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setModal('remove')}><X size={13} /> Remove lock</button>
+          </>
+        ) : (
+          <button className="btn btn-primary btn-sm" onClick={() => setModal('set')}><ShieldCheck size={13} /> Set pincode</button>
+        )}
+      </div>
+
+      <div className="mt-4 pt-4 flex flex-wrap items-center gap-2" style={{ borderTop: '1px dashed var(--border)' }}>
+        <div className="text-[12.5px] font-extrabold w-full mb-1">Local data (no account needed)</div>
+        <button className="btn btn-primary btn-sm" onClick={download}><CloudDownload size={13} /> Download all data (.json)</button>
+        <label className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }}>
+          <Upload size={13} /> Restore from a data file…
+          <input ref={el => { fileRef.current = el }} type="file" accept=".json,application/json" className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) restoreFile(f); e.target.value = '' }} />
+        </label>
+        <span className="text-[10.5px]" style={{ color: 'var(--faint)' }}>Same format as Drive backup. Works fully offline.</span>
+      </div>
+
+      <div className="mt-4 rounded-xl p-3 flex items-center justify-between flex-wrap gap-2"
+        style={{ background: '#f8717110', border: '1px solid #f8717130' }}>
+        <div>
+          <div className="text-[13px] font-extrabold flex items-center gap-1.5" style={{ color: '#f87171' }}>
+            <ShieldAlert size={14} /> Reset everything to blank
+          </div>
+          <div className="text-[11px]" style={{ color: 'var(--muted)' }}>
+            Erases ALL data, settings, sync tokens and the pincode itself from this app.{hasPin ? ' Requires your pincode.' : ''} Download a copy first.
+          </div>
+        </div>
+        <button className="btn btn-danger btn-sm" onClick={() => setModal('wipe')}>Wipe everything…</button>
+      </div>
+
+      {/* modals */}
+      <Modal open={modal === 'set' || modal === 'change'} onClose={close} title={modal === 'set' ? 'Set a pincode' : 'Change pincode'}>
+        <div className="flex flex-col gap-3">
+          {modal === 'change' && (
+            <div>
+              <div className="text-[11.5px] font-semibold mb-1" style={{ color: 'var(--faint)' }}>Current pincode</div>
+              <PinRow v={oldPin} set={setOldPin} />
+            </div>
+          )}
+          <div>
+            <div className="text-[11.5px] font-semibold mb-1" style={{ color: 'var(--faint)' }}>{modal === 'set' ? 'Choose pincode' : 'New pincode'}</div>
+            <PinRow v={a} set={setA} />
+          </div>
+          <div>
+            <div className="text-[11.5px] font-semibold mb-1" style={{ color: 'var(--faint)' }}>Repeat pincode</div>
+            <PinRow v={b} set={setB} />
+          </div>
+          <div className="flex justify-end gap-2 mt-1">
+            <button className="btn btn-ghost btn-sm" onClick={close}>Cancel</button>
+            <button className="btn btn-primary btn-sm" disabled={!valid || busy || (modal === 'change' && !oldPin)} onClick={modal === 'set' ? okSet : okChange}>
+              {busy ? <Loader2 size={13} className="animate-spin" /> : <ShieldCheck size={13} />} Confirm
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={modal === 'remove'} onClose={close} title="Remove app lock">
+        <div className="flex flex-col gap-3">
+          <div className="text-[12.5px]" style={{ color: 'var(--muted)' }}>The app will open without a pincode. Enter the current pincode to confirm.</div>
+          <PinRow v={oldPin} set={setOldPin} />
+          <div className="flex justify-end gap-2 mt-1">
+            <button className="btn btn-ghost btn-sm" onClick={close}>Cancel</button>
+            <button className="btn btn-primary btn-sm" disabled={!oldPin || busy} onClick={okRemove}>
+              {busy ? <Loader2 size={13} className="animate-spin" /> : 'Remove lock'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={modal === 'wipe'} onClose={close} title="Reset everything to blank">
+        <div className="flex flex-col gap-3">
+          <div className="text-[12.5px] leading-relaxed" style={{ color: '#f87171' }}>
+            <b>This deletes everything</b> — all contacts, tasks, notes, events, tags, groups, sync tokens (GitHub/Google), and the pincode.
+            The app restarts to first-launch with an empty CRM. There is no undo.
+          </div>
+          {hasPin && (
+            <div>
+              <div className="text-[11.5px] font-semibold mb-1" style={{ color: 'var(--faint)' }}>Confirm with your pincode</div>
+              <PinRow v={oldPin} set={setOldPin} />
+            </div>
+          )}
+          <div className="flex justify-end gap-2 mt-1">
+            <button className="btn btn-ghost btn-sm" onClick={close}>Cancel</button>
+            <button className="btn btn-danger btn-sm" disabled={(hasPin && !oldPin) || busy} onClick={okWipe}>
+              {busy ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />} Wipe everything
+            </button>
+          </div>
+        </div>
+      </Modal>
     </Card>
   )
 }

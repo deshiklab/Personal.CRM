@@ -16,6 +16,15 @@ const readback = async () => {
 
 const browser = await chromium.launch()
 const page = await browser.newPage()
+
+/* first-launch pincode gate: treat 'skip' as part of app boot for this suite */
+const boot = async () => {
+  await page.goto(BASE, { waitUntil: 'load' }).catch(() => {})
+  await page.waitForTimeout(700)
+  const skip = page.locator('text=Skip for now')
+  if (await skip.count()) { await skip.first().click(); await page.waitForTimeout(400) }
+}
+await boot()
 const errors = []
 page.on('pageerror', e => { const t = String(e); if (!t.includes('WebSocket closed') && !t.includes('validateDOMNesting')) errors.push(t) })
 let curStep = 'init'

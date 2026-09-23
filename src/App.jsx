@@ -3,7 +3,8 @@ import Sidebar from './components/Sidebar'
 import Topbar from './components/Topbar'
 import GlobalSearch from './components/GlobalSearch'
 import QuickCapture from './components/QuickCapture'
-import { ToastHost } from './store'
+import { ToastHost, useCrm } from './store'
+import LockScreen from './components/LockScreen'
 import Dashboard from './pages/Dashboard'
 import Contacts from './pages/Contacts'
 import Tasks from './pages/Tasks'
@@ -23,6 +24,11 @@ import FollowUps from './pages/FollowUps'
 import Notifications from './pages/Notifications'
 
 export default function App() {
+  const { lock, sessionUnlocked } = useCrm()
+  /* pincode gate: setup is offered on FIRST launch (skippable), unlock is
+     required every start (in-memory session, auto-relocks when idle) */
+  if (!lock) return <LockScreen mode="setup" />
+  if (lock.hash && !sessionUnlocked) return <LockScreen mode="unlock" />
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />

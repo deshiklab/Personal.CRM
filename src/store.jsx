@@ -48,6 +48,9 @@ export function CrmProvider({ children }) {
     deviceId: uid(), enabled: true, lastRev: 0, lastSyncAt: null, baselineData: null, baselineHash: '',
   })
   const [syncing, setSyncing] = useState(false)
+  /* app lock (per-device pincode): null = never offered | {hash:null,skipped} = skipped/off | {salt,hash} = locked */
+  const [lock, setLock] = useState(init?.lock || null)
+  const [sessionUnlocked, setSessionUnlocked] = useState(false)   // in-memory only
   /* github gist is the no-OAuth sync backend: token + created gist id */
   const [gist, setGist] = useState(init?.gist || { token: '', gistId: null })
   const syncBusy = useRef(false)
@@ -68,10 +71,10 @@ export function CrmProvider({ children }) {
     try {
       localStorage.setItem(KEY, JSON.stringify({
         contacts, tasks, events, notes, tags, groups, rules, audit,
-        activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist,
+        activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock,
       }))
     } catch {}
-  }, [contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist])
+  }, [contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock])
 
   /* ── toasts ── */
   const toast = (msg, tone = 'ok') => {
@@ -404,6 +407,94 @@ export function CrmProvider({ children }) {
     logAudit('user', 'Google disconnected', 'Token discarded')
     toast('Google disconnected', 'warn')
   }
+
+  /* ── app lock: per-device pincode + session unlock ──
+   * PIN is hashed (SHA-256 + salt via WebCrypto; FNV fallback outside secure
+   * contexts) — never stored in plaintext, never leaves the device. Honest
+   * scope: this locks the app screen; device-level encryption is the OS's job. */
+  const hashPin = async (pin, salt) => {
+    const raw = `${salt}|${pin}`
+    try {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw))
+      return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('')
+    } catch {
+      let h = 2166136261
+      for (let i = 0; i < raw.length; i++) { h ^= raw.charCodeAt(i); h = Math.imul(h, 16777619) }
+      return 'fnv:' + (h >>> 0).toString(16)
+    }
+  }
+  const verifyPin = async pin => !!(lock?.hash && (await hashPin(pin, lock.salt)) === lock.hash)
+
+  const setupPin = async pin => {
+    const salt = uid()
+    const hash = await hashPin(pin, salt)
+    setLock({ salt, hash, setAt: new Date().toISOString() })
+    setSessionUnlocked(true)
+    logAudit('user', 'App lock enabled', 'Pincode set')
+    toast('🔒 App lock enabled — pincode is required at every start on this device')
+    return true
+  }
+  const skipPinSetup = () => {
+    setLock({ hash: null, skipped: true })
+    toast('Pincode setup skipped — you can set it anytime in Settings → App lock', 'warn')
+  }
+  const unlockWithPin = async pin => {
+    if (await verifyPin(pin)) { setSessionUnlocked(true); return true }
+    return false
+  }
+  const lockNow = () => setSessionUnlocked(false)
+  const changePin = async (oldPin, newPin) => {
+    if (!(await verifyPin(oldPin))) return false
+    const salt = uid()
+    const hash = await hashPin(newPin, salt)
+    setLock({ salt, hash, setAt: new Date().toISOString() })
+    logAudit('user', 'Pincode changed', 'App lock')
+    toast('🔒 Pincode changed')
+    return true
+  }
+  const removePin = async pin => {
+    if (!(await verifyPin(pin))) return false
+    setLock({ hash: null, skipped: true })
+    logAudit('user', 'App lock removed', 'App lock')
+    toast('App lock removed', 'warn')
+    return true
+  }
+
+  /* factory reset to a BLANK crm — PIN-confirmed; wipes everything incl. pincode */
+  const blankState = () => ({
+    contacts: [], tasks: [], events: [], notes: [], tags: [], groups: [], rules: [], audit: [],
+    activity: [], imports: [], relFreq: {}, snoozes: {}, carddav: null,
+    gcal: { connected: false, email: null, lastSync: null },
+    notifState: {}, notifPrefs, widgetPrefs,
+    mailboxes: {
+      gmail: { connected: false, address: '', lastSync: null },
+      outlook: { connected: false, address: '', lastSync: null },
+    },
+    emails: [], googleClientId: '', gist: { token: '', gistId: null },
+    icsFeeds: [], driveState: { fileId: null, lastBackup: null, lastRestore: null, lastContactsSync: null },
+    syncState: null, lock: null, __blank: true,
+  })
+  const factoryReset = async pin => {
+    if (lock?.hash && !(await verifyPin(pin))) return false
+    try {
+      localStorage.setItem(KEY, JSON.stringify(blankState()))
+      localStorage.removeItem('pcrm-theme')
+    } catch {}
+    location.reload()
+    return true
+  }
+  /* auto-relock after 15 min hidden */
+  useEffect(() => {
+    if (!lock?.hash) return
+    let hiddenAt = null
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return }
+      if (hiddenAt && Date.now() - hiddenAt > 15 * 60e3) setSessionUnlocked(false)
+      hiddenAt = null
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [lock?.hash])
 
   /* ── multi-device sync: single personal-crm-sync.json in the user's Drive ── */
   const snapshotCore = () => ({
@@ -826,7 +917,7 @@ export function CrmProvider({ children }) {
     mailboxes, emails, connectMailbox, disconnectMailbox, syncMailbox, logEmailTouch, triageEmailAsLead, ignoreEmail,
     googleClientId, googleMode, saveGoogleClientId, connectGoogleLive, syncGoogleCalendar, syncGoogleContacts,
     driveState, driveBackupNow, driveRestoreNow, restoreAll, disconnectGoogle,
-    webhooks, saveWebhooks, testWebhook, icsFeeds, addIcsFeed, syncIcsFeed, removeIcsFeed, syncing, syncState, syncReport, syncNow, setSyncEnabled, gist, saveGistToken, syncProvider,
+    webhooks, saveWebhooks, testWebhook, icsFeeds, addIcsFeed, syncIcsFeed, removeIcsFeed, syncing, syncState, syncReport, syncNow, setSyncEnabled, gist, saveGistToken, syncProvider, lock, sessionUnlocked, setupPin, skipPinSetup, unlockWithPin, lockNow, changePin, removePin, verifyPin, factoryReset, buildBackup,
     commitImport, rollbackImport, resolveAuditConflict, updateFrequency, snoozeFollowUp, unsnooze, resetAll,
     notifState, notifPrefs, buildNotifications, dismissNotif, snoozeNotif, unsnoozeNotif, markNotifRead, markAllNotifsRead, toggleNotifPref,
     widgetPrefs, toggleWidget, moveWidget, resetWidgets, DEFAULT_WIDGET_ORDER,
