@@ -9,10 +9,10 @@ import { SectionHead, Avatar, DueBadge, Modal, Field, TagPill, PRIORITY_COLORS, 
 import { cn, tsRel } from '../lib'
 
 const COLUMNS = [
-  { id: 'todo', name: 'To do', color: '#94a3b8' },
-  { id: 'progress', name: 'In progress', color: '#38bdf8' },
-  { id: 'waiting', name: 'Waiting', color: '#fbbf24' },
-  { id: 'done', name: 'Done', color: '#34d399' },
+  { id: 'todo', name: 'To do', color: 'var(--t-slate)' },
+  { id: 'progress', name: 'In progress', color: 'var(--t-sky)' },
+  { id: 'waiting', name: 'Waiting', color: 'var(--t-amber)' },
+  { id: 'done', name: 'Done', color: 'var(--t-green)' },
 ]
 const COL_BY_ID = Object.fromEntries(COLUMNS.map(c => [c.id, c]))
 const PRIO_ORDER = { high: 0, med: 1, low: 2 }
@@ -113,7 +113,7 @@ export default function Tasks() {
           return (
             <div key={col.id}
               className={cn('rounded-2xl p-2.5 min-h-[120px] transition-colors', overCol === col.id && 'dragover')}
-              style={{ background: 'rgba(255,255,255,.025)' }}
+              style={{ background: 'var(--chipbg)' }}
               onDragOver={e => { e.preventDefault(); setOverCol(col.id) }}
               onDragLeave={() => setOverCol(c => c === col.id ? null : c)}
               onDrop={e => { e.preventDefault(); const id = e.dataTransfer.getData('text/task'); if (id) moveTask(id, col.id); setDragId(null); setOverCol(null) }}>
@@ -168,19 +168,19 @@ function TaskCard({ t, dragId, setDragId, onOpen }) {
             </div>
           )}
           <div className="flex items-center gap-2 mt-2 flex-wrap">
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold" style={{ color: PRIORITY_COLORS[t.priority] }}>
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold" style={{ color: toneVar(PRIORITY_COLORS[t.priority]) }}>
               <span className="dot" style={{ background: PRIORITY_COLORS[t.priority] }} />{t.priority}
             </span>
             <DueBadge date={t.due} />
             {t.tags.map(tid => tagById[tid] && <TagPill key={tid} tag={tagById[tid]} small />)}
             {subs.length > 0 && (
-              <span className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold" style={{ color: pct === 100 ? '#34d399' : 'var(--muted)' }}>
+              <span className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold" style={{ color: pct === 100 ? 'var(--t-green)' : 'var(--muted)' }}>
                 <ListChecks size={11} /> {subsDone}/{subs.length}
               </span>
             )}
           </div>
           {subs.length > 0 && (
-            <div className="h-1 rounded-full mt-2 overflow-hidden" style={{ background: 'rgba(255,255,255,.07)' }}>
+            <div className="h-1 rounded-full mt-2 overflow-hidden" style={{ background: 'var(--chipbg)' }}>
               <div className="h-full rounded-full transition-all"
                 style={{ width: `${pct}%`, background: pct === 100 ? '#34d399' : 'linear-gradient(90deg,var(--i1),var(--i2))' }} />
             </div>
@@ -275,17 +275,17 @@ function TaskDetailModal({ t, onClose }) {
       <div className="mt-4">
         <div className="flex items-center gap-2 mb-2">
           <div className="label" style={{ marginBottom: 0 }}>Subtasks</div>
-          {subs.length > 0 && <span className="chip" style={{ color: pct === 100 ? '#34d399' : 'var(--muted)' }}>{done}/{subs.length} · {pct}%</span>}
+          {subs.length > 0 && <span className="chip" style={{ color: pct === 100 ? 'var(--t-green)' : 'var(--muted)' }}>{done}/{subs.length} · {pct}%</span>}
         </div>
         {subs.length > 0 && (
-          <div className="h-1.5 rounded-full mb-3 overflow-hidden" style={{ background: 'rgba(255,255,255,.07)' }}>
+          <div className="h-1.5 rounded-full mb-3 overflow-hidden" style={{ background: 'var(--chipbg)' }}>
             <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: pct === 100 ? '#34d399' : 'linear-gradient(90deg,var(--i1),var(--i2))' }} />
           </div>
         )}
         <div className="flex flex-col gap-1.5">
           {subs.map(s => (
             <div key={s.id} className="flex items-center gap-2.5 group">
-              <button onClick={() => toggleSub(s.id)} className="flex-none transition-colors" style={{ color: s.done ? '#34d399' : 'var(--faint)' }}>
+              <button onClick={() => toggleSub(s.id)} className="flex-none transition-colors" style={{ color: s.done ? 'var(--t-green)' : 'var(--faint)' }}>
                 {s.done ? <CheckCircle2 size={17} /> : <Circle size={17} />}
               </button>
               <input className="input flex-1" value={s.text} style={{ padding: '6px 10px', fontSize: 12.5, textDecoration: s.done ? 'line-through' : 'none', opacity: s.done ? .55 : 1 }}
@@ -326,7 +326,7 @@ function TaskDetailModal({ t, onClose }) {
         </button>
         {confirmDel
           ? <button className="btn btn-danger btn-sm" onClick={() => { deleteTask(t.id); onClose() }}>Confirm delete?</button>
-          : <button className="btn btn-ghost btn-sm" style={{ color: '#fb7185' }}
+          : <button className="btn btn-ghost btn-sm" style={{ color: 'var(--t-rose)' }}
               onClick={() => { setConfirmDel(true); setTimeout(() => setConfirmDel(false), 2600) }}>
               <Trash2 size={13} /> Delete
             </button>}

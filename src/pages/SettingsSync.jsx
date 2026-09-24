@@ -49,7 +49,7 @@ function Connections() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="p-5 flex flex-col">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl grid place-items-center" style={{ background: '#22d3ee1c', color: '#22d3ee' }}><Globe size={18} /></div>
+            <div className="w-10 h-10 rounded-xl grid place-items-center" style={{ background: '#22d3ee1c', color: 'var(--t-cyan)' }}><Globe size={18} /></div>
             <div className="flex-1">
               <div className="font-bold text-[14.5px]">CardDAV server</div>
               <div className="text-[11.5px]" style={{ color: 'var(--faint)' }}>iCloud, Nextcloud, Fastmail…</div>
@@ -66,7 +66,7 @@ function Connections() {
 
         <Card className="p-5 flex flex-col">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl grid place-items-center" style={{ background: '#34d3991c', color: '#34d399' }}><Users size={18} /></div>
+            <div className="w-10 h-10 rounded-xl grid place-items-center" style={{ background: '#34d3991c', color: 'var(--t-green)' }}><Users size={18} /></div>
             <div className="flex-1">
               <div className="font-bold text-[14.5px]">Google Workspace</div>
               <div className="text-[11.5px]" style={{ color: 'var(--faint)' }}>
@@ -175,7 +175,7 @@ function RulesTable() {
                     <td><Toggle on={r.enabled} onChange={() => toggleRule(r.id)} /></td>
                     <td>
                       <div className="flex items-center gap-2.5">
-                        <Icon size={15} className="flex-none" style={{ color: 'var(--i2)' }} />
+                        <Icon size={15} className="flex-none" style={{ color: 'var(--t-sky)' }} />
                         <div>
                           <div className="font-semibold text-[13px]">{r.name}</div>
                           <div className="text-[11px]" style={{ color: 'var(--faint)' }}>{r.source} · {r.frequency} · {r.delivery}</div>
@@ -233,7 +233,7 @@ function AuditLog() {
       </div>
       <div className="flex flex-col">
         {list.map(a => (
-          <div key={a.id} className="flex items-center gap-3 py-2 border-b last:border-0 text-[12.5px]" style={{ borderColor: 'rgba(255,255,255,.05)' }}>
+          <div key={a.id} className="flex items-center gap-3 py-2 border-b last:border-0 text-[12.5px]" style={{ borderColor: 'var(--hairline)' }}>
             <span className="chip flex-none" style={{ background: ACTOR_TONE[a.actor] + '16', color: ACTOR_TONE[a.actor], borderColor: ACTOR_TONE[a.actor] + '35' }}>{a.actor}</span>
             <span className="font-semibold flex-none">{a.action}</span>
             <span className="truncate" style={{ color: a.status === 'warn' ? '#fbbf24' : 'var(--muted)' }}>
@@ -297,7 +297,7 @@ function GoogleHub() {
   return (
     <Card className="p-5 mb-4" id="google-hub">
       <div className="flex items-center gap-3 flex-wrap mb-4">
-        <div className="w-10 h-10 rounded-xl grid place-items-center" style={{ background: 'linear-gradient(120deg,#818cf822,#38bdf822)', color: 'var(--i2)' }}>
+        <div className="w-10 h-10 rounded-xl grid place-items-center" style={{ background: 'linear-gradient(120deg,#818cf822,#38bdf822)', color: 'var(--t-sky)' }}>
           <CloudDownload size={19} />
         </div>
         <div className="flex-1 min-w-0">
@@ -368,7 +368,7 @@ function GoogleHub() {
             {syncing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} Sync now
           </Btn>
           {syncReport?.conflicts > 0 && (
-            <span className="chip" style={{ color: '#fbbf24', borderColor: '#fbbf2444', background: '#fbbf2414' }}
+            <span className="chip" style={{ color: 'var(--t-amber)', borderColor: '#fbbf2444', background: '#fbbf2414' }}
               title="Same record was edited on two devices since the last sync — newest device copy won">
               {syncReport.conflicts} conflict{syncReport.conflicts > 1 ? 's' : ''} auto-resolved
             </span>
@@ -402,25 +402,25 @@ function GoogleSetupGuide({ toast }) {
   const Step = ({ n, children }) => (
     <div className="flex gap-3 items-start">
       <span className="w-5 h-5 rounded-full grid place-items-center flex-none text-[10.5px] font-extrabold mt-[1px]"
-        style={{ background: 'var(--i2)22', color: 'var(--i2)' }}>{n}</span>
+        style={{ background: 'var(--i2)22', color: 'var(--t-sky)' }}>{n}</span>
       <div className="text-[12.5px] leading-relaxed" style={{ color: 'var(--muted)' }}>{children}</div>
     </div>
   )
   const L = ({ href, children }) => (
-    <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold underline underline-offset-2" style={{ color: 'var(--i2)' }}>
+    <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold underline underline-offset-2" style={{ color: 'var(--t-sky)' }}>
       {children}<ExternalLink size={11} />
     </a>
   )
   return (
     <div className="card mb-5 overflow-hidden" style={{ borderRadius: 16, borderStyle: 'dashed' }}>
       <button className="w-full flex items-center gap-2.5 p-4 text-left" onClick={() => setOpen(o => !o)}>
-        <ListChecks size={16} style={{ color: 'var(--i2)' }} />
+        <ListChecks size={16} style={{ color: 'var(--t-sky)' }} />
         <span className="font-bold text-[13.5px]">Go live in ~5 minutes — step-by-step guide</span>
         <span className="ml-auto text-[11px] font-semibold" style={{ color: 'var(--faint)' }}>{open ? 'hide' : 'show'}</span>
         <ChevronDown size={14} style={{ color: 'var(--faint)', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
       </button>
       {open && (
-        <div className="px-4 pb-4 flex flex-col gap-3 border-t pt-4 fadein" style={{ borderColor: 'rgba(255,255,255,.06)' }}>
+        <div className="px-4 pb-4 flex flex-col gap-3 border-t pt-4 fadein" style={{ borderColor: 'var(--hairline)' }}>
           <Step n={1}>Open <L href="https://console.cloud.google.com/projectcreate">Google Cloud Console</L> and create a new project (any name, e.g. "Personal CRM").</Step>
           <Step n={2}>Go to <L href="https://console.cloud.google.com/apis/library">APIs & Services → Library</L> and enable all four:<br />
             <b style={{ color: 'var(--text)' }}>Google Calendar API · People API · Google Drive API · Gmail API</b></Step>
@@ -429,7 +429,7 @@ function GoogleSetupGuide({ toast }) {
             <div className="flex items-center gap-2 mt-2 p-2 rounded-lg" style={{ background: 'var(--cardbg2)', fontFamily: 'monospace', fontSize: 12 }}>
               <span className="truncate flex-1" style={{ color: 'var(--text)' }}>{origin}</span>
               <button className="btn btn-ghost btn-sm flex-none" onClick={copyOrigin}>
-                {copied ? <ClipboardCheck size={13} style={{ color: '#34d399' }} /> : <Copy size={13} />} {copied ? 'Copied' : 'Copy'}
+                {copied ? <ClipboardCheck size={13} style={{ color: 'var(--t-green)' }} /> : <Copy size={13} />} {copied ? 'Copied' : 'Copy'}
               </button>
             </div>
           </Step>
@@ -452,11 +452,11 @@ function GistSyncCard() {
   return (
     <Card className="p-5 mb-4">
       <div className="flex items-center gap-3 flex-wrap mb-1">
-        <div className="w-10 h-10 rounded-xl grid place-items-center" style={{ background: '#f472b61c', color: '#f472b6' }}>
+        <div className="w-10 h-10 rounded-xl grid place-items-center" style={{ background: '#f472b61c', color: 'var(--t-pink)' }}>
           <CloudUpload size={19} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-bold text-[15px]">Multi-device sync via GitHub Gist <span className="text-[10.5px] font-bold uppercase tracking-wide ml-1" style={{ color: '#f472b6' }}>no Google needed</span></div>
+          <div className="font-bold text-[15px]">Multi-device sync via GitHub Gist <span className="text-[10.5px] font-bold uppercase tracking-wide ml-1" style={{ color: 'var(--t-pink)' }}>no Google needed</span></div>
           <div className="text-[11.5px]" style={{ color: 'var(--faint)' }}>
             The simplest way: one token keeps your phone app, installed PWA and browser tabs in sync through a PRIVATE secret gist on your own GitHub account.
           </div>
@@ -465,7 +465,7 @@ function GistSyncCard() {
       </div>
 
       <ol className="text-[12.5px] leading-relaxed list-decimal pl-5 mb-3 mt-2" style={{ color: 'var(--muted)' }}>
-        <li className="text-[12.5px] leading-relaxed">Open <a href="https://github.com/settings/tokens/new" target="_blank" rel="noreferrer" className="font-semibold underline underline-offset-2" style={{ color: 'var(--i2)' }}>github.com → Settings → Developer settings → Tokens (classic) → Generate new token</a></li>
+        <li className="text-[12.5px] leading-relaxed">Open <a href="https://github.com/settings/tokens/new" target="_blank" rel="noreferrer" className="font-semibold underline underline-offset-2" style={{ color: 'var(--t-sky)' }}>github.com → Settings → Developer settings → Tokens (classic) → Generate new token</a></li>
         <li className="text-[12.5px] leading-relaxed">Note: <b style={{ color: 'var(--text)' }}>personal-crm-sync</b> · any expiration · tick ONLY the <b style={{ color: 'var(--text)' }}>gist</b> scope</li>
         <li className="text-[12.5px] leading-relaxed">Generate, copy the <code className="px-1 rounded" style={{ background: 'var(--cardbg2)', color: 'var(--text)' }}>ghp_…</code> token, paste below — done.</li>
       </ol>
@@ -617,7 +617,7 @@ function AppLockCard() {
       <div className="mt-4 rounded-xl p-3 flex items-center justify-between flex-wrap gap-2"
         style={{ background: '#f8717110', border: '1px solid #f8717130' }}>
         <div>
-          <div className="text-[13px] font-extrabold flex items-center gap-1.5" style={{ color: '#f87171' }}>
+          <div className="text-[13px] font-extrabold flex items-center gap-1.5" style={{ color: 'var(--t-red)' }}>
             <ShieldAlert size={14} /> Reset everything to blank
           </div>
           <div className="text-[11px]" style={{ color: 'var(--muted)' }}>
@@ -668,7 +668,7 @@ function AppLockCard() {
 
       <Modal open={modal === 'wipe'} onClose={close} title="Reset everything to blank">
         <div className="flex flex-col gap-3">
-          <div className="text-[12.5px] leading-relaxed" style={{ color: '#f87171' }}>
+          <div className="text-[12.5px] leading-relaxed" style={{ color: 'var(--t-red)' }}>
             <b>This deletes everything</b> — all contacts, tasks, notes, events, tags, groups, sync tokens (GitHub/Google), and the pincode.
             The app restarts to first-launch with an empty CRM. There is no undo.
           </div>

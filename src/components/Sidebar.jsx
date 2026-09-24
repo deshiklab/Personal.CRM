@@ -3,6 +3,7 @@ import {LayoutDashboard, Users, CheckSquare, Calendar, HeartHandshake, UsersRoun
 import { useCrm } from '../store'
 import { BRAND, COPYRIGHT } from '../brand'
 import { daysUntil, tsRel } from '../lib'
+import { toneVar } from './ui'
 
 export default function Sidebar({ open = false, onClose = () => {} }) {
   const {contacts, tasks, rules, gcal, followUpStatus, buildNotifications, profile, isRegistered } = useCrm()
@@ -72,7 +73,7 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
             <span className="flex-1 truncate">{n.label}</span>
             {n.badge > 0 && (
               <span className="text-[10.5px] font-extrabold rounded-full px-2 py-0.5"
-                style={{ background: n.tone + '22', color: n.tone }}>{n.badge}</span>
+                style={{ background: n.tone + '22', color: toneVar(n.tone) }}>{n.badge}</span>
             )}
           </NavLink>
         ))}
@@ -81,7 +82,7 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
       <div className="p-3 block safe-bottom">
         <div className="card p-3">
           <div className="text-[10.5px] font-bold uppercase tracking-[.08em] mb-2" style={{ color: 'var(--faint)' }}>Sync status</div>
-          <div className="flex items-center gap-2 text-[12px] font-semibold" style={{ color: gcal.connected ? '#34d399' : '#fbbf24' }}>
+          <div className="flex items-center gap-2 text-[12px] font-semibold" style={{ color: gcal.connected ? 'var(--t-green)' : 'var(--t-amber)' }}>
             <span className="dot" style={{ background: gcal.connected ? '#34d399' : '#fbbf24' }} />
             {gcal.connected ? `Google · ${tsRel(gcal.lastSync)}` : 'Google not connected'}
           </div>

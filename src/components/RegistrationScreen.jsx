@@ -80,7 +80,7 @@ export default function RegistrationScreen() {
             </div>
           </label>
 
-          {!!err && <div className="text-[12.5px] font-semibold text-center" style={{ color: '#f87171' }}>{err}</div>}
+          {!!err && <div className="text-[12.5px] font-semibold text-center" style={{ color: 'var(--t-red)' }}>{err}</div>}
 
           <label className="flex items-start gap-2.5 mt-1 cursor-pointer">
             <input type="checkbox" checked={share} onChange={e => setShare(e.target.checked)}

@@ -270,7 +270,7 @@ export default function GraphPage() {
                   onPointerDown={e => { e.stopPropagation(); dragRef.current = n.id; e.target.setPointerCapture?.(e.pointerId) }}
                   onClick={e => { e.stopPropagation(); if (Date.now() - lastDragRef.current < 200) return; setSelId(s => s === n.id ? null : n.id); setFocus(null) }}>
                   <circle r={n.r + 7} fill="transparent" />
-                  {selId === n.id && <circle r={n.r + 4} fill="none" stroke="#fff" strokeWidth="1.5" strokeDasharray="3 3" opacity=".7" />}
+                  {selId === n.id && <circle r={n.r + 4} fill="none" stroke="var(--text)" strokeWidth="1.5" strokeDasharray="3 3" opacity=".7" />}
                   <circle r={n.r} fill={color + '2a'} stroke={color} strokeWidth="1.6" opacity={d ? 0.18 : 1} />
                   <text textAnchor="middle" dy=".36em" fontSize={10.5} fontWeight="800" fill={d ? '#4a5261' : color} style={{ pointerEvents: 'none' }}>{initials(n.c.name)}</text>
                   <text y={n.r + 14} textAnchor="middle" fontSize="10" fontWeight="700" fill={d ? '#3a4150' : '#9aa3b2'} style={{ pointerEvents: 'none' }}>{n.c.name.split(' ')[0]}</text>
@@ -296,7 +296,7 @@ export default function GraphPage() {
         <div className="flex flex-col gap-4">
           {/* finder card */}
           <Card className="p-4">
-            <h3 className="font-bold text-[13.5px] mb-3 inline-flex items-center gap-2"><Users size={14} style={{ color: 'var(--i2)' }} /> Connection finders</h3>
+            <h3 className="font-bold text-[13.5px] mb-3 inline-flex items-center gap-2"><Users size={14} style={{ color: 'var(--t-sky)' }} /> Connection finders</h3>
             <div className="label">Mutual connections of</div>
             <div className="flex gap-1.5 mb-3">
               <select className="input" style={{ fontSize: 12 }} value={mutA} onChange={e => setMutA(e.target.value)}>
@@ -359,7 +359,7 @@ export default function GraphPage() {
                 <div className="flex flex-col gap-1 max-h-44 overflow-y-auto pr-1">
                   {(neighborsOf[selId] || []).map(x => contactById[x.id] && (
                     <button key={x.id} onClick={() => setSelId(x.id)}
-                      className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-white/[.05] text-left">
+                      className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-[var(--hover)] text-left">
                       <Avatar name={contactById[x.id].name} size={22} />
                       <span className="text-[12.5px] font-medium flex-1 truncate">{contactById[x.id].name}</span>
                       <span className="chip" style={{ color: EDGE_COLORS[x.type], borderColor: EDGE_COLORS[x.type] + '45', fontSize: 10 }}>{EDGE_LABELS[x.type]}</span>

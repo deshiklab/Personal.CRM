@@ -28,7 +28,7 @@ export default function SupportCard() {
   const Row = ({ icon: Icon, label, value, href, tone = '#38bdf8' }) => (
     <a href={href} target="_blank" rel="noreferrer"
       className="flex items-center gap-3 py-2.5 border-b last:border-0 hoverable"
-      style={{ borderColor: 'rgba(255,255,255,.05)', textDecoration: 'none', color: 'inherit' }}>
+      style={{ borderColor: 'var(--hairline)', textDecoration: 'none', color: 'inherit' }}>
       <div className="w-8 h-8 rounded-lg grid place-items-center flex-none"
         style={{ background: tone + '1c', color: tone }}>
         <Icon size={15} />
@@ -44,7 +44,7 @@ export default function SupportCard() {
     <Card className="p-5 mt-4">
       <div className="flex items-start gap-3 mb-3">
         <div className="w-10 h-10 rounded-xl grid place-items-center flex-none"
-          style={{ background: 'rgba(56,189,248,.12)', color: '#38bdf8' }}>
+          style={{ background: 'rgba(56,189,248,.12)', color: 'var(--t-sky)' }}>
           <LifeBuoy size={18} />
         </div>
         <div className="min-w-0">

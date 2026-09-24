@@ -117,7 +117,7 @@ export default function LockScreen({ mode }) {
           )}
 
           {!!err && (
-            <div className="text-[12.5px] font-semibold text-center" style={{ color: '#f87171' }}>
+            <div className="text-[12.5px] font-semibold text-center" style={{ color: 'var(--t-red)' }}>
               {err}{mode === 'unlock' && attempts >= 2 ? ` · ${attempts} failed attempts` : ''}
             </div>
           )}
@@ -125,9 +125,9 @@ export default function LockScreen({ mode }) {
           {mode === 'unlock' && st.locked && (
             <div className="flex items-start gap-2 rounded-xl p-3 mb-1"
               style={{ background: 'rgba(251,113,133,.10)', border: '1px solid rgba(251,113,133,.32)' }}>
-              <Timer size={15} className="flex-none mt-0.5" style={{ color: '#fb7185' }} />
+              <Timer size={15} className="flex-none mt-0.5" style={{ color: 'var(--t-rose)' }} />
               <div className="text-[12.5px] leading-snug">
-                <b style={{ color: '#fb7185' }}>Too many wrong pincodes.</b>{' '}
+                <b style={{ color: 'var(--t-rose)' }}>Too many wrong pincodes.</b>{' '}
                 <span style={{ color: 'var(--muted)' }}>
                   Try again in {secsLeft}s. Waiting gets longer with each wrong guess — that is what keeps a
                   4-digit pincode from being guessed by a machine.

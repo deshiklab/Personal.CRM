@@ -6,15 +6,16 @@ import { contactGroupIds } from '../store'
 import { Avatar, Panel } from './ui'
 import { cn } from '../lib'
 import { ARTICLES, searchArticles } from '../lib/kb'
+import { toneVar } from './ui'
 
 const TYPES = [
-  { id: 'contacts', label: 'Contacts', icon: Users, color: '#818cf8' },
-  { id: 'tasks', label: 'Tasks', icon: CheckSquare, color: '#38bdf8' },
-  { id: 'notes', label: 'Notes', icon: StickyNote, color: '#fbbf24' },
-  { id: 'events', label: 'Events', icon: Calendar, color: '#a78bfa' },
-  { id: 'groups', label: 'Groups', icon: UsersRound, color: '#34d399' },
-  { id: 'tags', label: 'Tags', icon: Tag, color: '#f472b6' },
-  { id: 'help', label: 'Help', icon: BookOpen, color: '#22d3ee' },
+  { id: 'contacts', label: 'Contacts', icon: Users, color: 'var(--t-indigo)' },
+  { id: 'tasks', label: 'Tasks', icon: CheckSquare, color: 'var(--t-sky)' },
+  { id: 'notes', label: 'Notes', icon: StickyNote, color: 'var(--t-amber)' },
+  { id: 'events', label: 'Events', icon: Calendar, color: 'var(--t-violet)' },
+  { id: 'groups', label: 'Groups', icon: UsersRound, color: 'var(--t-green)' },
+  { id: 'tags', label: 'Tags', icon: Tag, color: 'var(--t-pink)' },
+  { id: 'help', label: 'Help', icon: BookOpen, color: 'var(--t-cyan)' },
 ]
 const TMAP = Object.fromEntries(TYPES.map(t => [t.id, t]))
 
@@ -193,10 +194,10 @@ export default function GlobalSearch() {
       <Panel className="fadein w-full max-w-xl overflow-hidden" onClick={e => e.stopPropagation()}>
         {/* input */}
         <div className="flex items-center gap-3 px-4 py-3.5 border-b" style={{ borderColor: 'var(--border)' }}>
-          <Search size={16} style={{ color: 'var(--i1)' }} className="flex-none" />
+          <Search size={16} style={{ color: 'var(--t-indigo)' }} className="flex-none" />
           <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)} onKeyDown={onKeyDown}
             placeholder="Search contacts, tasks, notes, events, groups, tags…"
-            className="flex-1 bg-transparent outline-none text-[14.5px] placeholder:text-[#6b7382]" />
+            className="flex-1 bg-transparent outline-none text-[14.5px] placeholder:text-[var(--faint)]" />
           <kbd className="chip" style={{ fontSize: 10, padding: '1px 7px' }}>esc</kbd>
         </div>
 
@@ -229,20 +230,20 @@ export default function GlobalSearch() {
                 const isActive = idx === active
                 return (
                   <button key={`${item.type}-${item.id}`}
-                    className={cn('w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors', isActive ? 'bg-indigo-400/18' : 'hover:bg-white/[.04]')}
+                    className={cn('w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors', isActive ? 'bg-indigo-400/18' : 'hover:bg-[var(--hover)]')}
                     onMouseEnter={() => setActive(idx)} onClick={() => exec(item)}>
                     {item.type === 'contacts'
                       ? <Avatar name={item.title} size={28} />
                       : item.type === 'action'
-                        ? <span className="w-7 h-7 rounded-lg grid place-items-center flex-none" style={{ background: '#34d3991c', color: '#34d399' }}><Plus size={14} /></span>
-                        : <span className="w-7 h-7 rounded-lg grid place-items-center flex-none" style={{ background: t.color + '1c', color: t.color }}><t.icon size={14} /></span>}
+                        ? <span className="w-7 h-7 rounded-lg grid place-items-center flex-none" style={{ background: '#34d3991c', color: 'var(--t-green)' }}><Plus size={14} /></span>
+                        : <span className="w-7 h-7 rounded-lg grid place-items-center flex-none" style={{ background: t.color + '1c', color: toneVar(t.color) }}><t.icon size={14} /></span>}
                     <span className="flex-1 min-w-0">
                       <span className="block text-[13.5px] font-semibold truncate">{item.title}</span>
                       <span className="block text-[11.5px] truncate" style={{ color: 'var(--muted)' }}>{item.subtitle}</span>
                     </span>
-                    {item.facet && <span className="chip flex-none" style={{ color: 'var(--i2)', borderColor: '#38bdf844', background: '#38bdf812' }}>{item.facet}</span>}
+                    {item.facet && <span className="chip flex-none" style={{ color: 'var(--t-sky)', borderColor: '#38bdf844', background: '#38bdf812' }}>{item.facet}</span>}
                     {item.badge && <span className="chip flex-none">{item.badge}</span>}
-                    {isActive && <CornerDownLeft size={13} className="flex-none" style={{ color: 'var(--i1)' }} />}
+                    {isActive && <CornerDownLeft size={13} className="flex-none" style={{ color: 'var(--t-indigo)' }} />}
                   </button>
                 )
               })}

@@ -47,7 +47,7 @@ export default function ShortcutsOverlay() {
         <div className="flex items-start justify-between mb-4 gap-3">
           <div>
             <h2 className="text-[17px] font-extrabold flex items-center gap-2">
-              <Keyboard size={17} style={{ color: 'var(--i2)' }} /> Keyboard shortcuts
+              <Keyboard size={17} style={{ color: 'var(--t-sky)' }} /> Keyboard shortcuts
             </h2>
             <p className="text-[12px] mt-0.5" style={{ color: 'var(--muted)' }}>
               Press <Kbd>?</Kbd> any time to bring this back.

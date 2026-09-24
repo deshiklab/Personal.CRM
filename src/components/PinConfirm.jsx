@@ -53,7 +53,7 @@ export default function PinConfirm({
     <Modal open={open} onClose={onClose} title={title}>
       <div className="flex gap-3 items-start">
         <div className="w-10 h-10 rounded-xl grid place-items-center flex-none"
-          style={{ background: '#fb71851f', color: '#fb7185' }}>
+          style={{ background: '#fb71851f', color: 'var(--t-rose)' }}>
           <Icon size={18} />
         </div>
         <div className="text-[13px] leading-relaxed" style={{ color: 'var(--muted)' }}>{message}</div>
@@ -82,7 +82,7 @@ export default function PinConfirm({
         </div>
       )}
 
-      {err && <div className="text-[12.5px] font-semibold mt-3" style={{ color: '#fb7185' }}>{err}</div>}
+      {err && <div className="text-[12.5px] font-semibold mt-3" style={{ color: 'var(--t-rose)' }}>{err}</div>}
 
       <div className="flex justify-end gap-2 mt-6">
         <button className="btn btn-ghost" onClick={onClose}>Cancel</button>

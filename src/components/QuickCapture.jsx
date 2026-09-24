@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { useCrm } from '../store'
 import { daysAheadISO } from '../lib'
+import { toneVar } from './ui'
 
 /* Dev-only helpers (the demo transcript simulator) never ship in a build */
 const DEV = import.meta.env.DEV || (() => { try { return localStorage.getItem('pcrm-dev') === '1' } catch { return false } })()
@@ -42,9 +43,9 @@ function parseVoice(raw, contacts) {
 }
 
 const KIND_META = {
-  contact: { icon: UserRound, color: '#a78bfa', label: 'New lead' },
-  task: { icon: CheckSquare, color: '#38bdf8', label: 'Task' },
-  note: { icon: StickyNote, color: '#fbbf24', label: 'Note' },
+  contact: { icon: UserRound, color: 'var(--t-violet)', label: 'New lead' },
+  task: { icon: CheckSquare, color: 'var(--t-sky)', label: 'Task' },
+  note: { icon: StickyNote, color: 'var(--t-amber)', label: 'Note' },
 }
 
 export default function QuickCapture() {
@@ -197,7 +198,7 @@ export default function QuickCapture() {
             <div className="flex items-start justify-between mb-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <Zap size={16} style={{ color: 'var(--i2)' }} />
+                  <Zap size={16} style={{ color: 'var(--t-sky)' }} />
                   <h2 className="text-base font-extrabold">Quick Capture</h2>
                 </div>
                 <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>One tap — name + number, saved as a lead. Zero friction.</p>
@@ -239,7 +240,7 @@ export default function QuickCapture() {
                       placeholder="Where did you meet?" value={company} onChange={e => setCompany(e.target.value)} />
                   </div>
                 </div>
-                {err && <div className="text-xs mt-2 font-semibold" style={{ color: '#fb7185' }}>{err}</div>}
+                {err && <div className="text-xs mt-2 font-semibold" style={{ color: 'var(--t-rose)' }}>{err}</div>}
                 <div className="flex items-center gap-2 mt-5">
                   <button className="btn btn-primary flex-1" style={{ padding: '11px 14px' }} onClick={() => saveLead(false)}>
                     <Zap size={15} /> Save & add another
@@ -249,7 +250,7 @@ export default function QuickCapture() {
                   </button>
                 </div>
                 <p className="text-[11px] mt-3 flex items-center gap-1.5" style={{ color: 'var(--faint)' }}>
-                  <Sparkles size={11} /> Lands in <b style={{ color: '#a78bfa' }}>&nbsp;Leads&nbsp;</b> group · follow-up cadence every 7 days automatically
+                  <Sparkles size={11} /> Lands in <b style={{ color: 'var(--t-violet)' }}>&nbsp;Leads&nbsp;</b> group · follow-up cadence every 7 days automatically
                 </p>
               </div>
             )}
@@ -266,7 +267,7 @@ export default function QuickCapture() {
                             style={{ height: `${10 + (i * 13) % 28}px`, background: 'linear-gradient(180deg,var(--i1),var(--i2))', animationDelay: `${i * 90}ms` }} />
                         ))}
                       </div>
-                      <p className="text-xs font-semibold" style={{ color: 'var(--i2)' }}>Listening…</p>
+                      <p className="text-xs font-semibold" style={{ color: 'var(--t-sky)' }}>Listening…</p>
                     </>
                   ) : (
                     <p className="text-xs text-center" style={{ color: 'var(--muted)' }}>
@@ -301,8 +302,8 @@ export default function QuickCapture() {
                 {parsed && (
                   <div className="card p-4 mt-3" style={{ borderRadius: 16, borderColor: `${KIND_META[parsed.kind].color}55` }}>
                     <div className="flex items-center gap-2 mb-2">
-                      {(() => { const I = KIND_META[parsed.kind].icon; return <I size={14} style={{ color: KIND_META[parsed.kind].color }} /> })()}
-                      <span className="text-xs font-bold uppercase tracking-wider" style={{ color: KIND_META[parsed.kind].color }}>{KIND_META[parsed.kind].label}</span>
+                      {(() => { const I = KIND_META[parsed.kind].icon; return <I size={14} style={{ color: toneVar(KIND_META[parsed.kind].color) }} /> })()}
+                      <span className="text-xs font-bold uppercase tracking-wider" style={{ color: toneVar(KIND_META[parsed.kind].color) }}>{KIND_META[parsed.kind].label}</span>
                       <span className="text-[10px] ml-auto" style={{ color: 'var(--faint)' }}>smart-parsed from speech</span>
                     </div>
                     {parsed.kind === 'contact' && (
@@ -363,8 +364,8 @@ export default function QuickCapture() {
                   {session.slice(0, 5).map((s, i) => {
                     const I = KIND_META[s.kind]?.icon || UserRound
                     return (
-                      <div key={i} className="flex items-center gap-2.5 text-xs px-3 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,.03)', border: '1px solid var(--border)' }}>
-                        <I size={13} style={{ color: KIND_META[s.kind]?.color }} />
+                      <div key={i} className="flex items-center gap-2.5 text-xs px-3 py-2 rounded-xl" style={{ background: 'var(--chipbg)', border: '1px solid var(--border)' }}>
+                        <I size={13} style={{ color: toneVar(KIND_META[s.kind]?.color) }} />
                         <span className="font-semibold truncate" style={{ color: 'var(--text)' }}>{s.label}</span>
                         <span className="truncate" style={{ color: 'var(--muted)' }}>{s.sub}</span>
                         <span className="ml-auto flex-none" style={{ color: 'var(--faint)' }}>{ago(s.t)}</span>

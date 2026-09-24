@@ -7,7 +7,7 @@
   --border2:rgba(255,255,255,.16);
   --text:#e8eaf0;
   --muted:#9aa3b2;
-  --faint:#6b7382;
+  --faint:#838d9c;   /* was #6b7382 — 3.4:1 on the dark canvas; now 5:1 */
   --i1:#818cf8;
   --i2:#38bdf8;
   --i3:#34d399;
@@ -21,6 +21,16 @@
   --hairline:rgba(255,255,255,.05);
   --chipbg:rgba(255,255,255,.03);
   --codebg:rgba(255,255,255,.09);
+
+  /* ── tones ──
+   * Accent colours used for TEXT, icons and small labels. On the dark canvas the
+   * bright 400-weight tones read well; on the light canvas the same tones fall to
+   * about 1.6:1 — unreadable — so each has a darker light-mode twin. Anything
+   * that shows an accent as text should come from here, never from a literal. */
+  --t-green:#34d399;  --t-amber:#fbbf24;  --t-rose:#fb7185;  --t-sky:#38bdf8;
+  --t-violet:#a78bfa; --t-pink:#f472b6;   --t-indigo:#818cf8; --t-slate:#94a3b8;
+  --t-cyan:#22d3ee;   --t-red:#f87171;
+  --t-crimson:#fb7185; --t-orange:#f97316; --t-fuchsia:#e879f9; --t-lime:#a3e635;
 }
 
 [data-theme="light"]{
@@ -30,7 +40,7 @@
   --border2:rgba(15,23,42,.20);
   --text:#171b26;
   --muted:#4b5568;
-  --faint:#7d8799;
+  --faint:#586273;
   --sidebg:rgba(255,255,255,.65);
   --topbg:rgba(255,255,255,.72);
   --cardbg:#ffffff;
@@ -40,6 +50,12 @@
   --hairline:rgba(15,23,42,.08);
   --chipbg:rgba(15,23,42,.04);
   --codebg:rgba(15,23,42,.07);
+
+  /* the same tones, dark enough to read on white (all ≥ 4.5:1 on --cardbg) */
+  --t-green:#047857;  --t-amber:#92400e;  --t-rose:#be123c;  --t-sky:#0369a1;
+  --t-violet:#6d28d9; --t-pink:#be185d;   --t-indigo:#4338ca; --t-slate:#52606d;
+  --t-cyan:#0e7490;   --t-red:#b91c1c;
+  --t-crimson:#9f1239; --t-orange:#c2410c; --t-fuchsia:#a21caf; --t-lime:#3f6212;
 }
 
 [data-theme="light"] body::before{
@@ -112,6 +128,7 @@ body::before{
   .input,select.input,textarea.input{width:100%;background:var(--cardbg);border:1px solid var(--border);border-radius:12px;padding:8px 12px;font-size:13.5px;color:var(--text);outline:none;transition:border-color .15s,box-shadow .15s}
   .input:focus{border-color:var(--i1);box-shadow:0 0 0 3px rgba(129,140,248,.15)}
   select.input option{background:#12151d;color:var(--text)}
+  [data-theme="light"] select.input option{background:#ffffff;color:#171b26}
   .input::placeholder{color:var(--faint)}
   .label{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
 }
@@ -156,7 +173,7 @@ body::before{
 .md pre code{background:none;padding:0}
 .md blockquote{border-left:3px solid var(--i1);padding:2px 12px;color:var(--muted);margin:10px 0}
 .md a{color:var(--i2);text-decoration:underline;text-underline-offset:2px}
-.md strong{color:#fff}
+.md strong{color:var(--text);font-weight:750}
 
 /* light-mode polish */
 [data-theme="light"] .panel{box-shadow:0 24px 60px rgba(15,23,42,.16)}

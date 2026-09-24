@@ -144,7 +144,7 @@ export default function Tour({ autoStart = false }) {
         style={{ top, left, width: Math.min(W, window.innerWidth - 20), maxWidth: 'calc(100vw - 20px)', borderRadius: 16 }}>
         <div className="flex items-start gap-2.5">
           <div className="w-7 h-7 rounded-lg grid place-items-center flex-none"
-            style={{ background: 'rgba(129,140,248,.18)', color: 'var(--i2)' }}>
+            style={{ background: 'rgba(129,140,248,.18)', color: 'var(--t-sky)' }}>
             <Compass size={14} />
           </div>
           <div className="min-w-0 flex-1">

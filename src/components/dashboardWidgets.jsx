@@ -4,6 +4,7 @@ import { Users, CheckSquare, CalendarClock, HeartHandshake, ArrowRight, RefreshC
 import { useCrm } from '../store'
 import { Card, Stat, Avatar, Pill, Sparkline, MiniBars, Empty, EVENT_COLORS } from './ui'
 import { todayISO, daysUntil, parseISO, MONTHS_S, tsRel, isoDate, addDays } from '../lib'
+import { toneVar } from './ui'
 
 export const WIDGET_META = {
   stats:            { title: 'Key stats',          icon: Users,          span: 3 },
@@ -22,7 +23,7 @@ export const WIDGET_META = {
 const Head = ({ title, to, linkLabel = 'Open' }) => (
   <div className="flex items-center justify-between mb-3">
     <h3 className="font-bold text-[14.5px]">{title}</h3>
-    {to && <Link to={to} className="text-[12px] font-semibold inline-flex items-center gap-1" style={{ color: 'var(--i2)' }}>{linkLabel} <ArrowRight size={12} /></Link>}
+    {to && <Link to={to} className="text-[12px] font-semibold inline-flex items-center gap-1" style={{ color: 'var(--t-sky)' }}>{linkLabel} <ArrowRight size={12} /></Link>}
   </div>
 )
 
@@ -87,7 +88,7 @@ function Upcoming() {
       {upcoming.map(e => {
         const contact = e.contactId && contactById[e.contactId]
         return (
-          <div key={e.id} className="flex items-center gap-3 py-2.5 border-b last:border-0" style={{ borderColor: 'rgba(255,255,255,.05)' }}>
+          <div key={e.id} className="flex items-center gap-3 py-2.5 border-b last:border-0" style={{ borderColor: 'var(--hairline)' }}>
             <span className="dot" style={{ background: EVENT_COLORS[e.type] || '#94a3b8' }} />
             <span className="font-mono text-[11.5px] w-[74px] flex-none" style={{ color: 'var(--muted)' }}>{e.date.slice(5)} · {e.time}</span>
             <span className="text-[13px] font-medium truncate flex-1">{e.title}</span>
@@ -121,7 +122,7 @@ function StayInTouch() {
           </button>
         ))}
       </div>
-      <div className="mt-3 pt-3 border-t flex items-center gap-2 text-[11.5px]" style={{ borderColor: 'rgba(255,255,255,.05)', color: 'var(--faint)' }}>
+      <div className="mt-3 pt-3 border-t flex items-center gap-2 text-[11.5px]" style={{ borderColor: 'var(--hairline)', color: 'var(--faint)' }}>
         <Cake size={13} /> {bdays} birthday{bdays === 1 ? '' : 's'} this month
       </div>
     </Card>
@@ -133,12 +134,12 @@ function SyncHealth() {
   return (
     <Card className="p-5">
       <Head title="Sync health" to="/settings" linkLabel="Configure" />
-      <div className="flex items-center gap-2 mb-3 text-[12.5px] font-semibold" style={{ color: gcal.connected ? '#34d399' : '#fbbf24' }}>
+      <div className="flex items-center gap-2 mb-3 text-[12.5px] font-semibold" style={{ color: gcal.connected ? 'var(--t-green)' : 'var(--t-amber)' }}>
         <span className="dot" style={{ background: gcal.connected ? '#34d399' : '#fbbf24' }} />
         {gcal.connected ? `Google Calendar · synced ${tsRel(gcal.lastSync)}` : 'Google Calendar · not connected'}
       </div>
       {rules.map(r => (
-        <div key={r.id} className="flex items-center gap-3 py-2.5 border-b last:border-0" style={{ borderColor: 'rgba(255,255,255,.05)' }}>
+        <div key={r.id} className="flex items-center gap-3 py-2.5 border-b last:border-0" style={{ borderColor: 'var(--hairline)' }}>
           <span className="dot" style={{ background: r.enabled ? '#34d399' : '#6b7382' }} />
           <div className="min-w-0 flex-1">
             <div className="text-[13px] font-semibold truncate">{r.name}</div>
@@ -164,7 +165,7 @@ function Birthdays() {
       <Head title="Upcoming birthdays" to="/calendar" linkLabel="Calendar" />
       {list.length === 0 && <Empty icon={Cake} title="No birthdays on file" />}
       {list.map(({ c, occ, d, turning }) => (
-        <div key={c.id} className="flex items-center gap-3 py-2.5 border-b last:border-0" style={{ borderColor: 'rgba(255,255,255,.05)' }}>
+        <div key={c.id} className="flex items-center gap-3 py-2.5 border-b last:border-0" style={{ borderColor: 'var(--hairline)' }}>
           <Avatar name={c.name} size={30} />
           <div className="min-w-0 flex-1">
             <div className="text-[13px] font-semibold truncate">{c.name}</div>
@@ -189,11 +190,11 @@ function TopTags() {
       {top.map(({ t, n }) => (
         <button key={t.id} onClick={() => navigate(`/tags?tag=${t.id}`)} className="w-full flex items-center gap-2.5 py-1.5 text-left group">
           <span className="text-[13px] w-4 text-center flex-none">{t.icon}</span>
-          <span className="text-[12.5px] font-medium w-24 truncate flex-none group-hover:text-white">{t.name}</span>
-          <span className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,.07)' }}>
+          <span className="text-[12.5px] font-medium w-24 truncate flex-none ">{t.name}</span>
+          <span className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--chipbg)' }}>
             <span className="block h-full rounded-full transition-all" style={{ width: `${(n / max) * 100}%`, background: t.color }} />
           </span>
-          <span className="text-[11px] font-bold w-6 text-right flex-none" style={{ color: t.color }}>{n}</span>
+          <span className="text-[11px] font-bold w-6 text-right flex-none" style={{ color: toneVar(t.color) }}>{n}</span>
         </button>
       ))}
     </Card>
@@ -211,7 +212,7 @@ function OverdueCountdown() {
     <Card className="p-5">
       <Head title="Overdue countdown" to="/tasks" linkLabel="Open tasks" />
       <div className="flex items-end gap-3 mb-3">
-        <div className="text-[42px] font-extrabold leading-none tracking-tight" style={{ color: overdue.length ? '#fb7185' : '#34d399' }}>
+        <div className="text-[42px] font-extrabold leading-none tracking-tight" style={{ color: overdue.length ? 'var(--t-rose)' : 'var(--t-green)' }}>
           {overdue.length}
         </div>
         <div className="text-[11.5px] pb-1.5" style={{ color: 'var(--muted)' }}>
@@ -222,7 +223,7 @@ function OverdueCountdown() {
         <div className="card p-3">
           <div className="text-[10.5px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--faint)' }}>Oldest offender</div>
           <div className="text-[12.5px] font-semibold leading-snug">{oldest.title}</div>
-          <div className="text-[11.5px] mt-1 font-semibold" style={{ color: '#fb7185' }}>{daysUntil(oldest.due) * -1}d past due</div>
+          <div className="text-[11.5px] mt-1 font-semibold" style={{ color: 'var(--t-rose)' }}>{daysUntil(oldest.due) * -1}d past due</div>
         </div>
       ) : <Empty icon={Timer} title="Zero overdue 🎉" />}
     </Card>
@@ -242,9 +243,9 @@ function TaskHeatmap() {
     return { days, max: Math.max(1, ...days.map(x => x.n)) }
   }, [activity, audit])
   const shade = n => {
-    if (n === 0) return 'rgba(255,255,255,.05)'
+    if (n === 0) return 'var(--hairline)'
     const lvl = Math.min(4, Math.ceil((n / max) * 4))
-    return ['rgba(255,255,255,.05)', '#818cf840', '#818cf878', '#818cf8b3', '#818cf8'][lvl]
+    return ['var(--hairline)', '#818cf840', '#818cf878', '#818cf8b3', '#818cf8'][lvl]
   }
   const leadPad = days[0]?.dow || 0
   return (
@@ -260,7 +261,7 @@ function TaskHeatmap() {
       </div>
       <div className="flex items-center gap-1.5 mt-3 text-[10px] font-semibold" style={{ color: 'var(--faint)' }}>
         Less
-        {[0, 1, 2, 3, 4].map(l => <span key={l} className="rounded-[3px]" style={{ width: 10, height: 10, background: ['rgba(255,255,255,.05)', '#818cf840', '#818cf878', '#818cf8b3', '#818cf8'][l] }} />)}
+        {[0, 1, 2, 3, 4].map(l => <span key={l} className="rounded-[3px]" style={{ width: 10, height: 10, background: ['var(--hairline)', '#818cf840', '#818cf878', '#818cf8b3', '#818cf8'][l] }} />)}
         More · {days.reduce((s, d) => s + d.n, 0)} task actions in 12 weeks
       </div>
     </Card>
@@ -274,7 +275,7 @@ function ActivityFeed() {
       <Head title="Recent activity" />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
         {activity.slice(0, 8).map(a => (
-          <div key={a.id} className="flex items-center gap-3 py-2 border-b" style={{ borderColor: 'rgba(255,255,255,.05)' }}>
+          <div key={a.id} className="flex items-center gap-3 py-2 border-b" style={{ borderColor: 'var(--hairline)' }}>
             <Clock size={13} className="flex-none" style={{ color: 'var(--faint)' }} />
             <span className="text-[13px] truncate flex-1">{a.text}</span>
             <span className="text-[11px] flex-none" style={{ color: 'var(--faint)' }}>{tsRel(a.ts)}</span>

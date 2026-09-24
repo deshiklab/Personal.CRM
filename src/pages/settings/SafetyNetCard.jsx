@@ -30,7 +30,7 @@ export default function SafetyNetCard() {
     <Card className="p-5 mt-4">
       <div className="flex items-start gap-3 flex-wrap">
         <div className="w-10 h-10 rounded-xl grid place-items-center flex-none"
-          style={{ background: 'rgba(52,211,153,.12)', color: '#34d399' }}>
+          style={{ background: 'rgba(52,211,153,.12)', color: 'var(--t-green)' }}>
           <History size={18} />
         </div>
         <div className="flex-1 min-w-0">
@@ -53,7 +53,7 @@ export default function SafetyNetCard() {
       {pin.locked && (
         <div className="mt-3 flex items-start gap-2 rounded-xl p-3"
           style={{ background: 'rgba(251,113,133,.10)', border: '1px solid rgba(251,113,133,.3)' }}>
-          <ShieldAlert size={15} className="flex-none mt-0.5" style={{ color: '#fb7185' }} />
+          <ShieldAlert size={15} className="flex-none mt-0.5" style={{ color: 'var(--t-rose)' }} />
           <div className="text-[12px]" style={{ color: 'var(--muted)' }}>
             The app lock is paused after too many wrong pincodes. It clears itself — waiting gets longer
             with each wrong guess.
@@ -73,7 +73,7 @@ export default function SafetyNetCard() {
         <div className="mt-4">
           {snapshots.map((s, i) => (
             <div key={s.id} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 py-2.5 border-b last:border-0"
-              style={{ borderColor: 'rgba(255,255,255,.05)' }}>
+              style={{ borderColor: 'var(--hairline)' }}>
               <div className="min-w-0 flex-1">
                 <div className="text-[13px] font-semibold flex items-center gap-2 flex-wrap">
                   {new Date(s.at).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}

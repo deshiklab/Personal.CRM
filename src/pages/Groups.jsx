@@ -59,7 +59,7 @@ export default function Groups() {
                   <button className="icon-btn" style={{ width: 28, height: 28 }} title="Edit group" onClick={() => openEdit(g)}>
                     <Pencil size={13} />
                   </button>
-                  <button className="icon-btn" style={{ width: 28, height: 28, color: '#fb7185' }} title="Delete group"
+                  <button className="icon-btn" style={{ width: 28, height: 28, color: 'var(--t-rose)' }} title="Delete group"
                     onClick={() => setConfirm(g)}>
                     <Trash2 size={13} />
                   </button>

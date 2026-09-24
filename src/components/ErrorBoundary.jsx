@@ -70,7 +70,7 @@ function CrashScreen({ error, stack, onRetry }) {
       <div className="card w-full max-w-[560px] p-5 sm:p-6" style={{ borderRadius: 20 }}>
         <div className="flex items-start gap-3">
           <div className="w-11 h-11 rounded-2xl grid place-items-center flex-none"
-            style={{ background: 'rgba(251,113,133,.14)', color: '#fb7185' }}>
+            style={{ background: 'rgba(251,113,133,.14)', color: 'var(--t-rose)' }}>
             <AlertOctagon size={20} />
           </div>
           <div className="min-w-0">
@@ -99,7 +99,7 @@ function CrashScreen({ error, stack, onRetry }) {
         {newest && (
           <div className="mt-4 rounded-xl p-3.5" style={{ background: 'rgba(52,211,153,.08)', border: '1px solid rgba(52,211,153,.28)' }}>
             <div className="flex items-center gap-2 text-[13px] font-bold">
-              <History size={14} style={{ color: '#34d399' }} /> Roll back to {new Date(newest.at).toLocaleString()}
+              <History size={14} style={{ color: 'var(--t-green)' }} /> Roll back to {new Date(newest.at).toLocaleString()}
             </div>
             <div className="text-[11.5px] mt-1" style={{ color: 'var(--muted)' }}>
               {snaps.length} local snapshot{snaps.length === 1 ? '' : 's'} kept · this restores the app to how it

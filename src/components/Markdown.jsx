@@ -1,5 +1,6 @@
 import { Fragment } from 'react'
 import { Lightbulb, AlertTriangle, Info, Link2 } from 'lucide-react'
+import { toneVar } from './ui'
 
 /* ═════════════════════════════════════════════════════════════════════════════
  * Markdown — a small, safe subset rendered straight to React elements.
@@ -23,7 +24,7 @@ function inline(text, onArticle, keyBase) {
   return parts.map((p, i) => {
     const k = `${keyBase}-${i}`
     if (p.startsWith('**') && p.endsWith('**'))
-      return <strong key={k} style={{ color: '#fff' }}>{inline(p.slice(2, -2), onArticle, k)}</strong>
+      return <strong key={k} style={{ color: 'var(--text)' }}>{inline(p.slice(2, -2), onArticle, k)}</strong>
     if (p.startsWith('*') && p.endsWith('*') && p.length > 2)
       return <em key={k}>{inline(p.slice(1, -1), onArticle, k)}</em>
     if (p.startsWith('`') && p.endsWith('`'))
@@ -39,14 +40,14 @@ function inline(text, onArticle, keyBase) {
         return (
           <button key={k} type="button" onClick={() => onArticle?.(id)}
             className="inline-flex items-center gap-1 font-semibold"
-            style={{ color: 'var(--i2)', background: 'none', border: 0, padding: 0, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2, fontSize: 'inherit' }}>
+            style={{ color: 'var(--t-sky)', background: 'none', border: 0, padding: 0, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2, fontSize: 'inherit' }}>
             <Link2 size={11} />{label}
           </button>
         )
       }
       return (
         <a key={k} href={href} target="_blank" rel="noreferrer"
-          style={{ color: 'var(--i2)', textDecoration: 'underline', textUnderlineOffset: 2 }}>{label}</a>
+          style={{ color: 'var(--t-sky)', textDecoration: 'underline', textUnderlineOffset: 2 }}>{label}</a>
       )
     }
     return <Fragment key={k}>{p}</Fragment>
@@ -55,9 +56,9 @@ function inline(text, onArticle, keyBase) {
 
 /* ── callouts ──────────────────────────────────────────────────────────────── */
 const CALLOUTS = {
-  TIP:  { icon: Lightbulb,      label: 'Tip',    color: '#fbbf24', bg: 'rgba(251,191,36,.10)', border: 'rgba(251,191,36,.32)' },
-  WARN: { icon: AlertTriangle,  label: 'Careful', color: '#fb7185', bg: 'rgba(251,113,133,.10)', border: 'rgba(251,113,133,.32)' },
-  NOTE: { icon: Info,           label: 'Note',   color: '#38bdf8', bg: 'rgba(56,189,248,.10)', border: 'rgba(56,189,248,.32)' },
+  TIP:  { icon: Lightbulb,      label: 'Tip',    color: 'var(--t-amber)', bg: 'rgba(251,191,36,.10)', border: 'rgba(251,191,36,.32)' },
+  WARN: { icon: AlertTriangle,  label: 'Careful', color: 'var(--t-rose)', bg: 'rgba(251,113,133,.10)', border: 'rgba(251,113,133,.32)' },
+  NOTE: { icon: Info,           label: 'Note',   color: 'var(--t-sky)', bg: 'rgba(56,189,248,.10)', border: 'rgba(56,189,248,.32)' },
 }
 
 function Callout({ kind, children }) {
@@ -65,9 +66,9 @@ function Callout({ kind, children }) {
   const Icon = c.icon
   return (
     <div className="flex gap-2.5 rounded-xl p-3.5 my-3.5" style={{ background: c.bg, border: `1px solid ${c.border}` }}>
-      <Icon size={15} className="flex-none mt-0.5" style={{ color: c.color }} />
+      <Icon size={15} className="flex-none mt-0.5" style={{ color: toneVar(c.color) }} />
       <div className="text-[13px] leading-relaxed min-w-0">
-        <b style={{ color: c.color }}>{c.label}</b> — {children}
+        <b style={{ color: toneVar(c.color) }}>{c.label}</b> — {children}
       </div>
     </div>
   )

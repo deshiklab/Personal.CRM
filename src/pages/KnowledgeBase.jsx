@@ -13,6 +13,7 @@ import {
   ARTICLES, CATEGORIES, CAT_BY_ID, KB_VERSION, searchArticles, relatedTo, readingTime,
 } from '../lib/kb'
 import { cn } from '../lib'
+import { toneVar } from '../components/ui'
 
 const CAT_ICONS = { Sparkles, Users, HeartHandshake, StickyNote, Database, ShieldCheck, LifeBuoy, BookOpen }
 
@@ -312,7 +313,7 @@ export default function KnowledgeBase() {
                       <button key={id} onClick={() => openArticle(id)}
                         className="text-left text-[12.5px] px-2 py-1.5 rounded-lg hoverable truncate"
                         style={{ color: 'var(--muted)', background: 'transparent', border: 0, cursor: 'pointer' }}>
-                        <Star size={11} className="inline mr-1.5" style={{ color: '#fbbf24' }} />{a.title}
+                        <Star size={11} className="inline mr-1.5" style={{ color: 'var(--t-amber)' }} />{a.title}
                       </button>
                     )
                   })}
@@ -332,9 +333,9 @@ export default function KnowledgeBase() {
                     <div className="label">Start here</div>
                     <div className="grid sm:grid-cols-3 gap-3 mt-1.5">
                       {[
-                        { id: 'start.first-5-minutes', icon: Sparkles, title: 'First five minutes', sub: 'Register, pincode, import, rhythm', color: '#818cf8' },
-                        { id: 'start.tour', icon: Compass, title: 'Guided tour', sub: 'A spotlight walkthrough', color: '#38bdf8' },
-                        { id: 'ref.shortcuts', icon: Keyboard, title: 'Keyboard shortcuts', sub: 'Move without the mouse', color: '#34d399' },
+                        { id: 'start.first-5-minutes', icon: Sparkles, title: 'First five minutes', sub: 'Register, pincode, import, rhythm', color: 'var(--t-indigo)' },
+                        { id: 'start.tour', icon: Compass, title: 'Guided tour', sub: 'A spotlight walkthrough', color: 'var(--t-sky)' },
+                        { id: 'ref.shortcuts', icon: Keyboard, title: 'Keyboard shortcuts', sub: 'Move without the mouse', color: 'var(--t-green)' },
                       ].map(s => {
                         const Icon = s.icon
                         return (
@@ -370,7 +371,7 @@ export default function KnowledgeBase() {
                           className="flex items-start gap-2 text-left px-2 py-1.5 rounded-lg hoverable"
                           style={{ background: 'transparent', border: 0, cursor: 'pointer' }}>
                           {item.done
-                            ? <CheckCircle2 size={15} className="flex-none mt-0.5" style={{ color: '#34d399' }} />
+                            ? <CheckCircle2 size={15} className="flex-none mt-0.5" style={{ color: 'var(--t-green)' }} />
                             : <Circle size={15} className="flex-none mt-0.5" style={{ color: 'var(--faint)' }} />}
                           <span className="min-w-0">
                             <span className="block text-[13px] font-semibold" style={{ textDecoration: item.done ? 'line-through' : 'none', color: item.done ? 'var(--faint)' : 'var(--text)' }}>
@@ -387,7 +388,7 @@ export default function KnowledgeBase() {
                   <button onClick={() => { openArticle('ref.changelog'); patchHelpPrefs({ seenVersion: KB_VERSION }) }}
                     className="card p-4 text-left hoverable flex items-center gap-3" style={{ cursor: 'pointer' }}>
                     <div className="w-9 h-9 rounded-xl grid place-items-center flex-none"
-                      style={{ background: '#fbbf241f', color: '#fbbf24' }}><Sparkles size={16} /></div>
+                      style={{ background: '#fbbf241f', color: 'var(--t-amber)' }}><Sparkles size={16} /></div>
                     <div className="min-w-0 flex-1">
                       <div className="font-bold text-[13.5px] flex items-center gap-2">
                         What&apos;s new in {KB_VERSION}
@@ -461,7 +462,7 @@ function CatButton({ active, onClick, icon: Icon, label, count, color = '#818cf8
       className="flex items-center gap-2 px-2.5 py-2 rounded-xl text-[12.5px] font-semibold whitespace-nowrap lg:w-full"
       style={{
         background: active ? color + '1f' : 'transparent',
-        color: active ? color : 'var(--muted)',
+        color: active ? toneVar(color) : 'var(--muted)',
         border: `1px solid ${active ? color + '55' : 'transparent'}`,
         cursor: 'pointer',
       }}>
@@ -492,7 +493,7 @@ function ResultsList({ results, active, onOpen, query, cat, onClear }) {
           {query ? <> for “{query}”</> : null}
           {cat !== 'all' ? <> in {CAT_BY_ID[cat]?.label || 'My articles'}</> : null}
         </div>
-        <button className="text-[11.5px] font-bold" style={{ color: 'var(--i2)', background: 'none', border: 0, cursor: 'pointer' }} onClick={onClear}>
+        <button className="text-[11.5px] font-bold" style={{ color: 'var(--t-sky)', background: 'none', border: 0, cursor: 'pointer' }} onClick={onClear}>
           Clear
         </button>
       </div>
@@ -605,7 +606,7 @@ function ArticleView({ article, all, onBack, onOpen, onBookmark, bookmarked, vot
             <div className="grid sm:grid-cols-2 gap-2 mt-1.5">
               {related.map(r => (
                 <button key={r.id} onClick={() => onOpen(r.id)} className="card p-3 text-left hoverable" style={{ cursor: 'pointer' }}>
-                  <div className="text-[10.5px] font-extrabold uppercase" style={{ color: CAT_BY_ID[r.cat]?.color || '#818cf8' }}>
+                  <div className="text-[10.5px] font-extrabold uppercase" style={{ color: toneVar(CAT_BY_ID[r.cat]?.color || '#818cf8') }}>
                     {CAT_BY_ID[r.cat]?.label || 'Article'}
                   </div>
                   <div className="text-[13px] font-semibold mt-0.5">{r.title}</div>

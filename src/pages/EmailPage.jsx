@@ -38,11 +38,11 @@ export default function EmailPage() {
   const sync = async p => { setBusy('sync:' + p); await syncMailbox(p); setBusy('') }
 
   const statusChip = e => {
-    if (e.status === 'logged')   return <span className="chip" style={{ color: '#34d399', borderColor: '#34d39944', background: '#34d39914' }}><CheckCircle2 size={11} /> Logged</span>
-    if (e.status === 'triaged')  return <span className="chip" style={{ color: '#a78bfa', borderColor: '#a78bfa44', background: '#a78bfa14' }}><UserRound size={11} /> Lead created</span>
+    if (e.status === 'logged')   return <span className="chip" style={{ color: 'var(--t-green)', borderColor: '#34d39944', background: '#34d39914' }}><CheckCircle2 size={11} /> Logged</span>
+    if (e.status === 'triaged')  return <span className="chip" style={{ color: 'var(--t-violet)', borderColor: '#a78bfa44', background: '#a78bfa14' }}><UserRound size={11} /> Lead created</span>
     if (e.status === 'ignored')  return <span className="chip" style={{ color: 'var(--faint)' }}>Ignored</span>
-    if (e.matchedContactId)      return <span className="chip" style={{ color: '#818cf8', borderColor: '#818cf844', background: '#818cf814' }}>Matched → {contactById[e.matchedContactId]?.name.split(' ')[0]}</span>
-    return <span className="chip" style={{ color: '#fbbf24', borderColor: '#fbbf2444', background: '#fbbf2414' }}>New sender</span>
+    if (e.matchedContactId)      return <span className="chip" style={{ color: 'var(--t-indigo)', borderColor: '#818cf844', background: '#818cf814' }}>Matched → {contactById[e.matchedContactId]?.name.split(' ')[0]}</span>
+    return <span className="chip" style={{ color: 'var(--t-amber)', borderColor: '#fbbf2444', background: '#fbbf2414' }}>New sender</span>
   }
 
   return (
@@ -71,7 +71,7 @@ export default function EmailPage() {
                 <div className="flex items-center gap-2">
                   <span className="text-[15px] font-extrabold">{p.name}</span>
                   <span className="dot" style={{ background: mb.connected ? '#34d399' : '#6b7382' }} />
-                  {mb.connected && <span className="text-[10.5px] font-bold uppercase tracking-wide" style={{ color: '#34d399' }}>Connected</span>}
+                  {mb.connected && <span className="text-[10.5px] font-bold uppercase tracking-wide" style={{ color: 'var(--t-green)' }}>Connected</span>}
                 </div>
                 <div className="text-[12px] mt-0.5 truncate" style={{ color: 'var(--muted)' }}>
                   {mb.connected ? `${mb.address} · ${count} msgs · synced ${tsRel(mb.lastSync)}` : p.desc}
@@ -107,9 +107,9 @@ export default function EmailPage() {
       {anyConnected && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="chip"><Inbox size={12} /> {counts.all} scanned</span>
-          <span className="chip" style={{ color: '#818cf8' }}>{counts.matched} matched to contacts</span>
-          <span className="chip" style={{ color: '#fbbf24' }}>{counts.triage} need triage</span>
-          <span className="chip" style={{ color: '#34d399' }}>{counts.logged} logged as touchpoints</span>
+          <span className="chip" style={{ color: 'var(--t-indigo)' }}>{counts.matched} matched to contacts</span>
+          <span className="chip" style={{ color: 'var(--t-amber)' }}>{counts.triage} need triage</span>
+          <span className="chip" style={{ color: 'var(--t-green)' }}>{counts.logged} logged as touchpoints</span>
           <div className="ml-auto">
             <Seg value={seg} onChange={setSeg} options={[
               { value: 'all', label: `All (${counts.all})` },
@@ -140,7 +140,7 @@ export default function EmailPage() {
             const c = cid ? contactById[cid] : null
             return (
               <div key={e.id} className="flex items-start gap-3.5 px-5 py-4"
-                style={{ borderBottom: i < visible.length - 1 ? '1px solid rgba(255,255,255,.05)' : 'none', opacity: e.status === 'ignored' ? .5 : 1 }}>
+                style={{ borderBottom: i < visible.length - 1 ? '1px solid var(--hairline)' : 'none', opacity: e.status === 'ignored' ? .5 : 1 }}>
                 <div className="relative flex-none">
                   <Avatar name={e.name} size={38} />
                   <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full grid place-items-center"
@@ -168,7 +168,7 @@ export default function EmailPage() {
                           <CheckCircle2 size={13} /> Log touchpoint
                         </button>
                         {!cid && (
-                          <button className="btn btn-ghost btn-sm" style={{ color: '#a78bfa' }} onClick={() => triageEmailAsLead(e.id)}>
+                          <button className="btn btn-ghost btn-sm" style={{ color: 'var(--t-violet)' }} onClick={() => triageEmailAsLead(e.id)}>
                             <MailPlus size={13} /> Create lead
                           </button>
                         )}

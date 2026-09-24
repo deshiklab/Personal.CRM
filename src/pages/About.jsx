@@ -2,11 +2,12 @@ import { ExternalLink, Globe, Mail, Phone, ShieldCheck, Scale, FileText, HeartHa
 import { useCrm } from '../store'
 import { SectionHead, Card, Pill } from '../components/ui'
 import { BRAND, COPYRIGHT, LEGAL_URLS, THIRD_PARTY } from '../brand'
+import { toneVar } from '../components/ui'
 
 const ContactRow = ({ icon: Icon, label, value, href, tone = '#38bdf8' }) => (
   <a href={href} target="_blank" rel="noreferrer" className="flex items-center gap-3 py-2.5 border-b last:border-0 hoverable"
-    style={{ borderColor: 'rgba(255,255,255,.05)', textDecoration: 'none', color: 'inherit' }}>
-    <div className="w-8 h-8 rounded-lg grid place-items-center flex-none" style={{ background: tone + '1c', color: tone }}>
+    style={{ borderColor: 'var(--hairline)', textDecoration: 'none', color: 'inherit' }}>
+    <div className="w-8 h-8 rounded-lg grid place-items-center flex-none" style={{ background: tone + '1c', color: toneVar(tone) }}>
       <Icon size={15} />
     </div>
     <div className="min-w-0">
@@ -51,7 +52,7 @@ export default function About() {
       {/* ── your data ── */}
       <Card className="p-6 mt-4">
         <div className="flex items-center gap-2.5 mb-2">
-          <ShieldCheck size={17} style={{ color: '#34d399' }} />
+          <ShieldCheck size={17} style={{ color: 'var(--t-green)' }} />
           <h3 className="text-[15px] font-bold">Your data stays yours</h3>
         </div>
         <p className="text-[13px]" style={{ color: 'var(--muted)' }}>
@@ -74,14 +75,14 @@ export default function About() {
       {/* ── legal ── */}
       <Card className="p-6 mt-4">
         <div className="flex items-center gap-2.5 mb-3">
-          <Scale size={17} style={{ color: '#818cf8' }} />
+          <Scale size={17} style={{ color: 'var(--t-indigo)' }} />
           <h3 className="text-[15px] font-bold">Legal</h3>
         </div>
         <div className="flex flex-col gap-2">
           <a href={LEGAL_URLS.privacy} target="_blank" rel="noreferrer"
             className="flex items-center gap-3 p-3 rounded-xl border hoverable"
             style={{ borderColor: 'var(--border)', textDecoration: 'none', color: 'inherit' }}>
-            <FileText size={15} style={{ color: '#38bdf8' }} />
+            <FileText size={15} style={{ color: 'var(--t-sky)' }} />
             <div className="flex-1 min-w-0">
               <div className="text-[13.5px] font-semibold">Privacy Policy</div>
               <div className="text-[11.5px]" style={{ color: 'var(--faint)' }}>What is stored, where, and what leaves your device</div>
@@ -91,7 +92,7 @@ export default function About() {
           <a href={LEGAL_URLS.terms} target="_blank" rel="noreferrer"
             className="flex items-center gap-3 p-3 rounded-xl border hoverable"
             style={{ borderColor: 'var(--border)', textDecoration: 'none', color: 'inherit' }}>
-            <Scale size={15} style={{ color: '#a78bfa' }} />
+            <Scale size={15} style={{ color: 'var(--t-violet)' }} />
             <div className="flex-1 min-w-0">
               <div className="text-[13.5px] font-semibold">Terms of Use &amp; Licence</div>
               <div className="text-[11.5px]" style={{ color: 'var(--faint)' }}>Single-device licence, warranties, refunds</div>
@@ -108,7 +109,7 @@ export default function About() {
       {/* ── open source credits ── */}
       <Card className="p-6 mt-4">
         <div className="flex items-center gap-2.5 mb-1">
-          <Sparkles size={17} style={{ color: '#fbbf24' }} />
+          <Sparkles size={17} style={{ color: 'var(--t-amber)' }} />
           <h3 className="text-[15px] font-bold">Open-source credits</h3>
         </div>
         <p className="text-[12.5px] mb-3" style={{ color: 'var(--muted)' }}>
@@ -129,14 +130,14 @@ export default function About() {
       {/* ── support ── */}
       <Card className="p-6 mt-4">
         <div className="flex items-center gap-2.5 mb-2">
-          <HeartHandshake size={17} style={{ color: '#f472b6' }} />
+          <HeartHandshake size={17} style={{ color: 'var(--t-pink)' }} />
           <h3 className="text-[15px] font-bold">Support &amp; feedback</h3>
         </div>
         <p className="text-[13px]" style={{ color: 'var(--muted)' }}>
           Questions, bug reports or feature requests — email{' '}
-          <a href={`mailto:${BRAND.email}`} style={{ color: '#38bdf8', fontWeight: 650 }}>{BRAND.email}</a>{' '}
+          <a href={`mailto:${BRAND.email}`} style={{ color: 'var(--t-sky)', fontWeight: 650 }}>{BRAND.email}</a>{' '}
           or call{' '}
-          <a href={`tel:${BRAND.mobile.replace(/\s/g, '')}`} style={{ color: '#38bdf8', fontWeight: 650 }}>{BRAND.mobileLabel}</a>.
+          <a href={`tel:${BRAND.mobile.replace(/\s/g, '')}`} style={{ color: 'var(--t-sky)', fontWeight: 650 }}>{BRAND.mobileLabel}</a>.
           Please include your app version ({BRAND.version}) and device model.
         </p>
       </Card>

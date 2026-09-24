@@ -45,7 +45,7 @@ export function SectionHead({ kicker, title, sub, right, help }) {
 export function Stat({ icon: Icon, label, value, delta, tone = '#818cf8' }) {
   return (
     <Card className="p-4 flex items-center gap-4">
-      <div className="w-11 h-11 rounded-xl grid place-items-center flex-none" style={{ background: tone + '1c', color: tone }}>
+      <div className="w-11 h-11 rounded-xl grid place-items-center flex-none" style={{ background: tone + '1c', color: toneVar(tone) }}>
         <Icon size={20} />
       </div>
       <div className="min-w-0">
@@ -61,7 +61,7 @@ export function Avatar({ name = '', size = 36, className = '' }) {
   const color = hashColor(name)
   return (
     <div className={cn('rounded-full grid place-items-center font-bold flex-none', className)}
-      style={{ width: size, height: size, fontSize: size * 0.36, background: color + '22', color, border: `1px solid ${color}44` }}>
+      style={{ width: size, height: size, fontSize: size * 0.36, background: color + '22', color: toneVar(color), border: `1px solid ${color}44` }}>
       {initials(name)}
     </div>
   )
@@ -71,15 +71,28 @@ export function TagPill({ tag, small = false }) {
   if (!tag) return null
   return (
     <span className="inline-flex items-center gap-1 font-semibold rounded-full whitespace-nowrap"
-      style={{ fontSize: small ? 10.5 : 11.5, padding: small ? '1px 8px' : '3px 10px', background: tag.color + '1c', color: tag.color, border: `1px solid ${tag.color}40` }}>
+      style={{ fontSize: small ? 10.5 : 11.5, padding: small ? '1px 8px' : '3px 10px', background: tag.color + '1c', color: toneVar(tag.color), border: `1px solid ${tag.color}40` }}>
       <span>{tag.icon}</span>{tag.name}
     </span>
   )
 }
 
+/* Accent tones are passed around as bright hexes (they double as swatches and
+ * tint sources). When one is used as TEXT we swap in its theme twin, so a pill
+ * that is amber-on-dark becomes dark-amber-on-light instead of invisible. */
+const TONE_VAR = {
+  '#34d399': '--t-green', '#fbbf24': '--t-amber', '#fb7185': '--t-rose',
+  '#38bdf8': '--t-sky',   '#a78bfa': '--t-violet', '#f472b6': '--t-pink',
+  '#818cf8': '--t-indigo', '#94a3b8': '--t-slate', '#22d3ee': '--t-cyan',
+  '#f87171': '--t-red',   '#9aa3b2': '--t-slate', '#6b7382': '--t-slate',
+  /* the avatar + analytics palettes */
+  '#f43f5e': '--t-crimson', '#f97316': '--t-orange', '#e879f9': '--t-fuchsia', '#a3e635': '--t-lime',
+}
+export const toneVar = c => TONE_VAR[String(c).toLowerCase()] ? `var(${TONE_VAR[String(c).toLowerCase()]})` : c
+
 export function Pill({ children, color = '#9aa3b2' }) {
   return (
-    <span className="chip" style={{ background: color + '16', color, borderColor: color + '38' }}>{children}</span>
+    <span className="chip" style={{ background: color + '16', color: toneVar(color), borderColor: color + '38' }}>{children}</span>
   )
 }
 
@@ -97,9 +110,9 @@ export function Toggle({ on, onChange, disabled }) {
   return (
     <button type="button" role="switch" aria-checked={on} disabled={disabled} onClick={() => onChange?.(!on)}
       className="relative rounded-full transition-colors flex-none"
-      style={{ width: 38, height: 22, background: on ? 'linear-gradient(120deg,#818cf8,#38bdf8)' : 'rgba(255,255,255,.12)' }}>
-      <span className="absolute top-[3px] rounded-full bg-white transition-all"
-        style={{ width: 16, height: 16, left: on ? 19 : 3 }} />
+      style={{ width: 38, height: 22, background: on ? 'linear-gradient(120deg,#818cf8,#38bdf8)' : 'var(--border2)' }}>
+      <span className="absolute top-[3px] rounded-full transition-all"
+        style={{ width: 16, height: 16, left: on ? 19 : 3, background: on ? '#fff' : 'var(--text)' }} />
     </button>
   )
 }
@@ -175,7 +188,7 @@ const DUE_TONE = d => {
 export function DueBadge({ date }) {
   if (!date) return null
   const color = DUE_TONE(date)
-  return <span className="text-[11px] font-semibold" style={{ color }}>{relDay(date)}</span>
+  return <span className="text-[11px] font-semibold" style={{ color: toneVar(color) }}>{relDay(date)}</span>
 }
 
 export function Sparkline({ data, height = 60, color = '#38bdf8' }) {
@@ -197,7 +210,7 @@ export function MiniBars({ items, height = 110 }) {
     <div className="flex items-end gap-3" style={{ height }}>
       {items.map((it, i) => (
         <div key={i} className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
-          <span className="text-[11px] font-bold" style={{ color: it.color }}>{it.value}</span>
+          <span className="text-[11px] font-bold" style={{ color: toneVar(it.color) }}>{it.value}</span>
           <div className="w-full rounded-t-lg" style={{ height: `${Math.max(4, (it.value / max) * (height - 44))}px`, background: `linear-gradient(180deg, ${it.color}cc, ${it.color}33)` }} />
           <span className="text-[10px] font-semibold uppercase tracking-wide truncate w-full text-center" style={{ color: 'var(--faint)' }}>{it.label}</span>
         </div>

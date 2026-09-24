@@ -67,12 +67,12 @@ export default function TagsManager() {
             {visible.map(t => (
               <button key={t.id} onClick={() => setSelectedId(t.id)}
                 className={cn('w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors',
-                  selected?.id === t.id ? 'bg-white/[.07]' : 'hover:bg-white/[.03]')}>
+                  selected?.id === t.id ? 'bg-[var(--chipbg)]' : 'hover:bg-[var(--hover)]')}>
                 <span className="w-8 h-8 rounded-lg grid place-items-center text-[15px] flex-none"
                   style={{ background: t.color + '1c', border: `1px solid ${t.color}40` }}>{t.icon}</span>
                 <span className="flex-1 min-w-0">
                   <span className="block text-[13px] font-semibold truncate">{t.name}</span>
-                  <span className="block h-1 rounded-full mt-1.5" style={{ background: 'rgba(255,255,255,.07)' }}>
+                  <span className="block h-1 rounded-full mt-1.5" style={{ background: 'var(--chipbg)' }}>
                     <span className="block h-1 rounded-full" style={{ width: `${(usage[t.id] / maxUsage) * 100}%`, background: t.color }} />
                   </span>
                 </span>
@@ -125,14 +125,14 @@ export default function TagsManager() {
                     {TAG_ICONS.map(ic => (
                       <button key={ic} onClick={() => crm.updateTag(selected.id, { icon: ic })}
                         className={cn('w-8 h-8 rounded-lg grid place-items-center text-[15px] transition-colors',
-                          selected.icon === ic ? 'bg-indigo-400/25' : 'bg-white/[.05] hover:bg-white/[.09]')}>{ic}</button>
+                          selected.icon === ic ? 'bg-indigo-400/25' : 'bg-[var(--chipbg)] hover:bg-[var(--hover)]')}>{ic}</button>
                     ))}
                   </div>
                 </div>
               </div>
 
               {usage[selected.id] > 0 && (
-                <div className="mt-5 pt-4 border-t" style={{ borderColor: 'rgba(255,255,255,.06)' }}>
+                <div className="mt-5 pt-4 border-t" style={{ borderColor: 'var(--hairline)' }}>
                   <div className="label">Tagged contacts</div>
                   <div className="flex gap-1.5 flex-wrap">
                     {contacts.filter(c => c.tags.includes(selected.id)).slice(0, 8).map(c => (
@@ -166,7 +166,7 @@ function BulkAssign({ tag }) {
   return (
     <Card className="p-5">
       <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
-        <h3 className="font-bold text-[14.5px] inline-flex items-center gap-2"><Users size={15} style={{ color: 'var(--i2)' }} /> Bulk assign “{tag.icon} {tag.name}”</h3>
+        <h3 className="font-bold text-[14.5px] inline-flex items-center gap-2"><Users size={15} style={{ color: 'var(--t-sky)' }} /> Bulk assign “{tag.icon} {tag.name}”</h3>
         <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/contacts?tag=${tag.id}`)}>Open filtered view</button>
       </div>
       <div className="relative mb-2">
@@ -179,12 +179,12 @@ function BulkAssign({ tag }) {
           const on = picked.includes(c.id)
           return (
             <button key={c.id} onClick={() => toggle(c.id)}
-              className={cn('flex items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors', on ? 'bg-indigo-400/15' : 'hover:bg-white/[.03]')}>
+              className={cn('flex items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors', on ? 'bg-indigo-400/15' : 'hover:bg-[var(--hover)]')}>
               <span className={cn('w-4 h-4 rounded grid place-items-center flex-none border',
                 on ? 'bg-indigo-400 border-indigo-400 text-[#0a0c11]' : 'border-white/25 text-transparent')}><CheckSquare size={11} /></span>
               <Avatar name={c.name} size={24} />
               <span className="text-[13px] font-medium flex-1 truncate">{c.name}</span>
-              {has && <span className="chip" style={{ color: tag.color, borderColor: tag.color + '40' }}>has tag</span>}
+              {has && <span className="chip" style={{ color: toneVar(tag.color), borderColor: tag.color + '40' }}>has tag</span>}
             </button>
           )
         })}

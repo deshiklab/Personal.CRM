@@ -212,7 +212,7 @@ export default function TooltipHost({ enabled = true }) {
             {tip.learn && (
               <button type="button" onClick={goLearn}
                 className="mt-2 inline-flex items-center gap-1 text-[11.5px] font-bold"
-                style={{ color: 'var(--i2)', background: 'none', border: 0, padding: 0, cursor: 'pointer' }}>
+                style={{ color: 'var(--t-sky)', background: 'none', border: 0, padding: 0, cursor: 'pointer' }}>
                 <BookOpen size={11} /> Learn more
               </button>
             )}
@@ -265,7 +265,7 @@ function ContactCard({ c, relFreq, status }) {
         {line(Clock, c.lastContact ? `Last touch ${relDay(c.lastContact)}` : 'Never contacted')}
       </div>
       {status?.state === 'overdue' && (
-        <div className="mt-2 text-[11px] font-bold" style={{ color: '#fb7185' }}>
+        <div className="mt-2 text-[11px] font-bold" style={{ color: 'var(--t-rose)' }}>
           {status.overdueBy}d overdue for a follow-up
         </div>
       )}

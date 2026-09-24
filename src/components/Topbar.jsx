@@ -55,14 +55,14 @@ export default function Topbar({ onMenu = () => {} }) {
       </div>
       <div className="flex items-center gap-0.5 sm:gap-2 flex-none">
         {installEvt && (
-          <button className="btn btn-ghost btn-sm" onClick={install} title="Install as an app (works offline)" style={{ color: 'var(--i2)' }}>
+          <button className="btn btn-ghost btn-sm" onClick={install} title="Install as an app (works offline)" style={{ color: 'var(--t-sky)' }}>
             <Download size={14} /><span className="hidden md:inline">Install</span>
           </button>
         )}
         <button
           className="btn btn-ghost btn-sm"
           data-tip="topbar.sync"
-          style={syncProvider() !== 'none' ? { color: '#34d399' } : { color: 'var(--faint)' }}
+          style={syncProvider() !== 'none' ? { color: 'var(--t-green)' } : { color: 'var(--faint)' }}
           title={
             syncProvider() === 'none' ? 'Multi-device sync — set up GitHub Gist or Google in Settings' :
             syncing ? `Syncing via ${syncProvider() === 'gist' ? 'GitHub Gist' : 'Google Drive'}…` :

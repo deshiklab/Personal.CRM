@@ -127,7 +127,7 @@ function BirthdayChip({ name, small }) {
   return (
     <div className={cn('flex items-center gap-1 rounded-md px-1.5 truncate font-semibold',
       small ? 'text-[10px] py-[1px]' : 'text-[11px] py-[2px]')}
-      style={{ background: '#f472b61c', color: '#f472b6', border: '1px solid #f472b638' }}>
+      style={{ background: '#f472b61c', color: 'var(--t-pink)', border: '1px solid #f472b638' }}>
       <Cake size={small ? 9 : 10} className="flex-none" /> {name.split(' ')[0]}
     </div>
   )
@@ -144,7 +144,7 @@ function EventChip({ e, small, dragId, setDragId, onOpen }) {
       onDragEnd={() => setDragId(null)}
       className={cn('w-full flex items-center gap-1.5 rounded-md px-1.5 text-left truncate font-semibold cursor-grab active:cursor-grabbing',
       small ? 'text-[10px] py-[1px]' : 'text-[11px] py-[2px]', dragId === e.id && 'dragging')}
-      style={{ background: color + '1c', color, border: `1px solid ${color}38` }}>
+      style={{ background: color + '1c', color: toneVar(color), border: `1px solid ${color}38` }}>
       <span className="font-mono flex-none">{e.time}</span>
       <span className="truncate flex-1">{e.title}</span>
       {e.gcal === 'synced' && <Link2 size={9} className="flex-none opacity-70" />}
@@ -178,7 +178,7 @@ function MonthView({ cursor, byDate, setNewDate, setDetail, dragId, setDragId, o
           return (
             <div key={i}
               className={cn('min-h-[104px] p-1.5 cursor-pointer transition-colors', overCell === iso && 'dragover')}
-              style={{ borderRight: (i + 1) % 7 ? '1px solid rgba(255,255,255,.05)' : 'none', borderBottom: '1px solid rgba(255,255,255,.05)', background: outside ? 'rgba(255,255,255,.012)' : 'transparent' }}
+              style={{ borderRight: (i + 1) % 7 ? '1px solid var(--hairline)' : 'none', borderBottom: '1px solid var(--hairline)', background: outside ? 'var(--chipbg)' : 'transparent' }}
               onClick={() => setNewDate(iso)}
               {...dropHandlers(iso)}>
               <div className={cn('w-6 h-6 grid place-items-center rounded-full text-[11.5px] font-bold mb-1',
@@ -245,7 +245,7 @@ function DayView({ cursor, byDate, setNewDate, setDetail }) {
     <div className="card p-4 max-w-[720px]">
       {bdays.length > 0 && (
         <div className="flex items-center gap-2 mb-3 flex-wrap">
-          <Cake size={14} style={{ color: '#f472b6' }} />
+          <Cake size={14} style={{ color: 'var(--t-pink)' }} />
           {bdays.map(c => <Pill key={c.id} color="#f472b6">{c.name}'s birthday</Pill>)}
         </div>
       )}
@@ -255,7 +255,7 @@ function DayView({ cursor, byDate, setNewDate, setDetail }) {
           const hh = String(h).padStart(2, '0') + ':00'
           const evs = list.filter(e => +e.time.slice(0, 2) === h)
           return (
-            <div key={h} className="flex gap-3 border-b last:border-0 min-h-[44px] py-1.5" style={{ borderColor: 'rgba(255,255,255,.05)' }}>
+            <div key={h} className="flex gap-3 border-b last:border-0 min-h-[44px] py-1.5" style={{ borderColor: 'var(--hairline)' }}>
               <span className="w-12 flex-none text-[11px] font-mono pt-1" style={{ color: 'var(--faint)' }}>{hh}</span>
               <div className="flex-1 flex flex-col gap-1 cursor-pointer" onClick={() => setNewDate(iso)}>
                 {evs.map(e => <EventChip key={e.id} e={e} dragId={null} setDragId={() => {}} onOpen={setDetail} />)}
@@ -322,7 +322,7 @@ function EventDetail({ ev, onClose }) {
         <h4 className="text-[16px] font-bold tracking-tight">{ev.title}</h4>
       </div>
       <div className="card p-4 flex flex-col gap-2.5 text-[13px]">
-        <div className="flex gap-3"><Clock size={14} style={{ color: 'var(--i2)' }} className="flex-none" /> {ev.date} · {ev.time}–{ev.endTime}</div>
+        <div className="flex gap-3"><Clock size={14} style={{ color: 'var(--t-sky)' }} className="flex-none" /> {ev.date} · {ev.time}–{ev.endTime}</div>
         {ev.location && <div className="flex gap-3">📍 {ev.location}</div>}
         <div className="flex gap-3 items-center flex-wrap">
           <span className="chip" style={{ background: color + '1c', color, borderColor: color + '38' }}>{TYPE_LABEL[ev.type] || ev.type}</span>

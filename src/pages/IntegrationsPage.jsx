@@ -28,9 +28,9 @@ export default function IntegrationsPage() {
   const vcfRef = useRef(null)
 
   const SERVICE_ROWS = [
-    { icon: Calendar, color: '#38bdf8', name: 'Google Calendar', ok: gcal.connected, detail: gcal.connected ? `LIVE · synced ${gcal.lastSync ? tsRel(gcal.lastSync) : '—'}` : 'connect in Settings → Google hub' },
-    { icon: Users, color: '#a78bfa', name: 'Google Contacts', ok: !!driveState.lastContactsSync, detail: driveState.lastContactsSync ? `last import ${tsRel(driveState.lastContactsSync)}` : 'sync via Settings → Google hub' },
-    { icon: HardDrive, color: '#34d399', name: 'Drive backup', ok: !!driveState.lastBackup, detail: driveState.lastBackup ? `backed up ${tsRel(driveState.lastBackup)}` : 'backups in Settings → Google hub' },
+    { icon: Calendar, color: 'var(--t-sky)', name: 'Google Calendar', ok: gcal.connected, detail: gcal.connected ? `LIVE · synced ${gcal.lastSync ? tsRel(gcal.lastSync) : '—'}` : 'connect in Settings → Google hub' },
+    { icon: Users, color: 'var(--t-violet)', name: 'Google Contacts', ok: !!driveState.lastContactsSync, detail: driveState.lastContactsSync ? `last import ${tsRel(driveState.lastContactsSync)}` : 'sync via Settings → Google hub' },
+    { icon: HardDrive, color: 'var(--t-green)', name: 'Drive backup', ok: !!driveState.lastBackup, detail: driveState.lastBackup ? `backed up ${tsRel(driveState.lastBackup)}` : 'backups in Settings → Google hub' },
     { icon: Mail, color: '#ea4335', name: 'Gmail', ok: mailboxes.gmail.connected, detail: mailboxes.gmail.connected ? `LIVE · ${mailboxes.gmail.address}` : googleMode === 'live' ? 'Client ID set — connect from Email screen' : 'OFF — set your Client ID (guide in Settings)' },
     { icon: Mail, color: '#0a78d4', name: 'Outlook', ok: mailboxes.outlook.connected, unavailable: true, detail: 'not in this build — needs a Microsoft OAuth app and a server' },
   ]
@@ -43,7 +43,7 @@ export default function IntegrationsPage() {
       {/* status board */}
       <Card className="p-5 mb-4">
         <div className="flex items-center gap-2 mb-4">
-          <Plug size={15} style={{ color: 'var(--i2)' }} />
+          <Plug size={15} style={{ color: 'var(--t-sky)' }} />
           <h3 className="text-[14px] font-extrabold">Connection board</h3>
           <div className="ml-auto flex gap-2">
             <button className="btn btn-ghost btn-sm" onClick={() => nav('/settings')}><KeyRound size={13} /> Google Client ID {googleMode === 'live' ? '✓' : '…'}</button>
@@ -63,7 +63,7 @@ export default function IntegrationsPage() {
             </div>
           ))}
           <div className="card p-3.5 flex items-center gap-3" style={{ borderRadius: 14, borderStyle: 'dashed' }}>
-            <div className="w-9 h-9 rounded-xl grid place-items-center flex-none" style={{ background: '#fbbf241c', color: '#fbbf24' }}><Zap size={16} /></div>
+            <div className="w-9 h-9 rounded-xl grid place-items-center flex-none" style={{ background: '#fbbf241c', color: 'var(--t-amber)' }}><Zap size={16} /></div>
             <div className="min-w-0 flex-1">
               <div className="text-[13px] font-bold">Webhooks <StatusPill ok={!!webhooks.url} label={webhooks.url ? 'READY' : 'SETUP'} /></div>
               <div className="text-[11px] truncate" style={{ color: 'var(--faint)' }}>{webhooks.url ? `${Object.values(webhooks.on).filter(Boolean).length} events armed · ${webhooks.log.length} deliveries logged` : 'Zapier / Make / n8n — configure below'}</div>
@@ -76,7 +76,7 @@ export default function IntegrationsPage() {
         {/* ── outbound webhooks ── */}
         <Card className="p-5">
           <div className="flex items-center gap-2 mb-1">
-            <Zap size={15} style={{ color: '#fbbf24' }} />
+            <Zap size={15} style={{ color: 'var(--t-amber)' }} />
             <h3 className="text-[14px] font-extrabold">Outbound webhooks</h3>
           </div>
           <p className="text-[12px] mb-4" style={{ color: 'var(--muted)' }}>
@@ -109,7 +109,7 @@ export default function IntegrationsPage() {
               <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto">
                 {webhooks.log.slice(0, 8).map((l, i) => (
                   <div key={i} className="flex items-center gap-2 text-[11.5px] px-3 py-1.5 rounded-lg" style={{ background: 'var(--cardbg2)' }}>
-                    {l.ok ? <CheckCircle2 size={12} style={{ color: '#34d399' }} /> : <AlertTriangle size={12} style={{ color: '#fb7185' }} />}
+                    {l.ok ? <CheckCircle2 size={12} style={{ color: 'var(--t-green)' }} /> : <AlertTriangle size={12} style={{ color: 'var(--t-rose)' }} />}
                     <span className="font-semibold" style={{ color: 'var(--text)' }}>{l.type}</span>
                     <span style={{ color: 'var(--muted)' }}>{l.status}</span>
                     <span className="ml-auto" style={{ color: 'var(--faint)' }}>{tsRel(l.ts)}</span>
@@ -123,7 +123,7 @@ export default function IntegrationsPage() {
         {/* ── phone / address-book bridge ── */}
         <Card className="p-5">
           <div className="flex items-center gap-2 mb-1">
-            <PhoneCall size={15} style={{ color: '#34d399' }} />
+            <PhoneCall size={15} style={{ color: 'var(--t-green)' }} />
             <h3 className="text-[14px] font-extrabold">Phone & address-book bridge</h3>
           </div>
           <p className="text-[12px] mb-4" style={{ color: 'var(--muted)' }}>
@@ -156,7 +156,7 @@ export default function IntegrationsPage() {
         {/* ── calendar bridge ── */}
         <Card className="p-5">
           <div className="flex items-center gap-2 mb-1">
-            <Calendar size={15} style={{ color: '#38bdf8' }} />
+            <Calendar size={15} style={{ color: 'var(--t-sky)' }} />
             <h3 className="text-[14px] font-extrabold">Calendar bridges</h3>
           </div>
           <p className="text-[12px] mb-4" style={{ color: 'var(--muted)' }}>
@@ -201,7 +201,7 @@ export default function IntegrationsPage() {
                     <span className="truncate flex-1 min-w-[180px]" title={f.url}>{f.url}</span>
                     {f.lastVia && <Pill color="#818cf8">{f.lastVia}</Pill>}
                     <span style={{ color: 'var(--faint)' }}>{f.lastSync ? `${f.lastCount} feed events · ${tsRel(f.lastSync)}` : 'never synced'}</span>
-                    {f.error && <span style={{ color: '#f87171' }}>⚠ {f.error}</span>}
+                    {f.error && <span style={{ color: 'var(--t-red)' }}>⚠ {f.error}</span>}
                     <button className="btn btn-ghost btn-sm" title="Re-sync feed" onClick={() => syncIcsFeed(f.id)}><RefreshCw size={12} /></button>
                     <button className="btn btn-ghost btn-sm" title="Remove feed + its imported events" onClick={() => removeIcsFeed(f.id)}><Trash2 size={12} /></button>
                   </div>
@@ -214,7 +214,7 @@ export default function IntegrationsPage() {
         {/* ── deep actions ── */}
         <Card className="p-5">
           <div className="flex items-center gap-2 mb-1">
-            <Send size={15} style={{ color: '#f472b6' }} />
+            <Send size={15} style={{ color: 'var(--t-pink)' }} />
             <h3 className="text-[14px] font-extrabold">Deep actions</h3>
           </div>
           <p className="text-[12px] mb-4" style={{ color: 'var(--muted)' }}>

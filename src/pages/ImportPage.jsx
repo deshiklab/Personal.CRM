@@ -86,7 +86,7 @@ export default function ImportPage() {
 
       <Card className="p-5">
         <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
-          <h3 className="font-bold text-[14.5px] inline-flex items-center gap-2"><ScanLine size={16} style={{ color: 'var(--i2)' }} /> vCard scanner</h3>
+          <h3 className="font-bold text-[14.5px] inline-flex items-center gap-2"><ScanLine size={16} style={{ color: 'var(--t-sky)' }} /> vCard scanner</h3>
           <div className="flex gap-2">
             <label className="btn btn-ghost btn-sm cursor-pointer">
               <Upload size={13} /> Upload .vcf
@@ -148,14 +148,14 @@ export default function ImportPage() {
       <Card className="p-5 mt-4">
         <div className="flex items-center justify-between mb-2">
           <h3 className="font-bold text-[14.5px]">Recent imports</h3>
-          <Link to="/history" className="text-[12px] font-semibold inline-flex items-center gap-1" style={{ color: 'var(--i2)' }}>
+          <Link to="/history" className="text-[12px] font-semibold inline-flex items-center gap-1" style={{ color: 'var(--t-sky)' }}>
             Full history, diffs & rollback <ArrowRight size={12} />
           </Link>
         </div>
         {imports.length === 0 && <Empty icon={FileUp} title="No imports yet" />}
         {imports.slice(0, 3).map(b => (
-          <div key={b.id} className="flex items-center gap-3 py-2.5 border-b last:border-0 flex-wrap" style={{ borderColor: 'rgba(255,255,255,.05)' }}>
-            <FileUp size={15} className="flex-none" style={{ color: 'var(--i1)' }} />
+          <div key={b.id} className="flex items-center gap-3 py-2.5 border-b last:border-0 flex-wrap" style={{ borderColor: 'var(--hairline)' }}>
+            <FileUp size={15} className="flex-none" style={{ color: 'var(--t-indigo)' }} />
             <span className="font-semibold text-[13px]">{b.source}</span>
             <span className="text-[11.5px]" style={{ color: 'var(--faint)' }}>{tsRel(b.ts)}</span>
             <div className="ml-auto flex gap-1.5">

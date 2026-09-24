@@ -14,10 +14,10 @@ const ST_LABEL = { overdue: 'Overdue', 'due-soon': 'Due soon', ok: 'In touch', s
 export const SOCIAL_META = {
   linkedin:  { label: 'LinkedIn',  mark: 'in',           color: '#2b9ede' },
   twitter:   { label: 'X / Twitter', mark: '𝕏',          color: '#e7e9ea' },
-  instagram: { label: 'Instagram', mark: '◉',            color: '#f472b6' },
+  instagram: { label: 'Instagram', mark: '◉',            color: 'var(--t-pink)' },
   facebook:  { label: 'Facebook',  mark: 'f',            color: '#60a5fa' },
   whatsapp:  { label: 'WhatsApp',  Icon: MessageCircle,  color: '#4ade80' },
-  website:   { label: 'Website',   Icon: Globe,          color: '#94a3b8' },
+  website:   { label: 'Website',   Icon: Globe,          color: 'var(--t-slate)' },
 }
 export const socHref = (p, v) => {
   if (!v) return '#'
@@ -218,7 +218,7 @@ export default function Contacts() {
                     <div className="flex items-center gap-1 justify-end">
                       <button className="icon-btn" style={{ width: 28, height: 28 }} title="Edit contact"
                         onClick={() => setEditId(c.id)}><Pencil size={13} /></button>
-                      <button className="icon-btn" style={{ width: 28, height: 28, color: '#fb7185' }} title="Delete contact"
+                      <button className="icon-btn" style={{ width: 28, height: 28, color: 'var(--t-rose)' }} title="Delete contact"
                         onClick={() => askDelete([c.id])}><Trash2 size={13} /></button>
                     </div>
                   </td>
@@ -331,25 +331,25 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete }) {
           <Pencil size={14} /> Edit details
         </button>
         <button className="btn btn-ghost flex-1 justify-center" onClick={() => onDelete?.([c.id])} title="Delete this contact (pincode required)"
-          style={{ color: '#fb7185', borderColor: '#fb718544' }}>
+          style={{ color: 'var(--t-rose)', borderColor: '#fb718544' }}>
           <Trash2 size={14} /> Delete contact
         </button>
       </div>
 
       <div className="card p-4 mt-5 flex flex-col gap-2.5 text-[13px]">
-        {c.phone && <div className="flex items-center gap-3"><Phone size={14} style={{ color: 'var(--i2)' }} /> {c.phone}</div>}
-        {c.email && <div className="flex items-center gap-3 truncate"><Mail size={14} style={{ color: 'var(--i2)' }} /> {c.email}</div>}
-        {c.birthday && <div className="flex items-center gap-3"><Cake size={14} style={{ color: 'var(--i2)' }} /> {fmtHuman(c.birthday)}</div>}
-        <div className="flex items-center gap-3"><Clock size={14} style={{ color: 'var(--i2)' }} /> Last contacted {relDay(c.lastContact).toLowerCase()}</div>
-        {c.anniversary && <div className="flex items-center gap-3"><Heart size={14} style={{ color: 'var(--i2)' }} /> Anniversary {fmtHuman(c.anniversary)}</div>}
-        {c.giftIdeas && <div className="flex items-center gap-3"><Gift size={14} style={{ color: 'var(--i2)' }} /> {c.giftIdeas}</div>}
+        {c.phone && <div className="flex items-center gap-3"><Phone size={14} style={{ color: 'var(--t-sky)' }} /> {c.phone}</div>}
+        {c.email && <div className="flex items-center gap-3 truncate"><Mail size={14} style={{ color: 'var(--t-sky)' }} /> {c.email}</div>}
+        {c.birthday && <div className="flex items-center gap-3"><Cake size={14} style={{ color: 'var(--t-sky)' }} /> {fmtHuman(c.birthday)}</div>}
+        <div className="flex items-center gap-3"><Clock size={14} style={{ color: 'var(--t-sky)' }} /> Last contacted {relDay(c.lastContact).toLowerCase()}</div>
+        {c.anniversary && <div className="flex items-center gap-3"><Heart size={14} style={{ color: 'var(--t-sky)' }} /> Anniversary {fmtHuman(c.anniversary)}</div>}
+        {c.giftIdeas && <div className="flex items-center gap-3"><Gift size={14} style={{ color: 'var(--t-sky)' }} /> {c.giftIdeas}</div>}
         {c.introducedBy && (() => {
           const who = crm.contacts.find(x => x.name === c.introducedBy)
           return (
             <div className="flex items-center gap-3 flex-wrap">
-              <Users size={14} style={{ color: 'var(--i2)' }} /> Introduced by&nbsp;
+              <Users size={14} style={{ color: 'var(--t-sky)' }} /> Introduced by&nbsp;
               {who
-                ? <button className="font-semibold underline decoration-dotted underline-offset-2 hover:opacity-80" style={{ color: 'var(--i2)' }} onClick={() => onOpen?.(who.id)}>{c.introducedBy}</button>
+                ? <button className="font-semibold underline decoration-dotted underline-offset-2 hover:opacity-80" style={{ color: 'var(--t-sky)' }} onClick={() => onOpen?.(who.id)}>{c.introducedBy}</button>
                 : <strong>{c.introducedBy}</strong>}
               <span className="text-[11px]" style={{ color: 'var(--faint)' }}>— how you met</span>
             </div>
@@ -359,7 +359,7 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete }) {
           const introduced = crm.contacts.filter(x => x.introducedBy === c.name)
           return introduced.length > 0 && (
             <div className="flex items-center gap-3 flex-wrap">
-              <Users size={14} style={{ color: '#a78bfa' }} />
+              <Users size={14} style={{ color: 'var(--t-violet)' }} />
               <span style={{ color: 'var(--muted)' }}>Introduced you to:</span>
               {introduced.map(x => (
                 <button key={x.id} className="chip chip-btn" style={{ fontSize: 11 }} onClick={() => onOpen?.(x.id)}>{x.name.split(' ')[0]}</button>
@@ -373,7 +373,7 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete }) {
         <div className="label">Social profiles</div>
         <div className="flex gap-1.5 flex-wrap items-center">
           {Object.entries(c.socials || {}).map(([p, v]) => {
-            const m = SOCIAL_META[p] || { label: p, Icon: Link2, color: '#94a3b8' }
+            const m = SOCIAL_META[p] || { label: p, Icon: Link2, color: 'var(--t-slate)' }
             return (
               <a key={p} href={socHref(p, v)} target="_blank" rel="noreferrer"
                 className="chip chip-btn group" style={{ color: m.color, borderColor: m.color + '44', background: m.color + '12' }}
@@ -410,7 +410,7 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete }) {
         <div className="label">Interests & topics</div>
         <div className="flex gap-1.5 flex-wrap items-center">
           {(c.interests || []).map((it, i) => (
-            <span key={i} className="chip" style={{ color: '#38bdf8', borderColor: '#38bdf844', background: '#38bdf812' }}>
+            <span key={i} className="chip" style={{ color: 'var(--t-sky)', borderColor: '#38bdf844', background: '#38bdf812' }}>
               {it}
               <button className="ml-0.5 opacity-60 hover:opacity-100" title="Remove"
                 onClick={() => crm.updateContact(c.id, { interests: c.interests.filter((_, j) => j !== i) })}>×</button>
@@ -506,7 +506,7 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete }) {
         <div className="mt-5">
           <div className="label">Timeline</div>
           {myActs.map(a => (
-            <div key={a.id} className="flex items-center gap-3 py-2 border-b last:border-0" style={{ borderColor: 'rgba(255,255,255,.05)' }}>
+            <div key={a.id} className="flex items-center gap-3 py-2 border-b last:border-0" style={{ borderColor: 'var(--hairline)' }}>
               <span className="dot" style={{ background: 'var(--i1)' }} />
               <span className="text-[12.5px] flex-1">{a.text}</span>
               <span className="text-[10.5px] flex-none" style={{ color: 'var(--faint)' }}>{tsRel(a.ts)}</span>

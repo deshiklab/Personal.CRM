@@ -9,6 +9,7 @@ import { useCrm } from '../store'
 import { contactGroupIds as crmGroupIds } from '../store'
 import { Card, SectionHead, Stat, MiniBars, Avatar, CsvButton } from '../components/ui'
 import { daysSince } from '../lib'
+import { toneVar } from '../components/ui'
 
 /* ── helpers ─────────────────────────────────────────────── */
 const ym = iso => (iso || '').slice(0, 7)
@@ -29,7 +30,7 @@ function Donut({ slices, size = 190 }) {
   return (
     <div className="flex items-center gap-5">
       <svg viewBox="0 0 42 42" style={{ width: size, height: size }} className="flex-none">
-        <circle cx="21" cy="21" r="15.9155" fill="none" stroke="rgba(255,255,255,.05)" strokeWidth="5.5" />
+        <circle cx="21" cy="21" r="15.9155" fill="none" stroke="var(--hairline)" strokeWidth="5.5" />
         {slices.map((s, i) => {
           const pct = (s.value / total) * 100
           const el = (
@@ -63,11 +64,11 @@ function HBars({ items, onClick }) {
       {items.map((it, i) => (
         <div key={i} className={`flex items-center gap-3 ${onClick ? 'cursor-pointer group' : ''}`} onClick={() => onClick?.(it)}>
           {it.avatar && <Avatar name={it.avatar} size={28} />}
-          <span className="text-[12.5px] font-semibold w-32 truncate flex-none group-hover:text-white transition-colors" style={{ color: 'var(--text)' }}>{it.label}</span>
-          <div className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,.05)' }}>
+          <span className="text-[12.5px] font-semibold w-32 truncate flex-none  transition-colors" style={{ color: 'var(--text)' }}>{it.label}</span>
+          <div className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ background: 'var(--chipbg)' }}>
             <div className="h-full rounded-full transition-all" style={{ width: `${(it.value / max) * 100}%`, background: `linear-gradient(90deg, ${it.color}, ${it.color}77)` }} />
           </div>
-          <span className="text-[12px] font-bold w-8 text-right flex-none" style={{ color: it.color }}>{it.value}</span>
+          <span className="text-[12px] font-bold w-8 text-right flex-none" style={{ color: toneVar(it.color) }}>{it.value}</span>
         </div>
       ))}
     </div>
@@ -224,7 +225,7 @@ export default function Analytics() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <Card className="p-5 xl:col-span-2">
           <div className="flex items-center gap-2 mb-1">
-            <BarChart3 size={15} style={{ color: '#38bdf8' }} />
+            <BarChart3 size={15} style={{ color: 'var(--t-sky)' }} />
             <h3 className="text-[14px] font-extrabold">Contacts added per month</h3>
           </div>
           <p className="text-[11.5px] mb-4" style={{ color: 'var(--faint)' }}>New records entering your CRM · {d.addedTotal} this period (+{d.importsTotal} via imports all-time)</p>
@@ -233,14 +234,14 @@ export default function Analytics() {
 
         <Card className="p-5 flex flex-col">
           <div className="flex items-center gap-2 mb-1">
-            <Gauge size={15} style={{ color: '#34d399' }} />
+            <Gauge size={15} style={{ color: 'var(--t-green)' }} />
             <h3 className="text-[14px] font-extrabold">Execution pulse</h3>
           </div>
           <p className="text-[11.5px] mb-4" style={{ color: 'var(--faint)' }}>Task completion rate & average turn-around</p>
           <div className="flex items-center gap-5">
             <div className="relative flex-none" style={{ width: 120, height: 120 }}>
               <svg viewBox="0 0 42 42" style={{ width: 120, height: 120 }}>
-                <circle cx="21" cy="21" r="15.9155" fill="none" stroke="rgba(255,255,255,.06)" strokeWidth="5" />
+                <circle cx="21" cy="21" r="15.9155" fill="none" stroke="var(--hairline)" strokeWidth="5" />
                 <circle cx="21" cy="21" r="15.9155" fill="none" stroke={d.rate >= 60 ? '#34d399' : d.rate >= 40 ? '#fbbf24' : '#fb7185'}
                   strokeWidth="5" strokeLinecap="round" strokeDasharray={`${d.rate} ${100 - d.rate}`} strokeDashoffset="25" />
                 <text x="21" y="23.5" textAnchor="middle" fill="var(--text)" fontSize="7" fontWeight="800">{d.rate}%</text>
@@ -255,7 +256,7 @@ export default function Analytics() {
             </div>
           </div>
           <div className="mt-auto pt-4">
-            <MiniBars height={86} items={d.donePerMonth.map(b => ({ label: b.label, value: b.n, color: '#34d399' }))} />
+            <MiniBars height={86} items={d.donePerMonth.map(b => ({ label: b.label, value: b.n, color: 'var(--t-green)' }))} />
             <div className="text-[10.5px] text-center mt-1" style={{ color: 'var(--faint)' }}>completions logged per month</div>
           </div>
         </Card>
@@ -265,7 +266,7 @@ export default function Analytics() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <Card className="p-5 xl:col-span-2">
           <div className="flex items-center gap-2 mb-1">
-            <Trophy size={15} style={{ color: '#fbbf24' }} />
+            <Trophy size={15} style={{ color: 'var(--t-amber)' }} />
             <h3 className="text-[14px] font-extrabold">Most-contacted people</h3>
           </div>
           <p className="text-[11.5px] mb-4" style={{ color: 'var(--faint)' }}>Ranked by logged touchpoints · click a row to open their sheet</p>
@@ -278,7 +279,7 @@ export default function Analytics() {
 
         <Card className="p-5">
           <div className="flex items-center gap-2 mb-1">
-            <PieIcon size={15} style={{ color: '#a78bfa' }} />
+            <PieIcon size={15} style={{ color: 'var(--t-violet)' }} />
             <h3 className="text-[14px] font-extrabold">Tag distribution</h3>
           </div>
           <p className="text-[11.5px] mb-4" style={{ color: 'var(--faint)' }}>How your network is labelled across {tags.length} tags</p>
@@ -297,24 +298,24 @@ export default function Analytics() {
         </Card>
         <Card className="p-5">
           <div className="flex items-center gap-2 mb-4">
-            <Users size={15} style={{ color: '#34d399' }} />
+            <Users size={15} style={{ color: 'var(--t-green)' }} />
             <h3 className="text-[14px] font-extrabold">Network composition</h3>
           </div>
           <HBars items={d.groupDist} />
         </Card>
         <Card className="p-5">
           <div className="flex items-center gap-2 mb-4">
-            <ActivityIcon size={15} style={{ color: '#38bdf8' }} />
+            <ActivityIcon size={15} style={{ color: 'var(--t-sky)' }} />
             <h3 className="text-[14px] font-extrabold">Touchpoints per month</h3>
           </div>
-          <MiniBars height={110} items={d.actPerMonth.map(b => ({ label: b.label, value: b.n, color: '#38bdf8' }))} />
+          <MiniBars height={110} items={d.actPerMonth.map(b => ({ label: b.label, value: b.n, color: 'var(--t-sky)' }))} />
         </Card>
       </div>
 
       {/* insight deck */}
       <div>
         <div className="flex items-center gap-2 mb-3">
-          <Lightbulb size={15} style={{ color: '#fbbf24' }} />
+          <Lightbulb size={15} style={{ color: 'var(--t-amber)' }} />
           <h3 className="text-[14px] font-extrabold">Auto-generated insights</h3>
           <span className="text-[10.5px] font-semibold" style={{ color: 'var(--faint)' }}>computed live from your data — no AI in the loop</span>
         </div>

@@ -34,7 +34,7 @@ function VerifyRow({ kind, icon: Icon, value, verifiedAt, onRequest, onConfirm }
   }
 
   return (
-    <div className="py-3 border-b last:border-0" style={{ borderColor: 'rgba(255,255,255,.05)' }}>
+    <div className="py-3 border-b last:border-0" style={{ borderColor: 'var(--hairline)' }}>
       <div className="flex items-center gap-3 flex-wrap">
         <Icon size={15} style={{ color: 'var(--muted)' }} />
         <span className="text-[13px] font-semibold flex-none" style={{ minWidth: 54 }}>
@@ -68,7 +68,7 @@ function VerifyRow({ kind, icon: Icon, value, verifiedAt, onRequest, onConfirm }
       {verifiedAt && (
         <div className="text-[11px] mt-1.5" style={{ color: 'var(--faint)' }}>Verified {tsRel(verifiedAt)}</div>
       )}
-      {!!msg && <div className="text-[11.5px] mt-2" style={{ color: '#fbbf24' }}>{msg}</div>}
+      {!!msg && <div className="text-[11.5px] mt-2" style={{ color: 'var(--t-amber)' }}>{msg}</div>}
     </div>
   )
 }
@@ -107,9 +107,9 @@ export default function IdentityCard() {
   const NOTIFIED = {
     sent: ['sent to BITSCOL', '#34d399'],
     declined: ['not shared', '#94a3b8'],
-    'not-configured': ['channel not configured', '#fbbf24'],
-    'send-failed': ['send failed — will retry on next registration', '#fbbf24'],
-    null: ['sending…', '#38bdf8'],
+    'not-configured': ['channel not configured', 'var(--t-amber)'],
+    'send-failed': ['send failed — will retry on next registration', 'var(--t-amber)'],
+    null: ['sending…', 'var(--t-sky)'],
   }
   const note = NOTIFIED[profile?.notified ?? 'declined'] || NOTIFIED.declined
 
@@ -170,7 +170,7 @@ export default function IdentityCard() {
                 Owner notification: <b style={{ color: note[1] }}>{note[0]}</b>
               </span>
               <div className="flex-1" />
-              <button className="btn btn-ghost btn-sm" style={{ color: '#fb7185' }} onClick={() => setSignOutOpen(true)}>
+              <button className="btn btn-ghost btn-sm" style={{ color: 'var(--t-rose)' }} onClick={() => setSignOutOpen(true)}>
                 <LogOut size={13} /> Sign out
               </button>
             </div>

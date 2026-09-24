@@ -6,11 +6,11 @@ import { SectionHead, Card, Stat, Avatar, Pill, Toggle, Empty, CsvButton } from 
 import { todayISO, daysAheadISO } from '../lib'
 
 const TYPES = {
-  task:       { label: 'Tasks',     icon: CheckSquare,     color: '#38bdf8' },
-  'follow-up':{ label: 'Follow-ups',icon: HeartHandshake,  color: '#fb7185' },
-  birthday:   { label: 'Birthdays', icon: Cake,            color: '#f472b6' },
-  event:      { label: 'Events',    icon: Calendar,        color: '#a78bfa' },
-  system:     { label: 'System',    icon: ShieldAlert,     color: '#fbbf24' },
+  task:       { label: 'Tasks',     icon: CheckSquare,     color: 'var(--t-sky)' },
+  'follow-up':{ label: 'Follow-ups',icon: HeartHandshake,  color: 'var(--t-rose)' },
+  birthday:   { label: 'Birthdays', icon: Cake,            color: 'var(--t-pink)' },
+  event:      { label: 'Events',    icon: Calendar,        color: 'var(--t-violet)' },
+  system:     { label: 'System',    icon: ShieldAlert,     color: 'var(--t-amber)' },
 }
 const PRIO_COLOR = { high: '#fb7185', med: '#fbbf24', low: '#94a3b8' }
 

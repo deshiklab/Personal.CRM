@@ -134,8 +134,8 @@ export default function Birthdays() {
         {monthCounts.map(({ m, n }) => (
           <button key={m} onClick={() => setSelMonth(m)}
             className={cn('flex flex-col items-center rounded-xl px-3 py-2 transition-colors min-w-[56px]',
-              selMonth === m ? 'bg-indigo-400/20 text-white' : 'hover:bg-white/[.04]')}
-            style={m === curMonth && selMonth !== m ? { color: 'var(--i2)' } : selMonth !== m ? { color: 'var(--muted)' } : {}}>
+              selMonth === m ? 'bg-indigo-400/20 text-[color:var(--text)]' : 'hover:bg-[var(--hover)]')}
+            style={m === curMonth && selMonth !== m ? { color: 'var(--t-sky)' } : selMonth !== m ? { color: 'var(--muted)' } : {}}>
             <span className="text-[10px] font-bold uppercase tracking-wider">{MONTHS_S[m - 1]}</span>
             <span className="text-[15px] font-extrabold">{n || '·'}</span>
           </button>
@@ -178,7 +178,7 @@ export default function Birthdays() {
               </button>
 
               {open && (
-                <div className="border-t p-4 fadein" style={{ borderColor: 'rgba(255,255,255,.06)' }}>
+                <div className="border-t p-4 fadein" style={{ borderColor: 'var(--hairline)' }}>
                   <div className="label">🎁 Gift ideas for {e.c.name.split(' ')[0]} — autosaves</div>
                   <textarea className="input" rows={2} placeholder="e.g. books they've mentioned, sizes, wishlist links…"
                     defaultValue={e.c.giftIdeas || ''}
@@ -199,7 +199,7 @@ export default function Birthdays() {
       </div>
 
       <div className="card p-4 mt-5 flex items-center gap-3 text-[12px]" style={{ color: 'var(--muted)' }}>
-        <Sparkles size={15} style={{ color: '#fbbf24' }} className="flex-none" />
+        <Sparkles size={15} style={{ color: 'var(--t-amber)' }} className="flex-none" />
         The 7-day rule ran when you opened this page — any birthday within the next week that lacked a reminder got a kanban task automatically. Delete a task and “Reminded” resets.
       </div>
     </div>
