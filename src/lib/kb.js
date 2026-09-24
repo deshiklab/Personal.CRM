@@ -185,7 +185,7 @@ Additive power features only. We never hold your data hostage:
 - Extra themes · unlimited history
 
 ## How to unlock
-1. **Google Play** — one-time in-app product (wired this phase).
+1. **Google Play** — one-time in-app product **personal_crm_pro_lifetime**. Buy or Restore on the Pro screen inside the Android app.
 2. **Licence key** — bought on the web via a Merchant of Record; paste it on the Pro screen. Verified **offline**.
 
 Your unlock lives in its own storage slot, separate from CRM data, so a data reset does not wipe a paid licence.

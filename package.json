@@ -24,6 +24,7 @@
     "@capacitor/core": "^8.5.2",
     "@capacitor/preferences": "^8.0.1",
     "@capgo/capacitor-social-login": "^8.5.10",
+    "@capgo/native-purchases": "^8.8.1",
     "lucide-react": "latest",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

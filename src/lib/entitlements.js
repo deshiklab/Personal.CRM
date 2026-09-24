@@ -3,7 +3,7 @@
  *
  * Commercial model (standing decision):
  *   · one-time purchase, no subscription
- *   · Android via Play Billing (non-consumable)  — wired later this phase
+ *   · Android via Play Billing (non-consumable)  — @capgo/native-purchases
  *   · Web/PWA via a licence key from a Merchant of Record  — wired later
  *   · 100% offline verification once unlocked (no account, no phone-home)
  *
@@ -257,11 +257,37 @@ export function activateComp({ reason = 'comp', deviceId } = {}) {
 }
 
 /**
- * Placeholder for Play Billing restore. Returns null until Billing is wired;
- * the Pro screen already calls it so the UX is ready.
+ * Restore a Play lifetime purchase. Delegates to lib/billing so the Pro
+ * screen and store share one code path. Returns the new licence, or null
+ * when nothing was restored (web / no purchase / error).
  */
-export async function restorePlayPurchase() {
-  return null
+export async function restorePlayPurchase(opts = {}) {
+  try {
+    const billing = await import('./billing')
+    const r = await billing.restorePurchases(opts)
+    return r?.ok ? r.license : null
+  } catch {
+    return null
+  }
+}
+
+/** Activate Pro from a verified Play transaction (used by billing.purchasePro). */
+export function activateFromPlay(tx = {}, { deviceId } = {}) {
+  return writeLicense({
+    tier: 'pro',
+    source: 'play',
+    productId: tx.productIdentifier || PRODUCT_ID_PLAY,
+    licenseKey: null,
+    unlockedAt: tx.purchaseDate || new Date().toISOString(),
+    deviceId: deviceId || null,
+    proof: tx.transactionId || tx.purchaseToken || null,
+    play: {
+      transactionId: tx.transactionId || null,
+      purchaseToken: tx.purchaseToken || null,
+      purchaseState: tx.purchaseState ?? null,
+      acknowledged: tx.isAcknowledged ?? true,
+    },
+  })
 }
 
 /** Human label for the current tier. */

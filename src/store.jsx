@@ -10,6 +10,7 @@ import * as snap from './lib/snapshots'
 import * as secrets from './lib/secrets'
 import * as storage from './lib/storage'
 import * as ent from './lib/entitlements'
+import * as billing from './lib/billing'
 
 const KEY = 'pcrm-v1'
 /* Fields that must be arrays. A half-written or hand-edited blob should lose
@@ -796,11 +797,38 @@ export function CrmProvider({ children }) {
     return next
   }
   const restorePurchases = async () => {
-    const r = await ent.restorePlayPurchase()
-    if (!r) { toast('No Play purchase to restore on this build yet', 'warn'); return false }
-    setLicense(r); toast('Pro restored'); return true
+    const r = await billing.restorePurchases({ deviceId: syncState?.deviceId })
+    if (!r.ok) {
+      toast(r.reason || 'Nothing to restore', r.code === 'not_found' ? 'warn' : 'warn')
+      return false
+    }
+    setLicense(r.license)
+    toast(r.code === 'already' ? 'Pro is already unlocked on this device' : 'Pro restored from Google Play')
+    return true
+  }
+  const purchaseProLifetime = async () => {
+    const r = await billing.purchasePro({ deviceId: syncState?.deviceId })
+    if (!r.ok) {
+      if (r.code !== 'cancelled') toast(r.reason || 'Purchase failed', 'warn')
+      return r
+    }
+    setLicense(r.license)
+    toast('Pro unlocked — thank you for supporting BITSCOL')
+    return r
   }
   const refreshLicense = () => setLicense(ent.readLicense())
+  const billingAvailable = () => billing.isBillingAvailable()
+  const getProProduct = () => billing.getProProduct()
+
+  /* silent Play sync on native boot — never downgrades a key/comp unlock */
+  useEffect(() => {
+    let alive = true
+    billing.syncPlayEntitlement({ deviceId: syncState?.deviceId }).then(next => {
+      if (!alive || !next) return
+      if (next.tier === 'pro' && next.source === 'play') setLicense(next)
+    }).catch(() => {})
+    return () => { alive = false }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const blankState = () => ({
     contacts: [], tasks: [], events: [], notes: [], tags: [], groups: [], rules: [], audit: [],

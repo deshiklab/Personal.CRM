@@ -26,17 +26,56 @@ const ICONS = {
 export default function Pro() {
   const {
     license, isPro, unlockWithKey, unlockComp, restorePurchases,
+    purchaseProLifetime, billingAvailable, getProProduct,
     contacts, toast,
   } = useCrm()
   const pro = isPro()
   const [key, setKey] = useState('')
   const [busy, setBusy] = useState(false)
+  const [busyPlay, setBusyPlay] = useState(false)
   const [err, setErr] = useState('')
   const [devKey, setDevKey] = useState('')
+  const [playOk, setPlayOk] = useState(false)
+  const [product, setProduct] = useState(null)
   const used = contacts?.length || 0
   const cap = FREE_LIMITS.contacts
 
   useEffect(() => { setErr('') }, [key])
+
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      try {
+        const ok = await billingAvailable()
+        if (!alive) return
+        setPlayOk(!!ok)
+        if (ok) {
+          const p = await getProProduct()
+          if (alive) setProduct(p)
+        }
+      } catch { if (alive) setPlayOk(false) }
+    })()
+    return () => { alive = false }
+  }, [billingAvailable, getProProduct])
+
+  const buyPlay = async () => {
+    setBusyPlay(true); setErr('')
+    try {
+      const r = await purchaseProLifetime()
+      if (r && !r.ok && r.code !== 'cancelled') setErr(r.reason || 'Purchase failed')
+    } finally {
+      setBusyPlay(false)
+    }
+  }
+
+  const doRestore = async () => {
+    setBusyPlay(true); setErr('')
+    try {
+      await restorePurchases()
+    } finally {
+      setBusyPlay(false)
+    }
+  }
 
   const redeem = async () => {
     setBusy(true); setErr('')
@@ -161,20 +200,42 @@ export default function Pro() {
             <div className="flex items-center gap-2 mb-2">
               <Smartphone size={16} style={{ color: 'var(--t-sky)' }} />
               <div className="font-bold text-[14px]">Google Play</div>
+              {playOk
+                ? <Pill color="#34d399">Billing ready</Pill>
+                : <Pill color="#94a3b8">Android app</Pill>}
             </div>
             <p className="text-[12.5px] leading-relaxed mb-3" style={{ color: 'var(--muted)' }}>
               Lifetime unlock as a one-time in-app product
               (<span className="font-mono text-[11px]"> {PRODUCT_ID_PLAY}</span>).
-              Play Billing is being wired this phase — Restore will pick up an existing purchase.
+              {playOk
+                ? ' Google Play handles the payment; the unlock is stored on this device.'
+                : ' Open the Android build from Google Play to buy. On the web, use a licence key instead.'}
             </p>
+            {product?.priceString && (
+              <div className="mb-3 text-[22px] font-extrabold tracking-tight">
+                {product.priceString}
+                <span className="text-[12px] font-semibold ml-2" style={{ color: 'var(--faint)' }}>one-time</span>
+              </div>
+            )}
             <div className="flex flex-wrap gap-2">
-              <button type="button" className="btn btn-primary" disabled title="Play Billing ships later this phase">
-                <Crown size={14} /> Buy on Play · soon
+              <button type="button" className="btn btn-primary"
+                disabled={!playOk || busyPlay}
+                title={playOk ? 'Buy lifetime Pro on Google Play' : 'Only available inside the Android app'}
+                onClick={buyPlay}>
+                {busyPlay ? <Loader2 size={14} className="animate-spin" /> : <Crown size={14} />}
+                {busyPlay ? 'Waiting on Play…' : (product?.priceString ? `Buy Pro · ${product.priceString}` : 'Buy on Play')}
               </button>
-              <button type="button" className="btn btn-ghost" onClick={() => restorePurchases()}>
+              <button type="button" className="btn btn-ghost" disabled={busyPlay} onClick={doRestore}>
                 <RefreshCw size={14} /> Restore purchases
               </button>
             </div>
+            {!playOk && (
+              <p className="text-[11.5px] mt-3 leading-snug" style={{ color: 'var(--faint)' }}>
+                Play Billing needs the signed Android app and a one-time product named{' '}
+                <span className="font-mono">{PRODUCT_ID_PLAY}</span> in Play Console
+                (Monetize → In-app products → Non-consumable).
+              </p>
+            )}
           </Card>
 
           <Card className="p-5">
@@ -210,6 +271,9 @@ export default function Pro() {
             <div>Product · <b style={{ color: 'var(--text)' }}>{license.productId || '—'}</b></div>
             {license.licenseKey && (
               <div className="sm:col-span-2 break-all">Key · <span className="font-mono text-[11px]">{license.licenseKey}</span></div>
+            )}
+            {license.source === 'play' && license.play?.transactionId && (
+              <div className="sm:col-span-2 break-all">Play order · <span className="font-mono text-[11px]">{license.play.transactionId}</span></div>
             )}
           </div>
           <p className="text-[12px] mt-3 leading-snug" style={{ color: 'var(--faint)' }}>
