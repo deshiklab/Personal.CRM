@@ -230,3 +230,37 @@ a:focus:not(:focus-visible),
   .icon-btn{min-width:44px;min-height:44px}
   .btn-sm{min-height:36px}
 }
+
+
+/* Pro extra theme — deep ocean (gated by can('themes')) */
+[data-theme="ocean"]{
+  --bg:#07131c;
+  --panel:#0c1c28;
+  --border:rgba(125,211,252,.10);
+  --border2:rgba(125,211,252,.20);
+  --text:#e0f2fe;
+  --muted:#7dd3fc;
+  --faint:#5b9bb8;
+  --i1:#38bdf8;
+  --i2:#22d3ee;
+  --i3:#2dd4bf;
+  --sidebg:rgba(14,40,56,.55);
+  --topbg:rgba(7,19,28,.72);
+  --cardbg:rgba(14,40,56,.55);
+  --cardbg2:rgba(20,55,75,.55);
+  --scroll:rgba(125,211,252,.18);
+  --hover:rgba(125,211,252,.07);
+  --hairline:rgba(125,211,252,.08);
+  --chipbg:rgba(125,211,252,.06);
+  --codebg:rgba(125,211,252,.10);
+  --t-green:#2dd4bf;  --t-amber:#fbbf24;  --t-rose:#fb7185;  --t-sky:#38bdf8;
+  --t-violet:#a78bfa; --t-pink:#f472b6;   --t-indigo:#38bdf8; --t-slate:#94a3b8;
+  --t-cyan:#22d3ee;   --t-red:#f87171;
+  --t-crimson:#fb7185; --t-orange:#f97316; --t-fuchsia:#e879f9; --t-lime:#a3e635;
+}
+[data-theme="ocean"] body::before{
+  background:
+    radial-gradient(700px 420px at 10% -10%, rgba(56,189,248,.18), transparent 60%),
+    radial-gradient(800px 500px at 98% 4%, rgba(34,211,238,.12), transparent 60%),
+    radial-gradient(700px 500px at 50% 112%, rgba(45,212,191,.10), transparent 60%);
+}

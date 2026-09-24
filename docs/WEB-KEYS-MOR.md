@@ -59,6 +59,13 @@ node -e "
 "
 ```
 
+CLI (preferred for stock):
+
+```bash
+npm run mint-keys -- --count 50 --csv /secure/pcrm-keys.csv
+# optional: --email buyer@x.com  --days 30  --json
+```
+
 Practical launch process:
 
 1. On a private machine, open the built app with `localStorage.pcrm-dev = '1'`.

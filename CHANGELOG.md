@@ -2,6 +2,13 @@
 
 ## 2.0.0 — Phase 2 · Make it sellable (2026-09-25)
 
+### Pro feature gates · mint · real screenshots
+- Gate auto-snapshots, Drive/Gist auto-sync interval, analytics 6M/12M, graph SVG/PNG export
+- Ocean extra theme (Pro); free stays light/dark
+- `scripts/mint-keys.mjs` — offline PCRM1 key pool for MoR
+- `scripts/capture-store-shots.mjs` — 1080×1920 captures from the live build
+- Real phone screenshots replaced stylized stand-ins in `docs/store-assets/`
+
 ### Ops pack · reminders UI · web keys
 - Inbox: quiet hours + per-type lead times + Apply schedule (Pro)
 - `docs/OPS-LAUNCH.md`, `TESTER-EMAILS.md`, `WEB-KEYS-MOR.md`

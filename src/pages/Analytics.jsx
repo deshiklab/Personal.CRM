@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Users, UserPlus, Activity as ActivityIcon, CheckCircle2, Clock3, PieChart as PieIcon,
@@ -77,9 +77,13 @@ function HBars({ items, onClick }) {
 
 /* ══════════════════════════════════════════════════════════ */
 export default function Analytics() {
-  const { contacts, tasks, activity, audit, tags, groups, events, imports, followUpStatus } = useCrm()
+  const { contacts, tasks, activity, audit, tags, groups, events, imports, followUpStatus, can, isPro } = useCrm()
   const nav = useNavigate()
-  const [win, setWin] = useState(12)
+  const advanced = can?.('advanced_analytics')
+  const [win, setWin] = useState(() => (typeof can === 'function' && can('advanced_analytics') ? 12 : 3))
+  // free tier is locked to the 3-month window
+  useEffect(() => { if (!advanced && win !== 3) setWin(3) }, [advanced, win])
+
 
   const d = useMemo(() => {
     const buckets = monthBuckets(win)
@@ -202,10 +206,24 @@ export default function Analytics() {
               { m: 'Growth vs previous period', v: (d.growth > 0 ? '+' : '') + d.growth + '%' },
               { m: 'Events in window', v: d.eventsInWin }, { m: 'Tags in use', v: d.tagUse.length },
             ]} headers={[{ label: 'Metric', get: r => r.m }, { label: 'Value', get: r => r.v }]} />
-            {[3, 6, 12].map(n => (
-              <button key={n} onClick={() => setWin(n)}
-                className={`chip chip-btn ${win === n ? 'on' : ''}`} style={{ padding: '6px 13px', fontSize: 12 }}>{n}M</button>
-            ))}
+            {[3, 6, 12].map(n => {
+              const locked = !advanced && n > 3
+              return (
+                <button key={n} type="button"
+                  onClick={() => locked ? null : setWin(n)}
+                  title={locked ? 'Pro unlocks 6M and 12M windows' : `${n}-month window`}
+                  disabled={locked}
+                  className={`chip chip-btn ${win === n ? 'on' : ''}`}
+                  style={{ padding: '6px 13px', fontSize: 12, opacity: locked ? .45 : 1 }}>
+                  {n}M{locked ? ' · Pro' : ''}
+                </button>
+              )
+            })}
+            {!advanced && (
+              <a href="#/pro" className="chip chip-btn" style={{ padding: '6px 10px', fontSize: 11, textDecoration: 'none' }}>
+                Longer windows on Pro
+              </a>
+            )}
           </div>
         } />
 

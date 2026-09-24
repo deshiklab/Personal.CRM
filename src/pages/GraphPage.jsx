@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Network, Search, ArrowRight, Users, X } from 'lucide-react'
+import { Network, Search, ArrowRight, Users, X, Download } from 'lucide-react'
 import { useCrm } from '../store'
 import { contactGroupIds } from '../store'
 import { SectionHead, Card, Avatar, Pill, Empty } from '../components/ui'
@@ -78,7 +78,7 @@ function stepPhysics(nodes, links, pos, dragId) {
 }
 
 export default function GraphPage() {
-  const { contacts, groups, contactById, groupById } = useCrm()
+  const { contacts, groups, contactById, groupById, can, toast } = useCrm()
   const navigate = useNavigate()
   const [opts, setOpts] = useState({ group: true, tag: true, introduced: true })
   const [gfilter, setGfilter] = useState([])
@@ -195,7 +195,54 @@ export default function GraphPage() {
   const introducedCount = graph.links.filter(l => l.type === 'introduced').length
   const avgDeg = graph.nodes.length ? (graph.nodes.reduce((s, n) => s + n.deg, 0) / graph.nodes.length).toFixed(1) : 0
 
-  return (
+  
+  const exportGraph = (fmt = 'svg') => {
+    if (!can?.('graph_export')) {
+      toast?.('Graph export is a Pro feature', 'warn')
+      return
+    }
+    const svg = svgRef.current
+    if (!svg) return
+    const clone = svg.cloneNode(true)
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+    const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+    bg.setAttribute('width', '100%'); bg.setAttribute('height', '100%')
+    bg.setAttribute('fill', getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0a0c11')
+    clone.insertBefore(bg, clone.firstChild)
+    const xml = new XMLSerializer().serializeToString(clone)
+    if (fmt === 'svg') {
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(new Blob([xml], { type: 'image/svg+xml;charset=utf-8' }))
+      a.download = 'personal-crm-network.svg'
+      document.body.appendChild(a); a.click(); a.remove()
+      toast?.('Network exported as SVG')
+      return
+    }
+    const img = new Image()
+    const svgUrl = URL.createObjectURL(new Blob([xml], { type: 'image/svg+xml;charset=utf-8' }))
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      const vb = svg.viewBox.baseVal
+      canvas.width = (vb?.width || 900) * 2
+      canvas.height = (vb?.height || 600) * 2
+      const ctx = canvas.getContext('2d')
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0a0c11'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      canvas.toBlob(blob => {
+        const a = document.createElement('a')
+        a.href = URL.createObjectURL(blob)
+        a.download = 'personal-crm-network.png'
+        document.body.appendChild(a); a.click(); a.remove()
+        toast?.('Network exported as PNG')
+      }, 'image/png')
+      URL.revokeObjectURL(svgUrl)
+    }
+    img.onerror = () => { URL.revokeObjectURL(svgUrl); toast?.('PNG export failed', 'warn') }
+    img.src = svgUrl
+  }
+
+return (
     <div className="max-w-[1280px] mx-auto">
       <SectionHead kicker="Beyond the core · 1" title="Relationship Map"
         sub="Who-knows-who: edges from shared groups (indigo), shared tags (cyan) and introductions (pink arrows). Drag nodes to rearrange; click for details." />
@@ -214,6 +261,16 @@ export default function GraphPage() {
         <span className="text-[11.5px] ml-auto" style={{ color: 'var(--faint)' }}>
           {graph.nodes.length} nodes · {graph.links.length} edges · {introducedCount} introductions · avg {avgDeg} links
         </span>
+        <button type="button" className="btn btn-ghost btn-sm"
+          title={can?.('graph_export') ? 'Export SVG' : 'Pro feature'}
+          onClick={() => exportGraph('svg')}>
+          <Download size={13} /> SVG{!can?.('graph_export') ? ' · Pro' : ''}
+        </button>
+        <button type="button" className="btn btn-ghost btn-sm"
+          title={can?.('graph_export') ? 'Export PNG' : 'Pro feature'}
+          onClick={() => exportGraph('png')}>
+          <Download size={13} /> PNG{!can?.('graph_export') ? ' · Pro' : ''}
+        </button>
       </div>
 
       <div className="flex items-center gap-1.5 mb-4 flex-wrap">

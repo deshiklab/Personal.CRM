@@ -80,8 +80,8 @@ export default function Topbar({ onMenu = () => {} }) {
              syncState.lastSyncAt ? tsRel(syncState.lastSyncAt) : 'Sync now'}
           </span>
         </button>
-        <button className="icon-btn" onClick={toggleTheme} data-tip="topbar.theme" title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}>
-          {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+        <button className="icon-btn" onClick={toggleTheme} data-tip="topbar.theme" title={theme === 'dark' ? 'Switch to light theme' : theme === 'light' ? 'Switch theme (Pro unlocks Ocean)' : 'Switch to dark theme'}>
+          {theme === 'dark' ? <Sun size={15} /> : theme === 'ocean' ? <Moon size={15} /> : <Moon size={15} />}
         </button>
         <button className="btn btn-ghost btn-sm" onClick={() => window.dispatchEvent(new Event('crm:search'))} title="Global search (⌘K)" data-tip="topbar.search" data-tour="search">
           <Search size={14} /><span className="hidden md:inline">Search</span>

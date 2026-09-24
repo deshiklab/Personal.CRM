@@ -33,6 +33,8 @@ ok('docs STORE-LISTING present', fs.existsSync(path.join(__dirname, 'docs/STORE-
 ok('feature graphic SVG present', fs.existsSync(path.join(__dirname, 'docs/store-assets/feature-graphic.svg')))
 ok('screenshot templates ≥ 8', fs.readdirSync(path.join(__dirname, 'docs/store-assets')).filter(f => f.startsWith('screenshot-')).length >= 8)
 ok('package has local-notifications', /@capacitor\/local-notifications/.test(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')))
+ok('mint-keys script present', fs.existsSync(path.join(__dirname, 'scripts/mint-keys.mjs')))
+ok('bundle gates advanced analytics / graph export', /advanced_analytics|graph_export|Longer windows on Pro|Export SVG|Ocean/.test(bundle))
 
 await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 60000 })
 await page.waitForTimeout(800)

@@ -16,7 +16,9 @@
     "keystore:debug": "./android/make-debug-keystore.sh",
     "keystore:release": "./scripts/make-release-keystore.sh",
     "test:probes": "node scripts/run-probes.mjs",
-    "test:probes:ci": "node scripts/run-probes.mjs --ci"
+    "test:probes:ci": "node scripts/run-probes.mjs --ci",
+    "mint-keys": "node scripts/mint-keys.mjs",
+    "capture:store": "node scripts/capture-store-shots.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",

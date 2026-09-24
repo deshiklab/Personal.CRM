@@ -103,7 +103,19 @@ export function CrmProvider({ children }) {
     document.documentElement.dataset.theme = theme
     storage.setItem('pcrm-theme', theme)
   }, [theme])
-  const toggleTheme = () => { setTheme(t => t === 'dark' ? 'light' : 'dark') }
+  const THEMES_FREE = ['dark', 'light']
+  const THEMES_PRO = ['dark', 'light', 'ocean']
+  const toggleTheme = () => {
+    const list = ent.can('themes', license) ? THEMES_PRO : THEMES_FREE
+    setTheme(t => {
+      const i = list.indexOf(t)
+      return list[(i < 0 ? 0 : i + 1) % list.length]
+    })
+  }
+  /* if licence drops, snap ocean back to dark */
+  useEffect(() => {
+    if (theme === 'ocean' && !ent.can('themes', license)) setTheme('dark')
+  }, [license, theme])
 
   const wiping = useRef(false)
   useEffect(() => {
@@ -757,7 +769,7 @@ export function CrmProvider({ children }) {
   const [snapshots, setSnapshots] = useState(() => snap.listSnapshots())
   const refreshSnapshots = () => setSnapshots(snap.listSnapshots())
   const takeSnapshotNow = (label = 'manual') => {
-    const rec = snap.takeSnapshot(buildBackupObject(), label, { force: true })
+    const rec = snap.takeSnapshot(buildBackupObject(), label, { force: true, maxCount: ent.can('auto_snapshots', license) ? 12 : ent.isPro(license) ? 12 : 3 })
     refreshSnapshots()
     if (rec) logAudit('user', 'Snapshot saved', label, `${Math.round(rec.bytes / 1024)} KB`)
     return rec
@@ -881,19 +893,21 @@ export function CrmProvider({ children }) {
   /* auto: one after every burst of edits (the ring de-dupes and rate-limits) */
   const coreFingerprint = useMemo(() => JSON.stringify(snapshotCore()), [contacts, tasks, events, notes, tags, groups, rules, relFreq, emails])
   useEffect(() => {
-    const t = setTimeout(() => { if (snap.takeSnapshot(buildBackupObject(), 'auto')) refreshSnapshots() }, 9000)
+    if (!ent.can('auto_snapshots', license)) return
+    const t = setTimeout(() => { if (snap.takeSnapshot(buildBackupObject(), 'auto', { maxCount: ent.can('auto_snapshots', license) ? 12 : 3 })) refreshSnapshots() }, 9000)
     return () => clearTimeout(t)
       // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [coreFingerprint])
+  }, [coreFingerprint, license])
 
-  /* auto: once on start-up, but only if the newest copy is getting stale */
+  /* auto: once on start-up, but only if the newest copy is getting stale (Pro) */
   useEffect(() => {
+    if (!ent.can('auto_snapshots', license)) return
     const newest = snapshots[0]?.at ? new Date(snapshots[0].at).getTime() : 0
     if (Date.now() - newest > 6 * 3600e3) {
-      if (snap.takeSnapshot(buildBackupObject(), 'startup', { force: true })) refreshSnapshots()
+      if (snap.takeSnapshot(buildBackupObject(), 'startup', { force: true, maxCount: ent.can('auto_snapshots', license) ? 12 : 3 })) refreshSnapshots()
     }
       // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [license])
 
   const applySyncSnapshot = d => {
     if (Array.isArray(d.contacts)) setContacts(d.contacts.map(normalizeContact))
@@ -1014,6 +1028,7 @@ export function CrmProvider({ children }) {
   syncRef.current = syncNow
   useEffect(() => {
     if (!syncState.enabled || syncProvider() === 'none') return
+    if (!ent.can('drive_autosync', license)) return  /* free: manual Sync only */
     const tick = () => { if (navigator.onLine !== false) syncRef.current?.({}) }
     const iv = setInterval(tick, 60e3)
     const onVis = () => { if (document.visibilityState === 'visible') tick() }
@@ -1021,7 +1036,7 @@ export function CrmProvider({ children }) {
     document.addEventListener('visibilitychange', onVis)
     window.addEventListener('online', onOnline)
     return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onVis); window.removeEventListener('online', onOnline) }
-  }, [syncState.enabled, googleMode, gist.token])
+  }, [syncState.enabled, googleMode, gist.token, license])
 
   /* ── read-only calendar feed subscriptions (real calendars, no OAuth) ── */
   const addIcsFeed = (url, opts = {}) => {

@@ -15,7 +15,9 @@
 import * as storage from './storage'
 
 const KEY = 'pcrm-snapshots'
-const MAX_COUNT = 6
+const MAX_COUNT_FREE = 3
+const MAX_COUNT_PRO = 12
+const MAX_COUNT = 6  /* default; takeSnapshot opts can override */
 const MAX_BYTES = 4 * 1024 * 1024   // trim the ring rather than exceed local storage
 const MIN_GAP_MS = 45 * 1000        // never snapshot more than once per 45s of edits
 
@@ -59,7 +61,7 @@ export const latestSnapshotHash = () => (read()[0]?.hash || null)
  * Store a snapshot of `data`.
  * @returns the snapshot record, or null when nothing worth storing happened.
  */
-export const takeSnapshot = (data, label = 'auto', { force = false } = {}) => {
+export const takeSnapshot = (data, label = 'auto', { force = false, maxCount = MAX_COUNT } = {}) => {
   if (!data) return null
   let json
   try { json = JSON.stringify(data) } catch { return null }
@@ -79,7 +81,7 @@ export const takeSnapshot = (data, label = 'auto', { force = false } = {}) => {
   let next = [rec, ...list]
 
   /* trim: newest-first by count, then by total size */
-  next = next.slice(0, MAX_COUNT)
+  next = next.slice(0, Math.max(1, maxCount || MAX_COUNT))
   let total = next.reduce((n, s) => n + (s.bytes || 0), 0)
   while (next.length > 1 && total > MAX_BYTES) {
     const dropped = next.pop()

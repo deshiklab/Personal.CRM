@@ -74,6 +74,8 @@ Minimum 2, aim for **8**. Suggested order:
 7. **Pro screen** — Free vs Pro, one-time copy  
 8. **About / BITSCOL credit**
 
+Phone PNGs in `docs/store-assets/screenshot-0N-*.png` are **1080×1920 captures from the web build** (`npm run capture:store`). Prefer a physical-device pass before production if you can; these are already uploadable.
+
 Capture from a real device or Android emulator at xxxhdpi. Avoid browser chrome.
 
 ### Feature graphic (1024×500)
