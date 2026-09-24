@@ -4,10 +4,10 @@ name: Probes
 # production build. A red X here means the build is not honest/safe/responsive.
 on:
   push:
-    branches: [main, phase0]
+    branches: [main, phase0, phase2]
     paths: ['src/**', 'package.json', 'package-lock.json', 'probe-*.mjs', 'scripts/**', 'vite.config.*', 'index.html', '.github/workflows/probes.yml']
   pull_request:
-    branches: [main, phase0]
+    branches: [main, phase0, phase2]
   workflow_dispatch:
 
 jobs:
