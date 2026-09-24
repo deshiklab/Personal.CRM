@@ -11,6 +11,7 @@ import * as secrets from './lib/secrets'
 import * as storage from './lib/storage'
 import * as ent from './lib/entitlements'
 import * as billing from './lib/billing'
+import * as reminders from './lib/reminders'
 
 const KEY = 'pcrm-v1'
 /* Fields that must be arrays. A half-written or hand-edited blob should lose
@@ -1307,6 +1308,60 @@ export function CrmProvider({ children }) {
     }).sort((a, b) => PRIO[a.priority] - PRIO[b.priority] || (b.ts || '').localeCompare(a.ts || ''))
   }
 
+
+  /* ── local OS reminders (Pro) ── */
+  const [reminderPrefs, setReminderPrefs] = useState(() => reminders.readPrefs())
+  const patchReminderPrefs = (partial) => {
+    const next = reminders.writePrefs({ ...reminderPrefs, ...partial })
+    setReminderPrefs(next)
+    return next
+  }
+  const requestReminderPermission = async () => {
+    const p = await reminders.requestPermission()
+    patchReminderPrefs({ permission: p })
+    return p
+  }
+  const sendTestReminder = async () => {
+    if (!ent.can('reminders', license)) {
+      toast('Reminders are a Pro feature', 'warn')
+      return { ok: false, reason: 'pro-required' }
+    }
+    const r = await reminders.sendTestNotification()
+    if (r.ok) toast('Test reminder sent')
+    else toast(r.reason === 'permission' ? 'Notification permission needed' : (r.reason || 'Failed'), 'warn')
+    return r
+  }
+  const resyncReminders = async () => {
+    const list = buildNotifications()
+    const r = await reminders.syncReminders(list, {
+      enabled: reminderPrefs.enabled !== false,
+      canRemind: ent.can('reminders', license),
+    })
+    if (r.ok && r.scheduled != null) {
+      patchReminderPrefs({ lastSyncAt: new Date().toISOString(), permission: r.permission || reminderPrefs.permission })
+    }
+    return r
+  }
+  useEffect(() => {
+    let alive = true
+    const tick = async () => {
+      try {
+        const list = buildNotifications()
+        if (!alive) return
+        await reminders.syncReminders(list, {
+          enabled: reminderPrefs.enabled !== false,
+          canRemind: ent.can('reminders', license),
+        })
+      } catch {}
+    }
+    tick()
+    const id = setInterval(tick, 1000 * 60 * 15) // refresh every 15m
+    const onVis = () => { if (document.visibilityState === 'visible') tick() }
+    document.addEventListener('visibilitychange', onVis)
+    return () => { alive = false; clearInterval(id); document.removeEventListener('visibilitychange', onVis) }
+  // rebuild when the underlying data or licence/prefs change
+  }, [contacts, tasks, events, audit, notifState, notifPrefs, license, reminderPrefs.enabled]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const value = {
     contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, gcal, toasts,
     contactById, groupById, tagById, toast, followUpStatus, logActivity, logAudit,
@@ -1323,13 +1378,14 @@ export function CrmProvider({ children }) {
     webhooks, saveWebhooks, testWebhook, icsFeeds, addIcsFeed, syncIcsFeed, removeIcsFeed, syncing, syncState, syncReport, syncNow, setSyncEnabled, gist, saveGistToken, syncProvider, lock, sessionUnlocked, setupPin, skipPinSetup, unlockWithPin, lockNow, changePin, removePin, verifyPin, factoryReset, buildBackup,
     commitImport, rollbackImport, resolveAuditConflict, updateFrequency, snoozeFollowUp, unsnooze, resetAll,
     notifState, notifPrefs, buildNotifications, dismissNotif, snoozeNotif, unsnoozeNotif, markNotifRead, markAllNotifsRead, toggleNotifPref,
+    reminderPrefs, patchReminderPrefs, requestReminderPermission, sendTestReminder, resyncReminders,
     widgetPrefs, toggleWidget, moveWidget, resetWidgets, DEFAULT_WIDGET_ORDER,
     theme, toggleTheme,
     kbArticles, upsertKbArticle, deleteKbArticle,
     snapshots, takeSnapshotNow, restoreSnapshotById, deleteSnapshotById, downloadSnapshot, refreshSnapshots,
     pinStatus, PIN_FREE_ATTEMPTS,
     helpPrefs, patchHelpPrefs, toggleBookmark, voteArticle,
-    license, isPro, can, unlockWithKey, unlockComp, restorePurchases, refreshLicense, FREE_LIMITS: ent.FREE_LIMITS, PRO_FEATURES: ent.PRO_FEATURES, tierLabel: () => ent.tierLabel(license)
+    license, isPro, can, unlockWithKey, unlockComp, restorePurchases, refreshLicense, purchaseProLifetime, billingAvailable, getProProduct, FREE_LIMITS: ent.FREE_LIMITS, PRO_FEATURES: ent.PRO_FEATURES, tierLabel: () => ent.tierLabel(license)
   }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

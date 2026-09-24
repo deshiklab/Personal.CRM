@@ -2,26 +2,38 @@
 
 ## 2.0.0 — Phase 2 · Make it sellable (2026-09-25)
 
-### Play Billing
-- `@capgo/native-purchases` — one-time INAPP product `personal_crm_pro_lifetime`
-- `src/lib/billing.js` — purchase, restore, silent boot sync, web no-op
-- Pro screen: live price when Play is available, **Buy** + **Restore**
-- Android `BILLING` permission + Gradle module wired
-- Local licence written with `source:'play'` after acknowledge
+### Local reminders
+- `@capacitor/local-notifications` — on-device nudges for tasks, follow-ups, birthdays, events
+- `src/lib/reminders.js` — schedule/cancel/sync, quiet hours, web Notification fallback
+- Notification Center → **Device reminders** (Pro-gated); free keeps in-app inbox
+- Android: `POST_NOTIFICATIONS`, exact alarm, boot, vibrate; channel `pcrm_reminders`
+- Service worker `notificationclick` deep-links into the right screen
+
+### A11y & virtualised contacts
+- Skip-to-content link, `main#main-content`, focus-visible rings, `prefers-reduced-motion`
+- Larger touch targets for icon buttons on coarse pointers
+- `VirtualList` windowing on Contacts — smooth past 5 000 rows
+- Contact rows keyboard-activatable (Enter/Space) with aria-labels
+
+### Store assets & closed test
+- `docs/STORE-LISTING.md` — short/full description, data safety, screenshot plan
+- `docs/CLOSED-TEST.md` — 14–16 testers × 14 days, invite blurb, AAB steps
+- `docs/store-assets/` — feature graphic SVG + 8 screenshot frame templates
+- Android `versionCode` **4** (versionName 2.0.0)
+
+### Play Billing (earlier in 2.0.0)
+- `@capgo/native-purchases` — one-time INAPP `personal_crm_pro_lifetime`
+- Pro screen Buy + Restore; web degrades to licence key
+- `docs/PLAY-BILLING.md`
 
 ### Entitlements & Pro screen
-- **Entitlements module** (`src/lib/entitlements.js`) — free/pro tier, offline licence-key verify (HMAC), feature catalogue
-- **Pro screen** (`/#/pro`) — Free vs Pro comparison, licence-key redeem, honest money copy
-- Free-tier **contact cap** (75) with upgrade toast
-- Version **2.0.0** (app, package, Android `versionName` / `versionCode` 3)
-- `probe-pro.mjs` — key mint/verify + Pro UI + Play affordances
-- KB article `pro.lifetime`
-- `docs/PLAY-BILLING.md` — Play Console setup checklist
+- Free/pro tier, offline HMAC licence keys, contact cap 75
+- Pro screen Free vs Pro · KB `pro.lifetime`
 
-### Still this phase
-- Local reminders (Android + Web Notifications)
-- A11y / virtualised contacts / 5k test
-- Store assets + closed-test AAB
+### Still optional / ops
+- Capture real 1080×1920 screenshots from a device into `docs/store-assets/`
+- Upload signed AAB to closed testing; recruit 14–16 testers
+- Create Play product + license testers
 
 ## 1.x — Phase 0 / Phase 1
 

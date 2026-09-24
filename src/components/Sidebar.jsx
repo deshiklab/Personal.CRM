@@ -61,7 +61,7 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto p-2.5 flex flex-col gap-1">
+      <nav aria-label="Primary" className="flex-1 overflow-y-auto p-2.5 flex flex-col gap-1">
         {NAV.map(n => (
           <NavLink key={n.to} to={n.to} end={n.end} onClick={onClose}
             data-tip={`nav.${NAV_TIP[n.to] || n.to.slice(1)}`}

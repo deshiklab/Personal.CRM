@@ -9,6 +9,7 @@ import { contactGroupIds } from '../store'
 import PinConfirm from '../components/PinConfirm'
 import CardScanModal, { CardThumb } from '../components/CardScanModal'
 import { pickAndCompress } from '../lib/media'
+import VirtualList from '../components/VirtualList'
 
 const ST_TONE = { overdue: '#fb7185', 'due-soon': '#fbbf24', ok: '#34d399', snoozed: '#94a3b8' }
 const ST_LABEL = { overdue: 'Overdue', 'due-soon': 'Due soon', ok: 'In touch', snoozed: 'Snoozed' }
@@ -172,81 +173,124 @@ export default function Contacts() {
         </div>
       )}
 
-      <div className="card overflow-hidden overflow-x-auto">
-        <table className="table min-w-[760px]">
-          <thead><tr>
-            <th style={{ width: 34 }}>
-              <input type="checkbox" checked={allSel} onChange={toggleAll} aria-label="Select all contacts"
-                style={{ width: 15, height: 15, accentColor: 'var(--i1)', cursor: 'pointer' }} />
-            </th>
-            <th style={{ width: 34 }}></th><th>Name</th><th>Groups</th><th>Tags</th><th>Follow-up</th><th>Last contact</th>
-            <th style={{ width: 96 }}></th>
-          </tr></thead>
-          <tbody>
-            {list.map(c => {
+      <div className="card overflow-hidden" role="region" aria-label="Contacts directory">
+        {/* sticky header row */}
+        <div className="hidden md:grid items-center gap-2 px-3 py-2 text-[11px] font-bold uppercase tracking-[.08em]"
+          style={{
+            gridTemplateColumns: '34px 34px minmax(160px,1.4fr) minmax(100px,.9fr) minmax(100px,.9fr) 110px 100px 96px',
+            color: 'var(--faint)', borderBottom: '1px solid var(--hairline)', background: 'var(--cardbg2)',
+          }}
+          role="row">
+          <span role="columnheader">
+            <input type="checkbox" checked={allSel} onChange={toggleAll} aria-label="Select all contacts"
+              style={{ width: 15, height: 15, accentColor: 'var(--i1)', cursor: 'pointer' }} />
+          </span>
+          <span role="columnheader" className="sr-only">Star</span>
+          <span role="columnheader">Name</span>
+          <span role="columnheader">Groups</span>
+          <span role="columnheader">Tags</span>
+          <span role="columnheader">Follow-up</span>
+          <span role="columnheader">Last contact</span>
+          <span role="columnheader" className="sr-only">Actions</span>
+        </div>
+
+        {list.length === 0 ? (
+          contacts.length === 0
+            ? <Empty icon={Users} title="Your network starts here"
+                steps={[
+                  'Tap Add contact, or Scan card to fill the form from a visiting-card photo.',
+                  'Tag them and put them in a group so they show up in Follow-ups.',
+                  'Set how often you want to touch base — the app will remind you.',
+                ]}
+                action={() => setAddOpen(true)} actionLabel="Add your first contact"
+                guide="people.contacts">
+                Nobody is in the CRM yet. Everything else — follow-ups, birthdays, the graph — lights up once you add people.
+              </Empty>
+            : <Empty icon={Users} title="No contacts match">Try clearing filters, or search for a different name.</Empty>
+        ) : (
+          <VirtualList
+            items={list}
+            rowHeight={64}
+            overscan={10}
+            maxHeight={Math.min(720, Math.max(320, (typeof window !== 'undefined' ? window.innerHeight : 800) - 280))}
+            ariaLabel={`${list.length} contacts`}
+            role="list"
+            getKey={(c) => c.id}
+            renderRow={(c) => {
               const st = followUpStatus(c)
               const cgs = contactGroupIds(c)
               const isSel = selSet.has(c.id)
               return (
-                <tr key={c.id} className="rowclick" onClick={() => setOpenId(c.id)} data-tip-contact={c.id}
-                  style={isSel ? { background: 'var(--hover)' } : undefined}>
-                  <td onClick={e => e.stopPropagation()}>
+                <div
+                  className="rowclick contact-row grid items-center gap-2 px-3"
+                  onClick={() => setOpenId(c.id)}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenId(c.id) } }}
+                  role="button"
+                  tabIndex={0}
+                  data-tip-contact={c.id}
+                  aria-label={`${c.name}${c.company ? ', ' + c.company : ''}`}
+                  style={{
+                    gridTemplateColumns: '34px 34px minmax(0,1fr)',
+                    height: 64,
+                    borderBottom: '1px solid var(--hairline)',
+                    background: isSel ? 'var(--hover)' : undefined,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <span onClick={e => e.stopPropagation()} className="grid place-items-center">
                     <input type="checkbox" checked={isSel} onChange={() => toggleSel(c.id)} aria-label={`Select ${c.name}`}
                       style={{ width: 15, height: 15, accentColor: 'var(--i1)', cursor: 'pointer' }} />
-                  </td>
-                  <td onClick={e => { e.stopPropagation(); crm.toggleStar(c.id) }}>
-                    <Star size={15} style={{ color: c.starred ? '#fbbf24' : 'var(--faint)' }} fill={c.starred ? '#fbbf24' : 'none'} />
-                  </td>
-                  <td>
-                    <div className="flex items-center gap-3">
-                      <Avatar name={c.name} photo={c.photo} size={34} />
-                      <div className="min-w-0">
-                        <div className="font-semibold text-[13.5px] truncate">{c.name}</div>
-                        <div className="text-[11.5px] truncate" style={{ color: 'var(--faint)' }}>{[c.role, c.company].filter(Boolean).join(' · ') || '—'}</div>
+                  </span>
+                  <span className="grid place-items-center"
+                    onClick={e => { e.stopPropagation(); crm.toggleStar(c.id) }}
+                    role="button" tabIndex={0} aria-label={c.starred ? `Unstar ${c.name}` : `Star ${c.name}`}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); crm.toggleStar(c.id) } }}>
+                    <Star size={15} style={{ color: c.starred ? '#fbbf24' : 'var(--faint)' }} fill={c.starred ? '#fbbf24' : 'none'} aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0 flex items-center gap-3">
+                    <Avatar name={c.name} photo={c.photo} size={34} />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold text-[13.5px] truncate">{c.name}</div>
+                      <div className="text-[11.5px] truncate" style={{ color: 'var(--faint)' }}>{[c.role, c.company].filter(Boolean).join(' · ') || '—'}</div>
+                      <div className="md:hidden flex items-center gap-2 mt-0.5 flex-wrap">
+                        <Pill color={ST_TONE[st.state]}>{ST_LABEL[st.state]}{st.state === 'overdue' ? ` +${st.overdueBy}d` : ''}</Pill>
+                        <span className="text-[11px]" style={{ color: 'var(--muted)' }}>{relDay(c.lastContact)}</span>
                       </div>
                     </div>
-                  </td>
-                  <td>
-                    {cgs.length === 0
-                      ? <span className="text-[12px]" style={{ color: 'var(--faint)' }}>—</span>
-                      : <div className="flex gap-1 flex-wrap">
-                          {cgs.slice(0, 2).map(gid => groupById[gid] && <Pill key={gid} color={groupById[gid].color}>{groupById[gid].name}</Pill>)}
-                          {cgs.length > 2 && <span className="chip">+{cgs.length - 2}</span>}
-                        </div>}
-                  </td>
-                  <td>
-                    <div className="flex gap-1 flex-wrap">
-                      {c.tags.slice(0, 3).map(tid => <TagPill key={tid} tag={crm.tagById[tid]} small />)}
-                      {c.tags.length > 3 && <span className="chip">+{c.tags.length - 3}</span>}
+                    {/* desktop meta columns */}
+                    <div className="hidden md:grid items-center gap-2 flex-none" style={{ gridTemplateColumns: 'minmax(100px,.9fr) minmax(100px,.9fr) 110px 100px 96px', width: 'min(560px, 48vw)' }}>
+                      <div>
+                        {cgs.length === 0
+                          ? <span className="text-[12px]" style={{ color: 'var(--faint)' }}>—</span>
+                          : <div className="flex gap-1 flex-wrap">
+                              {cgs.slice(0, 2).map(gid => groupById[gid] && <Pill key={gid} color={groupById[gid].color}>{groupById[gid].name}</Pill>)}
+                              {cgs.length > 2 && <span className="chip">+{cgs.length - 2}</span>}
+                            </div>}
+                      </div>
+                      <div className="flex gap-1 flex-wrap">
+                        {(c.tags || []).slice(0, 3).map(tid => <TagPill key={tid} tag={crm.tagById[tid]} small />)}
+                        {(c.tags || []).length > 3 && <span className="chip">+{c.tags.length - 3}</span>}
+                      </div>
+                      <div><Pill color={ST_TONE[st.state]}>{ST_LABEL[st.state]}{st.state === 'overdue' ? ` +${st.overdueBy}d` : ''}</Pill></div>
+                      <div><span className="text-[12px] font-medium" style={{ color: 'var(--muted)' }}>{relDay(c.lastContact)}</span></div>
+                      <div onClick={e => e.stopPropagation()} className="flex items-center gap-1 justify-end">
+                        <button type="button" className="icon-btn" style={{ width: 28, height: 28 }} title="Edit contact" aria-label={`Edit ${c.name}`}
+                          onClick={() => setEditId(c.id)}><Pencil size={13} /></button>
+                        <button type="button" className="icon-btn" style={{ width: 28, height: 28, color: 'var(--t-rose)' }} title="Delete contact" aria-label={`Delete ${c.name}`}
+                          onClick={() => askDelete([c.id])}><Trash2 size={13} /></button>
+                      </div>
                     </div>
-                  </td>
-                  <td><Pill color={ST_TONE[st.state]}>{ST_LABEL[st.state]}{st.state === 'overdue' ? ` +${st.overdueBy}d` : ''}</Pill></td>
-                  <td><span className="text-[12px] font-medium" style={{ color: 'var(--muted)' }}>{relDay(c.lastContact)}</span></td>
-                  <td onClick={e => e.stopPropagation()}>
-                    <div className="flex items-center gap-1 justify-end">
-                      <button className="icon-btn" style={{ width: 28, height: 28 }} title="Edit contact"
-                        onClick={() => setEditId(c.id)}><Pencil size={13} /></button>
-                      <button className="icon-btn" style={{ width: 28, height: 28, color: 'var(--t-rose)' }} title="Delete contact"
-                        onClick={() => askDelete([c.id])}><Trash2 size={13} /></button>
-                    </div>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               )
-            })}
-          </tbody>
-        </table>
-        {list.length === 0 && (contacts.length === 0
-          ? <Empty icon={Users} title="Your network starts here"
-              steps={[
-                'Tap Add contact, or Scan card to fill the form from a visiting-card photo.',
-                'Tag them and put them in a group so they show up in Follow-ups.',
-                'Set how often you want to touch base — the app will remind you.',
-              ]}
-              action={() => setAddOpen(true)} actionLabel="Add your first contact"
-              guide="people.contacts">
-              Nobody is in the CRM yet. Everything else — follow-ups, birthdays, the graph — lights up once you add people.
-            </Empty>
-          : <Empty icon={Users} title="No contacts match">Try clearing filters, or search for a different name.</Empty>)}
+            }}
+          />
+        )}
+        {list.length > 80 && (
+          <div className="px-3 py-1.5 text-[11px] text-center" style={{ color: 'var(--faint)', borderTop: '1px solid var(--hairline)' }}>
+            Showing {list.length.toLocaleString()} contacts · windowed list (smooth past 5 000)
+          </div>
+        )}
       </div>
 
       <Drawer open={!!open} onClose={() => setOpenId(null)}>

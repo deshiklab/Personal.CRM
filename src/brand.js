@@ -33,5 +33,6 @@ export const THIRD_PARTY = [
   { name: 'Capacitor',    license: 'MIT',        url: 'https://github.com/ionic-team/capacitor' },
   { name: 'Tesseract.js',  license: 'Apache-2.0', url: 'https://github.com/naptha/tesseract.js' },
   { name: 'Capgo Native Purchases', license: 'MIT', url: 'https://github.com/Cap-go/capacitor-native-purchases' },
+  { name: 'Capacitor Local Notifications', license: 'MIT', url: 'https://github.com/ionic-team/capacitor-plugins' },
   { name: 'Vite',         license: 'MIT',        url: 'https://github.com/vitejs/vite' },
 ]

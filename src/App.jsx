@@ -84,11 +84,12 @@ export default function App() {
   if (lock.hash && !sessionUnlocked) return <LockScreen mode="unlock" />
   return (
     <div className="flex h-screen overflow-hidden">
+      <a href="#main-content" className="skip-link">Skip to main content</a>
       <CrashProbe />
       <Sidebar open={navOpen} onClose={() => setNavOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0">
         <Topbar onMenu={() => setNavOpen(true)} />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <main id="main-content" className="flex-1 overflow-y-auto p-4 md:p-6" tabIndex={-1} role="main">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/contacts" element={<Contacts />} />

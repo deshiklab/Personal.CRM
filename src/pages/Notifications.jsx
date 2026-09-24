@@ -164,22 +164,44 @@ function NotifCard({ n, snoozed, dismissedCard }) {
 }
 
 function PrefsCard({ mutedTypes }) {
-  const { notifPrefs, toggleNotifPref, toast } = useCrm()
-  const testPush = async () => {
-    if (!('Notification' in window)) return toast('Browser notifications unsupported here', 'warn')
-    if (Notification.permission === 'granted') {
-      new Notification('Personal CRM', { body: 'Reminders work! You’ll see nudges for tasks, follow-ups and birthdays here.' })
-      toast('Test notification sent')
-    } else if (Notification.permission === 'default') {
-      const p = await Notification.requestPermission()
-      toast(p === 'granted' ? 'Permission granted — test again' : 'Permission declined', p === 'granted' ? 'ok' : 'warn')
-    } else {
-      toast('Notifications are blocked in this browser', 'warn')
-    }
+  const {
+    notifPrefs, toggleNotifPref, toast, can, isPro,
+    reminderPrefs, patchReminderPrefs, requestReminderPermission,
+    sendTestReminder, resyncReminders,
+  } = useCrm()
+  const proReminders = can?.('reminders')
+  const [busy, setBusy] = useState(false)
+  const [pending, setPending] = useState(null)
+
+  const enableOs = async () => {
+    setBusy(true)
+    try {
+      if (!proReminders) {
+        toast('Local OS reminders are a Pro feature — unlock on the Pro screen', 'warn')
+        return
+      }
+      const p = await requestReminderPermission()
+      if (p !== 'granted') {
+        toast(p === 'denied' ? 'Permission denied — enable notifications in system settings' : 'Permission not granted', 'warn')
+        return
+      }
+      patchReminderPrefs({ enabled: true, permission: p })
+      const r = await resyncReminders()
+      setPending(r?.scheduled ?? 0)
+      toast(r?.ok ? `Reminders armed · ${r.scheduled || 0} scheduled` : 'Could not schedule reminders', r?.ok ? 'ok' : 'warn')
+    } finally { setBusy(false) }
   }
+
+  const testPush = async () => {
+    setBusy(true)
+    try { await sendTestReminder() } finally { setBusy(false) }
+  }
+
+  const perm = reminderPrefs?.permission || 'unknown'
+
   return (
     <Card className="p-4">
-      <h3 className="font-bold text-[13.5px] mb-1">Push preferences</h3>
+      <h3 className="font-bold text-[13.5px] mb-1">Inbox categories</h3>
       <p className="text-[11.5px] mb-3" style={{ color: 'var(--faint)' }}>Muted categories are hidden from the inbox and the sidebar badge.</p>
       <div className="flex flex-col gap-2.5">
         {Object.entries(TYPES).map(([k, t]) => (
@@ -193,7 +215,50 @@ function PrefsCard({ mutedTypes }) {
       {mutedTypes.length > 0 && (
         <p className="text-[11.5px] mt-3" style={{ color: 'var(--faint)' }}>Currently muted: {mutedTypes.map(k => TYPES[k].label).join(', ')}</p>
       )}
-      <button className="btn btn-ghost btn-sm w-full mt-4" onClick={testPush}><BellRing size={13} /> Send test notification</button>
+
+      <div className="mt-5 pt-4" style={{ borderTop: '1px solid var(--hairline)' }}>
+        <div className="flex items-center gap-2 mb-1">
+          <h3 className="font-bold text-[13.5px] flex-1">Device reminders</h3>
+          {!proReminders && <span className="chip" style={{ fontSize: 10 }}>PRO</span>}
+        </div>
+        <p className="text-[11.5px] mb-3 leading-snug" style={{ color: 'var(--faint)' }}>
+          Local OS nudges for due tasks, follow-ups and birthdays. Nothing leaves this device.
+          {!proReminders && ' Unlock Pro to arm them.'}
+        </p>
+        <div className="flex items-center gap-2.5 mb-3">
+          <span className="text-[12.5px] font-medium flex-1">Arm reminders</span>
+          <Toggle
+            on={!!proReminders && reminderPrefs?.enabled !== false && perm === 'granted'}
+            disabled={!proReminders || busy}
+            onChange={async v => {
+              if (!proReminders) return toast('Pro required', 'warn')
+              if (v) return enableOs()
+              patchReminderPrefs({ enabled: false })
+              await resyncReminders()
+              toast('Device reminders off')
+            }}
+          />
+        </div>
+        <div className="text-[11.5px] mb-3 space-y-1" style={{ color: 'var(--faint)' }}>
+          <div>Permission · <b style={{ color: 'var(--text)' }}>{perm}</b></div>
+          {reminderPrefs?.lastSyncAt && <div>Last sync · {new Date(reminderPrefs.lastSyncAt).toLocaleString()}</div>}
+          {pending != null && <div>Scheduled · {pending}</div>}
+        </div>
+        <div className="flex flex-col gap-2">
+          <button type="button" className="btn btn-primary btn-sm w-full" disabled={busy || !proReminders}
+            onClick={enableOs}>
+            <BellRing size={13} /> {perm === 'granted' ? 'Resync schedule' : 'Enable device reminders'}
+          </button>
+          <button type="button" className="btn btn-ghost btn-sm w-full" disabled={busy || !proReminders} onClick={testPush}>
+            <Bell size={13} /> Send test notification
+          </button>
+          {!proReminders && (
+            <a href="#/pro" className="btn btn-ghost btn-sm w-full" style={{ textDecoration: 'none' }}>
+              Unlock Pro for reminders
+            </a>
+          )}
+        </div>
+      </div>
     </Card>
   )
 }

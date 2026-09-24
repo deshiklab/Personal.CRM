@@ -193,6 +193,31 @@ Your unlock lives in its own storage slot, separate from CRM data, so a data res
     related: ['privacy.local', 'data.backup', 'start.layout'],
   },
   {
+    id: 'pro.reminders', cat: 'pro', title: 'Device reminders',
+    blurb: 'Local OS nudges for tasks, follow-ups and birthdays — Pro, on this device only.',
+    tags: ['reminders', 'notifications', 'pro', 'android', 'push'], updated: '2026-09-25',
+    body: `Personal CRM can tap you on the shoulder when a task is due, a follow-up slips, or a birthday is close.
+
+## How it works
+- Nudges are **scheduled on this device** (Android local notifications, or the browser Notification API on the web).
+- Nothing is sent to a BITSCOL server. There is no Firebase/APNs account tied to you.
+- The in-app **Inbox** stays free for everyone. **Device reminders** are a Pro feature.
+
+## Turn them on
+1. Unlock Pro (Play purchase or licence key).
+2. Open **Inbox** → **Device reminders** → **Enable**.
+3. Allow notification permission when the system asks.
+4. Use **Send test notification** to confirm.
+
+## Quiet hours
+By default, reminders avoid late night (22:00–07:00 local) and slide to the morning.
+
+## Web / PWA note
+Browsers cannot wake a closed tab days ahead without extra permissions. Keep the installed PWA or use the Android app for reliable long-range nudges.
+`,
+    related: ['pro.lifetime', 'privacy.local'],
+  },
+  {
     id: 'people.cardscan', cat: 'people', title: 'Scan a visiting card',
     blurb: 'Snap a card, read it on-device, confirm the fields, save the person.',
     tags: ['visiting card', 'scan', 'ocr', 'photo', 'camera', 'business card'], updated: '2026-09-24',
