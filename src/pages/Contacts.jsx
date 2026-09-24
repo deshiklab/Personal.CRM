@@ -227,7 +227,18 @@ export default function Contacts() {
             })}
           </tbody>
         </table>
-        {list.length === 0 && <Empty icon={Users} title="No contacts match">Try clearing filters.</Empty>}
+        {list.length === 0 && (contacts.length === 0
+          ? <Empty icon={Users} title="Your network starts here"
+              steps={[
+                'Tap Add contact (or press C) and add the first person you want to stay close to.',
+                'Tag them and put them in a group so they show up in Follow-ups.',
+                'Set how often you want to touch base — the app will remind you.',
+              ]}
+              action={() => setAddOpen(true)} actionLabel="Add your first contact"
+              guide="people.contacts">
+              Nobody is in the CRM yet. Everything else — follow-ups, birthdays, the graph — lights up once you add people.
+            </Empty>
+          : <Empty icon={Users} title="No contacts match">Try clearing filters, or search for a different name.</Empty>)}
       </div>
 
       <Drawer open={!!open} onClose={() => setOpenId(null)}>

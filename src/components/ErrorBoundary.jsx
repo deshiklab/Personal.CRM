@@ -2,6 +2,7 @@ import { Component } from 'react'
 import { AlertOctagon, RefreshCw, Copy, Mail, History } from 'lucide-react'
 import { useCrm } from '../store'
 import { BRAND, COPYRIGHT } from '../brand'
+import * as storage from '../lib/storage'
 
 /* ═════════════════════════════════════════════════════════════════════════════
  * Error boundary — the difference between "white screen" and "here is what
@@ -29,7 +30,7 @@ export default class ErrorBoundary extends Component {
       at: new Date().toISOString(),
     }
     console.error('[Personal CRM] unhandled error', record)
-    try { localStorage.setItem(ERR_KEY, JSON.stringify(record)) } catch {}
+    try { storage.setItem(ERR_KEY, JSON.stringify(record)) } catch {}
   }
 
   reset = () => this.setState({ err: null, stack: null })

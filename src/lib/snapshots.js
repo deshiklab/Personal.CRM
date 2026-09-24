@@ -12,6 +12,8 @@
  *     restored through the ordinary restore path.
  * ═════════════════════════════════════════════════════════════════════════════ */
 
+import * as storage from './storage'
+
 const KEY = 'pcrm-snapshots'
 const MAX_COUNT = 6
 const MAX_BYTES = 4 * 1024 * 1024   // trim the ring rather than exceed local storage
@@ -24,17 +26,17 @@ const fnv = s => {
 }
 
 const read = () => {
-  try { const v = JSON.parse(localStorage.getItem(KEY) || '[]'); return Array.isArray(v) ? v : [] }
+  try { const v = JSON.parse(storage.getItem(KEY) || '[]'); return Array.isArray(v) ? v : [] }
   catch { return [] }
 }
 const write = list => {
-  try { localStorage.setItem(KEY, JSON.stringify(list)); return true }
+  try { storage.setItem(KEY, JSON.stringify(list)); return true }
   catch {
     /* out of room — drop the oldest until it fits (or give up quietly) */
     let l = list.slice()
     while (l.length > 1) {
       l = l.slice(0, -1)
-      try { localStorage.setItem(KEY, JSON.stringify(l)); return true } catch {}
+      try { storage.setItem(KEY, JSON.stringify(l)); return true } catch {}
     }
     return false
   }

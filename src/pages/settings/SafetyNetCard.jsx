@@ -3,6 +3,7 @@ import { History, Camera, Download, Trash2, ShieldAlert, Info } from 'lucide-rea
 import { useCrm } from '../../store'
 import { Card, Pill } from '../../components/ui'
 import { SNAPSHOT_LIMITS } from '../../lib/snapshots'
+import { getBackend } from '../../lib/storage'
 import { tsRel } from '../../lib'
 
 /* ═════════════════════════════════════════════════════════════════════════════
@@ -42,6 +43,7 @@ export default function SafetyNetCard() {
           <div className="text-[11.5px] mt-0.5" style={{ color: 'var(--faint)' }}>
             Automatic local copies of everything — kept on this device, never uploaded. The app keeps the
             last {SNAPSHOT_LIMITS.MAX_COUNT} and drops the oldest when it runs out of room.
+            {' '}Storage: <b style={{ color: 'var(--text)' }}>{getBackend() === 'native' ? 'Android Preferences (survives app updates)' : 'this browser’s local storage'}</b>.
           </div>
         </div>
         <button className="btn btn-primary btn-sm w-full sm:w-auto justify-center"

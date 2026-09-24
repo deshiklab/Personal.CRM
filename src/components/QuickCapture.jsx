@@ -7,9 +7,10 @@ import {
 import { useCrm } from '../store'
 import { daysAheadISO } from '../lib'
 import { toneVar } from './ui'
+import * as storage from '../lib/storage'
 
 /* Dev-only helpers (the demo transcript simulator) never ship in a build */
-const DEV = import.meta.env.DEV || (() => { try { return localStorage.getItem('pcrm-dev') === '1' } catch { return false } })()
+const DEV = import.meta.env.DEV || (() => { try { return storage.getItem('pcrm-dev') === '1' } catch { return false } })()
 
 /* ── demo dictation lines for browsers without the Speech API ── */
 const DEMO_LINES = [

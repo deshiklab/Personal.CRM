@@ -17,12 +17,27 @@ android/debug.keystore
 *.pem
 *.key
 
-# probes / scratch
+# probes / scratch — keep the suite that CI runs; ignore one-off scratch probes
 probe-*.mjs
-!probe-crud.mjs
+!probe-boot.mjs
+!probe-phase0.mjs
+!probe-honest.mjs
+!probe-registration.mjs
 !probe-pin.mjs
+!probe-safety.mjs
+!probe-storage.mjs
+!probe-contrast.mjs
+!probe-kb.mjs
+!probe-crud.mjs
 !probe-legacy.mjs
+!probe-responsive.mjs
+!probe-mobileux.mjs
+!probe-verify.mjs
 screenshots/
+contrast-audit.mjs
+mobile-audit.mjs
+dbg-*.mjs
+shot*.mjs
 
 # editors / OS
 .DS_Store

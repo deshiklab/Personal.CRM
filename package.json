@@ -14,12 +14,15 @@
     "android:apk": "cd android && ./gradlew assembleDebug",
     "android:aab": "cd android && ./gradlew bundleRelease",
     "keystore:debug": "./android/make-debug-keystore.sh",
-    "keystore:release": "./scripts/make-release-keystore.sh"
+    "keystore:release": "./scripts/make-release-keystore.sh",
+    "test:probes": "node scripts/run-probes.mjs",
+    "test:probes:ci": "node scripts/run-probes.mjs --ci"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
     "@capacitor/cli": "^8.5.2",
     "@capacitor/core": "^8.5.2",
+    "@capacitor/preferences": "^8.0.1",
     "@capgo/capacitor-social-login": "^8.5.10",
     "lucide-react": "latest",
     "react": "^18.3.1",

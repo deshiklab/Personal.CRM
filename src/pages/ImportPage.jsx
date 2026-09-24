@@ -152,7 +152,15 @@ export default function ImportPage() {
             Full history, diffs & rollback <ArrowRight size={12} />
           </Link>
         </div>
-        {imports.length === 0 && <Empty icon={FileUp} title="No imports yet" />}
+        {imports.length === 0 && <Empty icon={FileUp} title="No imports yet"
+          steps={[
+            'Export contacts from your phone or another CRM as CSV or vCard.',
+            'Drop the file above — we map columns and never upload the file.',
+            'Review the preview, then commit. A snapshot is taken first so you can undo.',
+          ]}
+          guide="data.import">
+          Bring people in from a CSV or vCard. Everything stays on this device.
+        </Empty>}
         {imports.slice(0, 3).map(b => (
           <div key={b.id} className="flex items-center gap-3 py-2.5 border-b last:border-0 flex-wrap" style={{ borderColor: 'var(--hairline)' }}>
             <FileUp size={15} className="flex-none" style={{ color: 'var(--t-indigo)' }} />

@@ -158,12 +158,40 @@ export function Drawer({ open, onClose, children }) {
   )
 }
 
-export function Empty({ icon: Icon, title, children }) {
+export function Empty({ icon: Icon, title, children, action, actionLabel, steps, guide }) {
+  /* Teaching empty state: icon + title + short why + optional numbered steps +
+     a primary action. Used when a list is truly empty (not just filtered). */
   return (
-    <div className="py-10 text-center">
-      {Icon && <Icon size={28} className="mx-auto mb-3" style={{ color: 'var(--faint)' }} />}
-      <div className="font-semibold text-[14px]">{title}</div>
-      {children && <div className="text-[12.5px] mt-1" style={{ color: 'var(--faint)' }}>{children}</div>}
+    <div className="py-10 px-4 text-center max-w-[420px] mx-auto">
+      {Icon && (
+        <div className="w-12 h-12 rounded-2xl grid place-items-center mx-auto mb-3"
+          style={{ background: 'var(--chipbg)', color: 'var(--t-indigo)' }}>
+          <Icon size={22} />
+        </div>
+      )}
+      <div className="font-bold text-[15px] tracking-tight">{title}</div>
+      {children && <div className="text-[12.5px] mt-1.5 leading-relaxed" style={{ color: 'var(--muted)' }}>{children}</div>}
+      {Array.isArray(steps) && steps.length > 0 && (
+        <ol className="mt-4 text-left space-y-2">
+          {steps.map((s, i) => (
+            <li key={i} className="flex items-start gap-2.5 text-[12.5px] leading-snug" style={{ color: 'var(--text)' }}>
+              <span className="flex-none w-5 h-5 rounded-full grid place-items-center text-[10.5px] font-bold"
+                style={{ background: 'var(--chipbg)', color: 'var(--t-indigo)' }}>{i + 1}</span>
+              <span style={{ color: 'var(--muted)' }}>{s}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+      {(action || guide) && (
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+          {action && (
+            <button type="button" className="btn btn-primary btn-sm" onClick={action}>
+              {actionLabel || 'Get started'}
+            </button>
+          )}
+          {guide && <GuideLink slug={guide} />}
+        </div>
+      )}
     </div>
   )
 }

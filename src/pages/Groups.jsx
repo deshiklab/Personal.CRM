@@ -80,7 +80,16 @@ export default function Groups() {
           )
         })}
       </div>
-      {groups.length === 0 && <Empty icon={UsersRound} title="No groups yet">Create your first circle to segment your network.</Empty>}
+      {groups.length === 0 && <Empty icon={UsersRound} title="No groups yet"
+        steps={[
+          'Create a circle — Work, Family, Clients, or anything you like.',
+          'Open a contact and add them to the group (a person can be in many).',
+          'Filter the contacts list or the graph by group when you need a slice.',
+        ]}
+        action={() => setOpen && setOpen(true)} actionLabel="Create a group"
+        guide="people.groups">
+        Groups are circles of people. They power the network graph and keep big contact lists readable.
+      </Empty>}
 
       <Modal open={open} onClose={closeForm} title={editId ? 'Edit group' : 'New group'}>
         <div className="flex flex-col gap-4">

@@ -7,14 +7,14 @@
  * cleared on a factory reset.
  * ═════════════════════════════════════════════════════════════════════════════ */
 
+import * as storage from './storage'
+
 const GIST = 'pcrm-secret-gist'
 
-const safe = fn => { try { return fn() } catch { return null } }
-
-export const getGistToken = () => safe(() => localStorage.getItem(GIST)) || ''
-export const setGistToken = t => safe(() => {
-  if (t) localStorage.setItem(GIST, t)
-  else localStorage.removeItem(GIST)
-})
-export const clearSecrets = () => safe(() => { localStorage.removeItem(GIST) })
+export const getGistToken = () => storage.getItem(GIST) || ''
+export const setGistToken = t => {
+  if (t) storage.setItem(GIST, t)
+  else storage.removeItem(GIST)
+}
+export const clearSecrets = () => { storage.removeItem(GIST) }
 export const SECRET_KEYS = [GIST]

@@ -79,7 +79,18 @@ export default function TagsManager() {
                 <span className="chip flex-none">{usage[t.id]}</span>
               </button>
             ))}
-            {visible.length === 0 && <Empty icon={Tag} title="No tags match" />}
+            {visible.length === 0 && (tags.length === 0
+              ? <Empty icon={Tag} title="No tags yet"
+                  steps={[
+                    'Create a tag — Client, Investor, Friend, whatever helps you filter.',
+                    'Open any contact and tap the tag to attach it.',
+                    'Filter the contacts list or search by tag when you need a slice.',
+                  ]}
+                  action={() => setSelectedId(crm.addTag().id)} actionLabel="Create a tag"
+                  guide="people.tags">
+                  Tags are free-form labels. Use them for things that cut across groups.
+                </Empty>
+              : <Empty icon={Tag} title="No tags match" />)}
           </div>
         </Card>
 

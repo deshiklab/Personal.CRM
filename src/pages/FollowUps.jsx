@@ -117,7 +117,21 @@ export default function FollowUps() {
             </Card>
           )
         })}
-        {rows.length === 0 && <Card><Empty icon={HeartHandshake} title="Nobody here 🎉">Switch the filter, or enjoy the calm.</Empty></Card>}
+        {rows.length === 0 && <Card><Empty icon={HeartHandshake} title="All caught up 🎉"
+          steps={contacts.length === 0 ? [
+            'Add a few contacts first — follow-ups only appear for people you track.',
+            'On each contact, set a relationship cadence (weekly, monthly…).',
+            'Come back here when someone is due; one tap logs the touch.',
+          ] : [
+            'Nobody is overdue on the cadence you set. That is the point.',
+            'Switch the filter above if you want to peek at upcoming or snoozed.',
+            'A touch from the contact page resets their clock automatically.',
+          ]}
+          guide="rhythm.followups">
+          {contacts.length === 0
+            ? 'Follow-ups keep relationships from going quiet. They need contacts to watch.'
+            : 'Switch the filter, or enjoy the calm.'}
+        </Empty></Card>}
       </div>
     </div>
   )

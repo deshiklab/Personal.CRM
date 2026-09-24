@@ -48,7 +48,11 @@ export default function HistoryPage() {
 
       {tab === 'imports' && (
         <div className="flex flex-col gap-3">
-          {imports.length === 0 && <Card><Empty icon={FileUp} title="No imports yet">Run one from the Import page.</Empty></Card>}
+          {imports.length === 0 && <Card><Empty icon={FileUp} title="No imports yet"
+            steps={['Open Import', 'Drop a CSV or vCard', 'Confirm the preview — a snapshot is taken first']}
+            guide="data.import">
+            Every import lands here so you can see what changed and undo if needed.
+          </Empty></Card>}
           {imports.map(b => (
             <BatchCard key={b.id} batch={b} open={openBatch === b.id}
               onToggle={() => setOpenBatch(o => o === b.id ? null : b.id)}

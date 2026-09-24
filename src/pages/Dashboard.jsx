@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
-import { Settings2, RotateCcw, ChevronLeft, ChevronRight, EyeOff, Plus } from 'lucide-react'
+import { Settings2, RotateCcw, ChevronLeft, ChevronRight, EyeOff, Plus, UserPlus, CheckSquare, Shield, BookOpen, X, Sparkles } from 'lucide-react'
 import { useCrm } from '../store'
-import { SectionHead } from '../components/ui'
+import { SectionHead, Card } from '../components/ui'
+import { Link } from 'react-router-dom'
 import { WIDGET_META, WIDGET_COMPONENTS } from '../components/dashboardWidgets'
 import { cn } from '../lib'
 
 export default function Dashboard() {
-  const { widgetPrefs, toggleWidget, moveWidget, resetWidgets, DEFAULT_WIDGET_ORDER, profile, isRegistered } = useCrm()
+  const { widgetPrefs, toggleWidget, moveWidget, resetWidgets, DEFAULT_WIDGET_ORDER, profile, isRegistered, helpPrefs, patchHelpPrefs, contacts, lock } = useCrm()
   const firstName = isRegistered ? (profile.name.trim().split(/\s+/)[0] || 'there') : 'BiTsCol'
   const [edit, setEdit] = useState(false)
 
@@ -28,6 +29,69 @@ export default function Dashboard() {
         ) : (
           <button className="btn btn-ghost btn-sm" onClick={() => setEdit(true)}><Settings2 size={13} /> Customize</button>
         )} />
+
+
+      {/* First-run teaching card — dismissed once, lives only on this device */}
+      {!helpPrefs?.onboardDone && (
+        <Card className="p-4 sm:p-5 mb-5 relative overflow-hidden" data-tour="onboard">
+          <button className="icon-btn absolute top-3 right-3" title="Dismiss"
+            onClick={() => patchHelpPrefs({ onboardDone: true })}>
+            <X size={14} />
+          </button>
+          <div className="flex items-start gap-3 pr-8">
+            <div className="w-10 h-10 rounded-2xl grid place-items-center flex-none"
+              style={{ background: 'linear-gradient(140deg,var(--i1),var(--i2))', color: '#0b0e17' }}>
+              <Sparkles size={18} />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[14px] font-bold tracking-tight">Your first five minutes</div>
+              <p className="text-[12.5px] mt-0.5 leading-snug" style={{ color: 'var(--muted)' }}>
+                Everything stays on this device. No account, no cloud unless you turn one on.
+              </p>
+            </div>
+          </div>
+          <ol className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {[
+              { n: 1, icon: UserPlus, title: 'Add a person',
+                body: contacts.length ? `${contacts.length} already in` : 'Name, how you know them, how often to stay in touch.',
+                to: '/contacts?new=1', done: contacts.length > 0 },
+              { n: 2, icon: CheckSquare, title: 'Capture a task or note',
+                body: 'Quick Capture (lightning bolt) or the Tasks / Notes screens.',
+                to: '/tasks', done: false },
+              { n: 3, icon: Shield, title: 'Turn on a pincode',
+                body: lock?.hash ? 'Pincode is on — you are set.' : 'Optional, but the only lock between a borrowed phone and your network.',
+                to: '/settings', done: !!lock?.hash },
+              { n: 4, icon: BookOpen, title: 'Open the knowledge base',
+                body: 'Short articles and a guided tour of every screen.',
+                to: '/knowledge', done: !!helpPrefs?.tourDone },
+            ].map(step => (
+              <li key={step.n}>
+                <Link to={step.to}
+                  className="flex items-start gap-3 rounded-xl p-3 h-full transition-colors hover:bg-[var(--hover)]"
+                  style={{ background: 'var(--cardbg2)', border: '1px solid var(--border)' }}>
+                  <span className="w-7 h-7 rounded-lg grid place-items-center flex-none text-[12px] font-bold"
+                    style={{ background: step.done ? 'rgba(52,211,153,.16)' : 'var(--chipbg)',
+                             color: step.done ? 'var(--t-green)' : 'var(--t-indigo)' }}>
+                    {step.done ? '✓' : step.n}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-[13px] font-semibold leading-tight">{step.title}</span>
+                    <span className="block text-[11.5px] mt-0.5 leading-snug" style={{ color: 'var(--muted)' }}>{step.body}</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ol>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button className="btn btn-ghost btn-sm" onClick={() => window.dispatchEvent(new CustomEvent('crm:tour'))}>
+              Take the guided tour
+            </button>
+            <button className="btn btn-ghost btn-sm" onClick={() => patchHelpPrefs({ onboardDone: true })}>
+              Got it — hide this
+            </button>
+          </div>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4" data-tour="widgets">
         {visible.map(id => {

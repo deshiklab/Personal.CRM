@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Lock, Unlock, ShieldCheck, Trash2, Loader2, Zap, Timer } from 'lucide-react'
 import { useCrm } from '../store'
+import * as storage from '../lib/storage'
 
 /* Full-screen gate shown before the app:
  *   mode 'setup'  — first launch: offer a pin (option + skip link)
@@ -86,7 +87,7 @@ export default function LockScreen({ mode }) {
     if (!confirm('Forgot pincode?\n\nThe ONLY way back in is wiping this app — ALL contacts, tasks, notes, events and settings are erased. Continue?')) return
     if (!confirm('Really erase everything and start blank? This cannot be undone.')) return
     /* bypasses verify (you forgot it) — wipe local state and reload */
-    try { localStorage.clear() } catch {}
+    try { storage.clearOwned() } catch {}
     location.reload()
   }
 

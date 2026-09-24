@@ -8,6 +8,7 @@ import * as gs from './lib/gistsync'
 import { notifyOwner, notifyConfigured } from './lib/notify'
 import * as snap from './lib/snapshots'
 import * as secrets from './lib/secrets'
+import * as storage from './lib/storage'
 
 const KEY = 'pcrm-v1'
 /* Fields that must be arrays. A half-written or hand-edited blob should lose
@@ -15,7 +16,7 @@ const KEY = 'pcrm-v1'
 const ARRAY_FIELDS = ['contacts', 'tasks', 'events', 'notes', 'tags', 'groups', 'rules', 'audit', 'activity', 'imports', 'emails', 'kbArticles']
 const load = () => {
   let s
-  try { s = JSON.parse(localStorage.getItem(KEY) || 'null') } catch { return null }
+  try { s = JSON.parse(storage.getItem(KEY) || 'null') } catch { return null }
   if (!s || typeof s !== 'object' || Array.isArray(s)) return null
   ARRAY_FIELDS.forEach(k => { if (s[k] != null && !Array.isArray(s[k])) delete s[k] })
   return s
@@ -85,25 +86,25 @@ export function CrmProvider({ children }) {
    * Both live with the rest of the data so they travel in every backup. */
   const [kbArticles, setKbArticles] = useState(init?.kbArticles || [])
   const [helpPrefs, setHelpPrefs]   = useState(init?.helpPrefs || {
-    tips: true, tourDone: false, tourStep: 0, bookmarks: [], votes: {}, seenVersion: '',
+    tips: true, tourDone: false, tourStep: 0, tourStarted: false, onboardDone: false, bookmarks: [], votes: {}, seenVersion: '',
   })
   const [webhooks, setWebhooks]   = useState(init?.webhooks || {
     url: '', on: { lead: true, contact: false, task_done: true, touch: false }, log: [],
   })
 
-  const [theme, setTheme]         = useState(() => { try { return localStorage.getItem('pcrm-theme') || 'dark' } catch { return 'dark' } })
+  const [theme, setTheme]         = useState(() => storage.getItem('pcrm-theme') || 'dark')
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    try { localStorage.setItem('pcrm-theme', theme) } catch {}
+    storage.setItem('pcrm-theme', theme)
   }, [theme])
   const toggleTheme = () => { setTheme(t => t === 'dark' ? 'light' : 'dark') }
 
   const wiping = useRef(false)
   useEffect(() => {
-    if (wiping.current) return          // a factory reset owns localStorage now
+    if (wiping.current) return          // a factory reset owns storage now
     try {
-      localStorage.setItem(KEY, JSON.stringify({
+      storage.setItem(KEY, JSON.stringify({
         contacts, tasks, events, notes, tags, groups, rules, audit,
         activity, imports, relFreq, snoozes, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, lock, profile,
         kbArticles, helpPrefs,
@@ -782,7 +783,9 @@ export function CrmProvider({ children }) {
     },
     emails: [], googleClientId: '', gist: { token: '', gistId: null },
     icsFeeds: [], driveState: { fileId: null, lastBackup: null, lastRestore: null, lastContactsSync: null },
-    syncState: null, lock: null, __blank: true,
+    syncState: null, lock: null, profile: null, kbArticles: [],
+    helpPrefs: { tips: true, tourDone: false, tourStep: 0, tourStarted: false, onboardDone: false, bookmarks: [], votes: {}, seenVersion: '' },
+    __blank: true,
   })
   const factoryReset = async pin => {
     if (pinLockedUntil()) return false
@@ -791,9 +794,10 @@ export function CrmProvider({ children }) {
        and its state update would re-save the old data before the reload lands */
     try {
       wiping.current = true
-      localStorage.setItem(KEY, JSON.stringify(blankState()))
-      localStorage.removeItem('pcrm-theme')
+      await storage.setItem(KEY, JSON.stringify(blankState()))
+      await storage.removeItem('pcrm-theme')
       secrets.clearSecrets()
+      await storage.flush()
     } catch {}
     location.reload()
     return true
@@ -1178,7 +1182,15 @@ export function CrmProvider({ children }) {
     return { state: 'ok', since, every }
   }
 
-  const resetAll = () => { try { localStorage.removeItem(KEY) } catch {} secrets.clearSecrets(); location.reload() }
+  const resetAll = async () => {
+    try {
+      wiping.current = true
+      await storage.removeItem(KEY)
+      secrets.clearSecrets()
+      await storage.flush()
+    } catch {}
+    location.reload()
+  }
 
   /* ── notifications (derived feed + dismiss/snooze/read state) ── */
   const dismissNotif = (key, on = true) => setNotifState(s => ({ ...s, [key]: { ...(s[key] || {}), dismissed: on } }))
