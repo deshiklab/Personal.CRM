@@ -9,6 +9,7 @@ import { notifyOwner, notifyConfigured } from './lib/notify'
 import * as snap from './lib/snapshots'
 import * as secrets from './lib/secrets'
 import * as storage from './lib/storage'
+import * as ent from './lib/entitlements'
 
 const KEY = 'pcrm-v1'
 /* Fields that must be arrays. A half-written or hand-edited blob should lose
@@ -75,6 +76,8 @@ export function CrmProvider({ children }) {
   /* registered user profile (device-local): null = not registered,
    * { skipped:true } = deliberately skipped, otherwise { name, email, mobile, verified:{} } */
   const [profile, setProfile] = useState(init?.profile || null)
+  /* entitlements — kept outside the CRM blob; see lib/entitlements */
+  const [license, setLicense] = useState(() => ent.readLicense())
   /* app lock (per-device pincode): null = never offered | {hash:null,skipped} = skipped/off | {salt,hash} = locked */
   const [lock, setLock] = useState(init?.lock || null)
   const [sessionUnlocked, setSessionUnlocked] = useState(false)   // in-memory only
@@ -136,6 +139,11 @@ export function CrmProvider({ children }) {
 
   /* ── contacts ── */
   const addContact = data => {
+    const cap = ent.contactCap(license)
+    if (Number.isFinite(cap) && contacts.length >= cap) {
+      toast(`Free plan covers ${cap} contacts. Unlock Pro for unlimited — or archive someone first.`, 'warn')
+      return null
+    }
     const c = normalizeContact({ id: uid(), role: '', company: '', phone: '', email: '', birthday: null, tags: [], rel: 'acquaintance', starred: false, introducedBy: null, interests: [], socials: {}, photo: null, cardImage: null, address: '', lastContact: todayISO(), createdAt: todayISO(), ...data })
     setContacts(cs => [c, ...cs])
     logAudit('user', 'Added contact', c.name, c.company || 'No company')
@@ -772,6 +780,28 @@ export function CrmProvider({ children }) {
   const deleteSnapshotById = id => { snap.deleteSnapshot(id); refreshSnapshots(); toast('Snapshot deleted', 'warn') }
 
   /* factory reset to a BLANK crm — PIN-confirmed; wipes everything incl. pincode */
+
+  const isPro = () => ent.isPro(license)
+  const can = featureId => ent.can(featureId, license)
+  const unlockWithKey = async key => {
+    const next = await ent.activateWithKey(key, { deviceId: syncState?.deviceId })
+    setLicense(next)
+    toast('Pro unlocked — thank you for supporting BITSCOL')
+    return next
+  }
+  const unlockComp = (reason = 'comp') => {
+    const next = ent.activateComp({ reason, deviceId: syncState?.deviceId })
+    setLicense(next)
+    toast('Pro unlocked')
+    return next
+  }
+  const restorePurchases = async () => {
+    const r = await ent.restorePlayPurchase()
+    if (!r) { toast('No Play purchase to restore on this build yet', 'warn'); return false }
+    setLicense(r); toast('Pro restored'); return true
+  }
+  const refreshLicense = () => setLicense(ent.readLicense())
+
   const blankState = () => ({
     contacts: [], tasks: [], events: [], notes: [], tags: [], groups: [], rules: [], audit: [],
     activity: [], imports: [], relFreq: {}, snoozes: {},
@@ -1271,6 +1301,7 @@ export function CrmProvider({ children }) {
     snapshots, takeSnapshotNow, restoreSnapshotById, deleteSnapshotById, downloadSnapshot, refreshSnapshots,
     pinStatus, PIN_FREE_ATTEMPTS,
     helpPrefs, patchHelpPrefs, toggleBookmark, voteArticle,
+    license, isPro, can, unlockWithKey, unlockComp, restorePurchases, refreshLicense, FREE_LIMITS: ent.FREE_LIMITS, PRO_FEATURES: ent.PRO_FEATURES, tierLabel: () => ent.tierLabel(license)
   }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

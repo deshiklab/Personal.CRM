@@ -166,6 +166,33 @@ Search matches name, role and company. Combine it with a group, a tag or a rhyth
     related: ['people.groups', 'people.tags', 'people.rel-rhythm', 'people.merge'],
   },
   {
+    id: 'pro.lifetime', cat: 'start', title: 'Free vs Pro (lifetime unlock)',
+    blurb: 'What Free covers, what Pro adds, and how a one-time unlock works offline.',
+    tags: ['pro', 'licence', 'license', 'paywall', 'free', 'purchase'], updated: '2026-09-25',
+    body: `Personal CRM is **one-time purchase, no subscription, no account**.
+
+## Free forever
+Contacts, tasks, notes, calendar, follow-ups, visiting-card scan, CSV/vCard, manual snapshots, PIN lock, knowledge base — the full CRM for a personal network up to **75 contacts**.
+
+## Pro · lifetime
+Additive power features only. We never hold your data hostage:
+
+- Reminders & local notifications
+- Unlimited contacts
+- Automatic rolling backups
+- Drive / Gist auto-sync
+- Advanced analytics & graph export
+- Extra themes · unlimited history
+
+## How to unlock
+1. **Google Play** — one-time in-app product (wired this phase).
+2. **Licence key** — bought on the web via a Merchant of Record; paste it on the Pro screen. Verified **offline**.
+
+Your unlock lives in its own storage slot, separate from CRM data, so a data reset does not wipe a paid licence.
+`,
+    related: ['privacy.local', 'data.backup', 'start.layout'],
+  },
+  {
     id: 'people.cardscan', cat: 'people', title: 'Scan a visiting card',
     blurb: 'Snap a card, read it on-device, confirm the fields, save the person.',
     tags: ['visiting card', 'scan', 'ocr', 'photo', 'camera', 'business card'], updated: '2026-09-24',

@@ -12,7 +12,7 @@ export const BRAND = {
   mobile: '+8801711853769',
   mobileLabel: '+880 1711-853769',
   year: 2026,
-  version: '1.0.0',
+  version: '2.0.0',
 }
 
 export const COPYRIGHT = `© ${BRAND.year} ${BRAND.publisher}. All rights reserved.`
@@ -31,5 +31,6 @@ export const THIRD_PARTY = [
   { name: 'Lucide Icons', license: 'ISC',        url: 'https://github.com/lucide-icons/lucide' },
   { name: 'Tailwind CSS', license: 'MIT',        url: 'https://github.com/tailwindlabs/tailwindcss' },
   { name: 'Capacitor',    license: 'MIT',        url: 'https://github.com/ionic-team/capacitor' },
+  { name: 'Tesseract.js',  license: 'Apache-2.0', url: 'https://github.com/naptha/tesseract.js' },
   { name: 'Vite',         license: 'MIT',        url: 'https://github.com/vitejs/vite' },
 ]

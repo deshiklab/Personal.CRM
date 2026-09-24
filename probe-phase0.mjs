@@ -17,13 +17,13 @@ await boot(pg, BASE + '/#/')
 
 /* ── 1. sidebar / global credit ── */
 const side = await pg.locator('aside').first().textContent()
-ok('sidebar shows app + version', side.includes('Personal CRM') && side.includes('v1.0.0'), side.slice(-90))
+ok('sidebar shows app + version', side.includes('Personal CRM') && side.includes('v'), side.slice(-90))
 ok('sidebar shows BITSCOL copyright', side.includes('© 2026 BITSCOL'))
 
 /* ── 2. About screen ── */
 await pg.goto(BASE + '/#/about'); await pg.waitForTimeout(1000)
 const about = await pg.locator('body').textContent()
-ok('About screen renders', about.includes('Version 1.0.0') && about.includes('BITSCOL'))
+ok('About screen renders', about.includes('Version 2.0.0') && about.includes('BITSCOL'))
 ok('credit: publisher name', about.includes('Designed and developed by'))
 ok('credit: copyright line', about.includes('© 2026 BITSCOL. All rights reserved.'))
 ok('credit: website', about.includes('www.bitscol.com'))

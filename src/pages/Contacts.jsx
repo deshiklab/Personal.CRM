@@ -31,7 +31,7 @@ export const socLabel = v => v.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/
 
 export default function Contacts() {
   const crm = useCrm()
-  const { contacts, groups, tags, followUpStatus, groupById } = crm
+  const { contacts, groups, tags, followUpStatus, groupById, isPro, FREE_LIMITS } = crm
   const [params, setParams] = useSearchParams()
   const [q, setQ] = useState('')
   const [groupF, setGroupF] = useState(params.get('group') || '')
@@ -85,7 +85,7 @@ export default function Contacts() {
   return (
     <div className="max-w-[1200px] mx-auto">
       <SectionHead kicker="Directory" title="Contacts"
-        sub={`${contacts.length} people in your network · ${list.length} shown`}
+        sub={`${contacts.length} people in your network · ${list.length} shown${!isPro() && Number.isFinite(FREE_LIMITS?.contacts) ? ` · Free plan ${contacts.length}/${FREE_LIMITS.contacts}` : ''}`}
         right={<div className="flex items-center gap-2">
           <CsvButton filename="contacts.csv" rows={crm.contacts} headers={[
             { label: 'Name', get: r => r.name }, { label: 'Role', get: r => r.role },

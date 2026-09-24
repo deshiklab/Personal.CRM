@@ -42,6 +42,7 @@ export const OWNED_KEYS = [
   'pcrm-secret-gist',
   'pcrm-last-error',
   'pcrm-dev',
+  'pcrm-license',
 ]
 
 /**

@@ -23,6 +23,7 @@ import CalendarPage from './pages/CalendarPage'
 import Birthdays from './pages/Birthdays'
 import SettingsSync from './pages/SettingsSync'
 import About from './pages/About'
+import Pro from './pages/Pro'
 import IntegrationsPage from './pages/IntegrationsPage'
 import FollowUps from './pages/FollowUps'
 import Notifications from './pages/Notifications'
@@ -58,7 +59,7 @@ export default function App() {
     const GO = {
       d: '/', c: '/contacts', t: '/tasks', n: '/notes', e: '/calendar', b: '/birthdays',
       f: '/follow-ups', i: '/notifications', g: '/groups', r: '/graph', a: '/analytics',
-      k: '/knowledge', s: '/settings', h: '/history', m: '/import',
+      k: '/knowledge', s: '/settings', h: '/history', m: '/import', p: '/pro',
     }
     const onKey = e => {
       const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable
@@ -107,6 +108,7 @@ export default function App() {
             <Route path="/integrations" element={<IntegrationsPage />} />
             <Route path="/settings" element={<SettingsSync />} />
             <Route path="/about" element={<About />} />
+            <Route path="/pro" element={<Pro />} />
             <Route path="/knowledge" element={<KnowledgeBase />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

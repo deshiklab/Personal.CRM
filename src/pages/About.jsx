@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { ExternalLink, Globe, Mail, Phone, ShieldCheck, Scale, FileText, HeartHandshake, Sparkles } from 'lucide-react'
 import { useCrm } from '../store'
 import { SectionHead, Card, Pill } from '../components/ui'
@@ -18,13 +19,13 @@ const ContactRow = ({ icon: Icon, label, value, href, tone = '#38bdf8' }) => (
 )
 
 export default function About() {
-  const { contacts, tasks, events, notes } = useCrm()
+  const { contacts, tasks, events, notes, tierLabel, isPro } = useCrm()
 
   return (
     <div className="max-w-[900px] mx-auto">
       <SectionHead kicker="About" title={BRAND.app}
         sub={`Version ${BRAND.version} · a private, offline-first relationship manager`}
-        right={<Pill color="#818cf8">v{BRAND.version}</Pill>} />
+        right={<div className="flex items-center gap-2"><Pill color={isPro() ? '#34d399' : '#818cf8'}>{tierLabel()}</Pill><Pill color="#818cf8">v{BRAND.version}</Pill></div>} />
 
       {/* ── publisher ── */}
       <Card className="p-6">
@@ -142,7 +143,18 @@ export default function About() {
         </p>
       </Card>
 
-      <div className="text-center text-[11.5px] py-7" style={{ color: 'var(--faint)' }}>
+      
+      <Card className="p-5 mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="font-bold text-[14px]">{isPro() ? 'Pro is active on this device' : 'Need more power?'}</div>
+          <div className="text-[12.5px]" style={{ color: 'var(--muted)' }}>
+            {isPro() ? 'Lifetime unlock · one-time · offline' : 'Reminders, unlimited contacts, auto backups — one-time unlock.'}
+          </div>
+        </div>
+        <Link to="/pro" className="btn btn-primary btn-sm">{isPro() ? 'Manage licence' : 'See Pro'}</Link>
+      </Card>
+
+<div className="text-center text-[11.5px] py-7" style={{ color: 'var(--faint)' }}>
         <div style={{ fontWeight: 700, letterSpacing: '.04em' }}>
           {BRAND.app} · v{BRAND.version}
         </div>
