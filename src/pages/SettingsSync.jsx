@@ -4,7 +4,7 @@ import { useCrm } from '../store'
 import { SectionHead, Card, Modal, Field, Toggle, Pill, Empty } from '../components/ui'
 import { tsRel } from '../lib'
 
-const SOURCES = ['Google Contacts', 'Google Calendar', 'CardDAV (iCloud)', 'vCard file (.vcf)', 'Outlook (CSV)']
+const SOURCES = ['Google Contacts', 'Google Calendar', 'ICS feed', 'vCard file (.vcf)']
 const DIRECTIONS = ['Import', 'Export', 'Two-way']
 const FREQUENCIES = ['Every 15 min', 'Hourly', 'Daily', 'Weekly']
 const DELIVERIES = ['Auto-apply changes', 'Review queue', 'Notify only']
@@ -14,7 +14,9 @@ const CONFLICTS = [
   { v: 'newest', label: 'Newest change wins' },
   { v: 'manual', label: 'Merge — manual review queue' },
 ]
-const SOURCE_ICON = { 'Google Calendar': Calendar, 'CardDAV (iCloud)': Globe, 'Google Contacts': ShieldCheck }
+const SOURCE_ICON = { 'Google Calendar': Calendar, 'ICS feed': Globe, 'Google Contacts': ShieldCheck }
+/* a source this build can genuinely move data through */
+const RULE_CAN_RUN = src => /google contacts|google calendar|^ics feed|^vcard file/i.test(String(src || ''))
 
 const ACTOR_TONE = { user: '#38bdf8', system: '#94a3b8', rule: '#a78bfa' }
 
@@ -40,40 +42,26 @@ export default function SettingsSync() {
 
 /* ── Connections ── */
 function Connections() {
-  const { carddav, gcal, saveCarddav, testConnection, toast } = useCrm()
-  const [f, setF] = useState({ server: '', username: '', password: '' })
-  const [testing, setTesting] = useState(false)
-  const configured = !!carddav
+  const { gcal } = useCrm()
 
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="p-5">
+        <Card className="p-5 flex flex-col">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl grid place-items-center" style={{ background: '#22d3ee1c', color: '#22d3ee' }}><Globe size={18} /></div>
             <div className="flex-1">
               <div className="font-bold text-[14.5px]">CardDAV server</div>
-              <div className="text-[11.5px]" style={{ color: 'var(--faint)' }}>{configured ? `Configured · ${carddav.username}` : 'iCloud, Nextcloud, Fastmail…'}</div>
+              <div className="text-[11.5px]" style={{ color: 'var(--faint)' }}>iCloud, Nextcloud, Fastmail…</div>
             </div>
-            {configured && <Pill color="#34d399">Saved</Pill>}
+            <Pill color="#94a3b8">Not in this build</Pill>
           </div>
-          <div className="flex flex-col gap-3">
-            <Field label="Server URL"><input className="input" placeholder="https://contacts.icloud.com" value={f.server} onChange={e => setF(x => ({ ...x, server: e.target.value }))} /></Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Username"><input className="input" placeholder="apple-id@…" value={f.username} onChange={e => setF(x => ({ ...x, username: e.target.value }))} /></Field>
-              <Field label="App password"><input className="input" type="password" placeholder="••••••••" value={f.password} onChange={e => setF(x => ({ ...x, password: e.target.value }))} /></Field>
-            </div>
-            <div className="flex justify-end gap-2">
-              <button className="btn btn-ghost btn-sm" disabled={testing || !f.server}
-                onClick={async () => { setTesting(true); await testConnection(); setTesting(false) }}>
-                {testing ? <RefreshCw size={13} className="spin" /> : <ShieldCheck size={13} />} Test connection
-              </button>
-              <button className="btn btn-primary btn-sm" disabled={!f.server || !f.username}
-                onClick={() => { saveCarddav({ server: f.server, username: f.username }); setF({ server: '', username: '', password: '' }); toast('CardDAV credentials saved') }}>
-                Save
-              </button>
-            </div>
-          </div>
+          <p className="text-[12.5px] mb-3" style={{ color: 'var(--muted)' }}>
+            A browser page cannot talk to a CardDAV server by itself — the server would have to allow this origin, and there is no server of ours in the middle. Rather than collect a password that is never used, this build says so.
+          </p>
+          <p className="text-[12px] mt-auto" style={{ color: 'var(--faint)' }}>
+            What does work: import or export a <b>vCard (.vcf)</b>, subscribe to <b>ICS</b> calendar feeds, or sync Google Contacts with your own Client ID.
+          </p>
         </Card>
 
         <Card className="p-5 flex flex-col">
@@ -205,8 +193,9 @@ function RulesTable() {
                     <td><span className="text-[11.5px] whitespace-nowrap" style={{ color: 'var(--faint)' }}>{r.lastRun ? tsRel(r.lastRun) : 'never'}</span></td>
                     <td>
                       <div className="flex gap-1.5 justify-end">
-                        <button className="icon-btn" style={{ width: 28, height: 28 }} title="Run now"
-                          onClick={async () => { setRunning(r.id); await new Promise(res => setTimeout(res, 900)); runRuleNow(r.id); setRunning(null) }}>
+                        <button className="icon-btn" style={{ width: 28, height: 28, opacity: RULE_CAN_RUN(r.source) ? 1 : .4 }}
+                          title={RULE_CAN_RUN(r.source) ? 'Run now' : `${r.source} cannot be reached from a browser — this build will not fake it`}
+                          onClick={async () => { if (!RULE_CAN_RUN(r.source)) { runRuleNow(r.id); return } setRunning(r.id); await runRuleNow(r.id); setRunning(null) }}>
                           {running === r.id ? <RefreshCw size={13} className="spin" /> : <Play size={13} />}
                         </button>
                         {confirmDel === r.id

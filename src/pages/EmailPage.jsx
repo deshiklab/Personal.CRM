@@ -10,7 +10,7 @@ import { tsRel } from '../lib'
 
 const PROVIDERS = [
   { id: 'gmail',   name: 'Gmail',   color: '#ea4335', desc: 'Live · Google OAuth · read-only gmail.readonly' },
-  { id: 'outlook', name: 'Outlook', color: '#0a78d4', desc: 'Not available yet (needs Microsoft OAuth)' },
+  { id: 'outlook', name: 'Outlook', color: '#0a78d4', desc: 'Not available in this build — it needs a Microsoft OAuth app and a server to hold the token' },
 ]
 
 export default function EmailPage() {
@@ -86,7 +86,7 @@ export default function EmailPage() {
                     <button className="btn btn-danger btn-sm" onClick={() => disconnectMailbox(p.id)}><Unplug size={13} /></button>
                   </>
                 ) : p.id === 'outlook' ? (
-                  <span className="chip" style={{ opacity: .7 }} title="Microsoft OAuth connector not built yet">Coming soon</span>
+                  <span className="chip" style={{ opacity: .7 }} title="Microsoft sign-in needs an OAuth app of our own plus a server to hold the token — this app has neither, and stays that way by design">Not in this build</span>
                 ) : !googleClientId ? (
                   <button className="btn btn-primary btn-sm" onClick={() => nav('/settings')}>Set up live mode</button>
                 ) : (

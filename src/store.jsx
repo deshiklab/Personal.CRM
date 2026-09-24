@@ -51,7 +51,6 @@ export function CrmProvider({ children }) {
   const [imports, setImports]     = useState(init?.imports   || seed.IMPORTS)
   const [relFreq, setRelFreq]     = useState(init?.relFreq   || seed.REL_FREQ)
   const [snoozes, setSnoozes]     = useState(init?.snoozes   || {})
-  const [carddav, setCarddav]     = useState(init?.carddav   || seed.CARDDAV)
   const [gcal, setGcal]           = useState(init?.gcal      || seed.GCAL)
   const [mailboxes, setMailboxes] = useState(init?.mailboxes || {
     gmail:   { connected: false, address: '', lastSync: null },
@@ -106,12 +105,12 @@ export function CrmProvider({ children }) {
     try {
       localStorage.setItem(KEY, JSON.stringify({
         contacts, tasks, events, notes, tags, groups, rules, audit,
-        activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, lock, profile,
+        activity, imports, relFreq, snoozes, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, lock, profile,
         kbArticles, helpPrefs,
         gist: { gistId: gist.gistId },   // the token is kept apart — see lib/secrets
       }))
     } catch {}
-  }, [contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock, profile, kbArticles, helpPrefs])
+  }, [contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock, profile, kbArticles, helpPrefs])
 
   /* the gist token is mirrored into its own key — never into the data blob */
   useEffect(() => { secrets.setGistToken(gist.token) }, [gist.token])
@@ -360,26 +359,53 @@ export function CrmProvider({ children }) {
     setRules(rs => rs.filter(x => x.id !== id))
     if (r) logAudit('user', 'Deleted sync rule', r.name)
   }
-  const runRuleNow = id => {
+  /* A rule only runs when this build can genuinely do the work. Google calls
+   * need your own Client ID; ICS feeds are always real; and anything we cannot
+   * reach from a browser (CardDAV, Outlook) is refused out loud — never faked. */
+  const runRuleNow = async id => {
     const r = rules.find(x => x.id === id)
-    setRules(rs => rs.map(x => x.id === id ? { ...x, lastRun: new Date().toISOString() } : x))
-    if (r) { logAudit('rule', 'Sync run completed', r.name, `Mock run · ${r.direction} · no conflicts`); toast(`Sync run finished: ${r.name}`) }
-  }
-
-  /* ── connections ── */
-  const saveCarddav = cfg => { setCarddav(cfg); logAudit('user', 'Saved CardDAV credentials', cfg.server, `User: ${cfg.username}`) }
-  const testConnection = async () => {
-    if (!carddav?.server) return false
+    if (!r) return false
+    const src = String(r.source || '')
+    const stamp = ok => setRules(rs => rs.map(x => x.id === id ? { ...x, lastRun: new Date().toISOString(), lastResult: ok ? 'ok' : 'skipped' } : x))
+    const needsClientId = () => { toast(`${r.name}: add your Google Client ID first — Settings → Google hub`, 'warn'); logAudit('rule', 'Rule skipped', r.name, 'No Google Client ID — local mode'); return false }
     try {
-      await fetch(carddav.server, { method: 'OPTIONS', mode: 'no-cors' })
-      logAudit('system', 'CardDAV server reachable', carddav.server, 'Browser reachability probe (no-cors)')
-      toast('Server is reachable — full CardDAV apply needs the server to allow your origin')
-      return true
-    } catch {
-      toast('Server not reachable from this browser — check the URL/network', 'warn')
+      if (/^google contacts/i.test(src)) {
+        if (googleMode !== 'live') return needsClientId()
+        await syncGoogleContacts()
+        stamp(true); logAudit('rule', 'Rule run', r.name, 'Google People import'); return true
+      }
+      if (/^google calendar/i.test(src)) {
+        if (googleMode !== 'live') return needsClientId()
+        const done = await syncGoogleCalendar()
+        stamp(!!done); logAudit('rule', 'Rule run', r.name, done ? 'Google Calendar sync' : 'Google Calendar sync failed'); return !!done
+      }
+      if (/^ics feed|^ics\b|^subscribed/i.test(src)) {
+        if (!icsFeeds.length) {
+          toast(`${r.name}: no calendar feeds subscribed yet — add one in Integrations`, 'warn')
+          logAudit('rule', 'Rule skipped', r.name, 'No ICS feeds subscribed'); return false
+        }
+        let added = 0
+        for (const f of icsFeeds) { const res = await syncIcsFeed(f.id); if (typeof res === 'number') added += res; else if (res) added += 1 }
+        stamp(true)
+        toast(`📆 ${r.name}: ${icsFeeds.length} feed${icsFeeds.length > 1 ? 's' : ''} refreshed · ${added} new event${added === 1 ? '' : 's'}`)
+        logAudit('rule', 'Rule run', r.name, `${icsFeeds.length} feeds · ${added} new events`); return true
+      }
+      if (/^vcard|^\.vcf|vcard file/i.test(src)) {
+        toast(`${r.name}: vCard import is a file you pick — use Integrations → Import vCard`, 'warn')
+        logAudit('rule', 'Rule skipped', r.name, 'vCard needs a file, not a schedule'); return false
+      }
+      toast(`${r.name}: ${r.source || 'this source'} cannot be reached from a browser app — no server sits in the middle, so this build will not pretend to sync it`, 'warn')
+      logAudit('rule', 'Rule not supported', r.name, r.source || 'unknown source')
+      return false
+    } catch (e) {
+      stamp(false)
+      toast(`${r.name} failed: ${e.message}`, 'warn')
+      logAudit('rule', 'Rule failed', r.name, e.message)
       return false
     }
   }
+
+  /* ── connections ── */
   const connectGcal = async () => {
     if (googleMode !== 'live') { toast('Live-only: paste your Google Client ID in Settings → Google hub (guide included)', 'warn'); return false }
     return connectGoogleLive()
@@ -747,7 +773,7 @@ export function CrmProvider({ children }) {
   /* factory reset to a BLANK crm — PIN-confirmed; wipes everything incl. pincode */
   const blankState = () => ({
     contacts: [], tasks: [], events: [], notes: [], tags: [], groups: [], rules: [], audit: [],
-    activity: [], imports: [], relFreq: {}, snoozes: {}, carddav: null,
+    activity: [], imports: [], relFreq: {}, snoozes: {},
     gcal: { connected: false, email: null, lastSync: null },
     notifState: {}, notifPrefs, widgetPrefs,
     mailboxes: {
@@ -1212,7 +1238,7 @@ export function CrmProvider({ children }) {
   }
 
   const value = {
-    contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, toasts,
+    contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, gcal, toasts,
     contactById, groupById, tagById, toast, followUpStatus, logActivity, logAudit,
     addContact, updateContact, toggleStar, markContacted, deleteContact, bulkDeleteContacts, bulkSetGroups, contactGroupIds, addNote, updateNote, deleteNote,
     addTask, moveTask, updateTask, deleteTask, duplicateTask, createFollowUpTask,
@@ -1220,7 +1246,7 @@ export function CrmProvider({ children }) {
     addTag, updateTag, deleteTag, mergeTags, bulkTag,
     addGroup, updateGroup, deleteGroup, addRule, updateRule, toggleRule, deleteRule, runRuleNow,
     profile, isRegistered, registerProfile, updateProfile, skipRegistration, signOutProfile, requestVerificationCode, confirmVerificationCode,
-    saveCarddav, testConnection, connectGcal, disconnectGcal,
+    connectGcal, disconnectGcal,
     mailboxes, emails, connectMailbox, disconnectMailbox, syncMailbox, logEmailTouch, triageEmailAsLead, ignoreEmail,
     googleClientId, googleMode, saveGoogleClientId, connectGoogleLive, syncGoogleCalendar, syncGoogleContacts,
     driveState, driveBackupNow, driveRestoreNow, restoreAll, disconnectGoogle,

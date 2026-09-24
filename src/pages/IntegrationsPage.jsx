@@ -32,7 +32,7 @@ export default function IntegrationsPage() {
     { icon: Users, color: '#a78bfa', name: 'Google Contacts', ok: !!driveState.lastContactsSync, detail: driveState.lastContactsSync ? `last import ${tsRel(driveState.lastContactsSync)}` : 'sync via Settings → Google hub' },
     { icon: HardDrive, color: '#34d399', name: 'Drive backup', ok: !!driveState.lastBackup, detail: driveState.lastBackup ? `backed up ${tsRel(driveState.lastBackup)}` : 'backups in Settings → Google hub' },
     { icon: Mail, color: '#ea4335', name: 'Gmail', ok: mailboxes.gmail.connected, detail: mailboxes.gmail.connected ? `LIVE · ${mailboxes.gmail.address}` : googleMode === 'live' ? 'Client ID set — connect from Email screen' : 'OFF — set your Client ID (guide in Settings)' },
-    { icon: Mail, color: '#0a78d4', name: 'Outlook', ok: mailboxes.outlook.connected, detail: mailboxes.outlook.connected ? `LIVE · ${mailboxes.outlook.address}` : 'not available yet (needs Microsoft OAuth)' },
+    { icon: Mail, color: '#0a78d4', name: 'Outlook', ok: mailboxes.outlook.connected, unavailable: true, detail: 'not in this build — needs a Microsoft OAuth app and a server' },
   ]
 
   return (
@@ -55,7 +55,8 @@ export default function IntegrationsPage() {
               <div className="w-9 h-9 rounded-xl grid place-items-center flex-none" style={{ background: r.color + '1c', color: r.color }}><r.icon size={16} /></div>
               <div className="min-w-0 flex-1">
                 <div className="text-[13px] font-bold flex items-center gap-2">{r.name}
-                  <StatusPill ok={r.ok && !r.warn} warn={r.warn} label={r.ok ? (r.warn ? 'DEMO' : 'LIVE') : 'OFF'} />
+                  <StatusPill ok={r.ok && !r.warn} warn={r.warn || r.unavailable}
+                    label={r.unavailable ? 'NOT IN THIS BUILD' : r.ok ? (r.warn ? 'DEMO' : 'LIVE') : 'OFF'} />
                 </div>
                 <div className="text-[11px] truncate" style={{ color: 'var(--faint)' }}>{r.detail}</div>
               </div>

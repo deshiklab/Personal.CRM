@@ -135,7 +135,7 @@ export const NOTES = [
 /* ── Sync rules ───────────────────────────────────────────── */
 export const SYNC_RULES = [
   { id:'r1', name:'Google Contacts ↔ CRM', source:'Google Contacts', direction:'Two-way', frequency:'Hourly', scope:'selected', scopeGroups:['g_work','g_clients'], scopeTags:[], delivery:'Auto-apply changes', conflict:'prefer-local', enabled:true, lastRun:tsAgo(120) },
-  { id:'r2', name:'iCloud CardDAV import', source:'CardDAV (iCloud)', direction:'Import', frequency:'Daily', scope:'selected', scopeGroups:[], scopeTags:['t_vip'], delivery:'Review queue', conflict:'manual', enabled:true, lastRun:tsAgo(60*26) },
+  { id:'r2', name:'Calendar feeds → CRM', source:'ICS feed', direction:'Import', frequency:'Daily', scope:'all', scopeGroups:[], scopeTags:['t_vip'], delivery:'Auto-apply changes', conflict:'newest', enabled:true, lastRun:tsAgo(60*26) },
   { id:'r3', name:'Birthdays → Google Calendar', source:'Google Calendar', direction:'Export', frequency:'Weekly', scope:'all', scopeGroups:[], scopeTags:[], delivery:'Notify only', conflict:'newest', enabled:false, lastRun:tsAgo(60*24*6) },
 ]
 

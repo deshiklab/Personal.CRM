@@ -317,7 +317,7 @@ Things with a date: calls, coffees, reviews, deadlines. Each has a colour and ca
 Drag an event to another day to reschedule it; the change is recorded in **History**.
 
 > [!TIP] If the month view looks empty, check that contacts actually have birthdays stored and that you are on the right month — see [Calendar looks empty](article:fix.calendar-empty).`,
-    related: ['rhythm.birthdays', 'data.google', 'data.carddav'],
+    related: ['rhythm.birthdays', 'data.google', 'data.ics'],
   },
   {
     id: 'rhythm.birthdays', cat: 'rhythm', title: 'Birthdays & anniversaries',
@@ -473,24 +473,26 @@ The first time, one device establishes the **baseline**. Later devices join that
 ## What you get
 - **Calendar** — import your events, and push birthdays and anniversaries into a calendar of your choosing.
 - **Drive** — store the sync file in your own Drive instead of a Gist.
-- **Contacts (CardDAV/People)** — see [CardDAV & ICS feeds](article:data.carddav).
+- **Contacts (People)** — imported with the same sign-in, or from a vCard file.
 
 > [!NOTE] Tokens live in memory only — they are never written to storage. Restarting the app signs you out.`,
-    related: ['data.sync', 'data.carddav', 'data.backup'],
+    related: ['data.sync', 'data.ics', 'data.backup'],
   },
   {
-    id: 'data.carddav', cat: 'data', title: 'CardDAV & ICS feeds',
-    summary: 'Talk to standard contact and calendar servers, read-only or push.',
-    tags: ['carddav', 'ics', 'caldav', 'feed', 'server', 'standard'], updated: '2026-09-24',
-    body: `For anything that is not Google, the app speaks the open standards.
+    id: 'data.ics', cat: 'data', title: 'Calendar feeds (ICS)',
+    summary: 'Subscribe to any .ics URL — holidays, fixtures, term dates, a shared rota.',
+    tags: ['ics', 'ical', 'feed', 'calendar', 'subscribe', 'standard'], updated: '2026-09-24',
+    body: `Subscribe to any \`.ics\` URL — a sports fixture list, a public holiday calendar, a school term calendar, a rota someone shares with you. Add the feed in **Integrations → Calendar feeds**, and its events appear alongside your own, clearly marked with the feed they came from. Refresh one feed whenever you like, or let a sync rule do it on a schedule.
 
-## CardDAV
-Point it at a CardDAV server (Nextcloud, Fastmail, iCloud, Radicale…) with a URL, username and password. Use **Test connection** first — the browser has to be allowed to reach that server, which is a server-side CORS setting.
+## Why a feed and not a two-way sync?
+A feed is a plain file on a URL: the app can fetch it directly, and it never needs your password. Most calendar servers allow it.
 
-## ICS feeds
-Subscribe to any \`.ics\` URL — a sports fixture list, a public holiday calendar, a school term calendar. Feeds refresh on a schedule and their events appear alongside your own, clearly marked.
+## What about CardDAV (contacts)?
+Not in this build, and we would rather say so than pretend. A browser page cannot reach a CardDAV server on its own — that server would have to allow this origin, and a two-way contact sync would also need somewhere to keep a refresh token. There is no server of ours in the middle, by design.
 
-> [!WARN] Credentials for CardDAV are stored on this device in the browser's local storage. On a shared machine, prefer read-only feeds.`,
+What you can do instead: **import or export a vCard (.vcf)** whenever you like, or sync **Google Contacts** with your own Client ID. Both are real, both work offline-first.
+
+> [!NOTE] Feed URLs are stored on this device. Some feed URLs are secret-ish — treat a shared machine accordingly.`,
     related: ['data.google', 'data.sync', 'rhythm.calendar'],
   },
   {
@@ -580,7 +582,7 @@ Name, email or mobile, the code, and a device label — sent to the relay you ch
 | --- | --- | --- |
 | Multi-device sync | your data file | *your* Gist or Drive |
 | Google hub | calendar/contact data | *your* Google account |
-| CardDAV / ICS | credentials / feed URL | the server you configured |
+| ICS feeds | feed URL | the server hosting the .ics file |
 | Webhooks | the event payload | the URL you configured |
 | Verification | name, email/mobile, code | the relay you configured |
 
@@ -687,7 +689,7 @@ Sync before you start editing on a second device, then sync again when you stop.
 - A feed may have failed to fetch; check its status in Settings.
 
 > [!TIP] A calendar with only your own events in it is a calendar that is not doing much work. Fill in birthdays for the fifty people who matter and it fills up by itself.`,
-    related: ['rhythm.calendar', 'rhythm.birthdays', 'data.carddav'],
+    related: ['rhythm.calendar', 'rhythm.birthdays', 'data.ics'],
   },
   {
     id: 'fix.migrating', cat: 'fix', title: 'Moving to a new phone or browser',
@@ -730,7 +732,7 @@ Even simpler: turn on sync on the old device, let it finish, then sign in on the
 - **Pincode** — the 4–6 digit app lock, stored only as a salted hash.
 - **Session** — the period after unlocking; held in memory, never on disk.
 - **PWA** — the installable web version; same data, no app store.
-- **CardDAV** — the open standard for syncing contacts.
+- **ICS** — the calendar file format behind feed subscriptions and exports.
 - **ICS** — the calendar file format used by subscriptions.
 - **vCard (.vcf)** — the standard phone-contacts file.
 - **Gist** — a small file hosted on GitHub; a *secret* gist is visible only to you.
@@ -792,7 +794,7 @@ Even simpler: turn on sync on the old device, let it finish, then sign in on the
 - Registration with optional email/mobile verification.
 - App lock (pincode) with salted-hash storage.
 - Multi-device sync via Gist or Drive, with field-level merging.
-- Google hub, CardDAV and ICS feeds.
+- Google hub and ICS calendar feeds.
 - Quick Capture, network graph, analytics, dashboard widgets.`,
     related: ['notes.kb', 'ref.faq'],
   },
@@ -804,7 +806,7 @@ Even simpler: turn on sync on the old device, let it finish, then sign in on the
 No. There is no account, and no way for us to see your data. See [Where your data lives](article:privacy.where-data-lives).
 
 **Is it really offline?**
-Yes — the whole app runs from local storage. Sync, Google, CardDAV and webhooks are all opt-in.
+Yes — the whole app runs from local storage. Sync, Google, ICS feeds and webhooks are all opt-in.
 
 **Can I use it on my phone and laptop?**
 Yes, with sync (Gist or Drive) — or by moving a JSON backup across. See [Multi-device sync](article:data.sync).
@@ -853,7 +855,7 @@ export const TIPS = {
   'nav.tags':        { title: 'Tags', body: 'Ad-hoc labels with colour and icon. Rename once, updates everywhere.', learn: 'people.tags' },
   'nav.import':      { title: 'Import', body: 'Bring in a CSV or vCard with column mapping and a preview.', learn: 'data.import' },
   'nav.history':     { title: 'History', body: 'Every change you made, in an audit log — including merges and restores.' },
-  'nav.integrations':{ title: 'Integrations', body: 'Google, CardDAV, ICS feeds, sync backends and webhooks.' },
+  'nav.integrations':{ title: 'Integrations', body: 'Google, ICS calendar feeds, sync backends and webhooks.' },
   'nav.settings':    { title: 'Settings', body: 'Identity, pincode, backups, sync, notifications and dashboard widgets.' },
   'nav.about':       { title: 'About', body: 'Version, licence, third-party notices, privacy and how to reach BITSCOL.' },
   'nav.knowledge':   { title: 'Knowledge base', body: 'The manual, searchable offline — plus articles of your own.', learn: 'notes.kb' },
@@ -916,8 +918,8 @@ export const TERMS = {
   'pincode':     { term: 'Pincode', def: 'The 4–6 digit app lock, stored only as a salted hash.', learn: 'privacy.lock' },
   'session':     { term: 'Session', def: 'The period after unlocking. Held in memory, never written to disk.', learn: 'privacy.lock' },
   'pwa':         { term: 'PWA', def: 'The installable web version — same data, no app store involved.', learn: 'privacy.where-data-lives' },
-  'carddav':     { term: 'CardDAV', def: 'The open standard for syncing contacts with a server.', learn: 'data.carddav' },
-  'ics':         { term: 'ICS', def: 'The calendar file format used by subscriptions and exports.', learn: 'data.carddav' },
+  'ics':         { term: 'ICS', def: 'The calendar file format used by subscriptions and exports.', learn: 'data.ics' },
+  'carddav':     { term: 'CardDAV', def: 'The open standard for syncing contacts with a server — not available in this build (a browser cannot reach it alone).', learn: 'data.ics' },
   'vcard':       { term: 'vCard', def: 'The standard phone-contacts file, usually a .vcf.', learn: 'data.import' },
   'gist':        { term: 'Gist', def: 'A small file hosted on GitHub. A secret gist is visible only to you.', learn: 'data.sync' },
   'webhook':     { term: 'Webhook', def: 'An HTTP call your app makes to a URL you chose when something happens.', learn: 'data.webhooks' },
