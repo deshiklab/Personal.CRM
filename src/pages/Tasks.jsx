@@ -5,7 +5,7 @@ import {
   AlignLeft, ListChecks, CalendarDays, UserRound, X, ChevronRight
 } from 'lucide-react'
 import { useCrm } from '../store'
-import { SectionHead, Avatar, DueBadge, Modal, Field, TagPill, PRIORITY_COLORS, CsvButton } from '../components/ui'
+import { SectionHead, Avatar, DueBadge, Modal, Field, TagPill, PRIORITY_COLORS, CsvButton, toneVar } from '../components/ui'
 import { cn, tsRel } from '../lib'
 
 const COLUMNS = [

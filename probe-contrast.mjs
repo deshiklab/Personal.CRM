@@ -85,6 +85,20 @@ const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } })
 const pg = await ctx.newPage()
 await boot(pg)
 
+/* crash guard — every route must render without a ReferenceError.
+ * The light-theme toneVar sweep left three call sites without an import;
+ * this catches that class of bug before it ships. */
+{
+  const errs = []
+  pg.on('pageerror', e => errs.push(e.message))
+  for (const route of ROUTES) {
+    await pg.goto(BASE + '/#' + route); await pg.waitForTimeout(700)
+  }
+  ok('no ReferenceError on any route', !errs.some(m => /is not defined|ReferenceError/.test(m)), errs.slice(0, 3).join(' | '))
+  ok('zero page errors across the route walk', errs.length === 0, errs.slice(0, 3).join(' | '))
+  pg.removeAllListeners('pageerror')
+}
+
 for (const theme of ['light', 'dark']) {
   const canvas = theme === 'light' ? { r: 242, g: 244, b: 249 } : { r: 10, g: 12, b: 17 }
   await pg.evaluate(t => localStorage.setItem('pcrm-theme', t), theme)

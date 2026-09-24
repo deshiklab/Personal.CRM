@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, CalendarPlus, Cake, Clock, Trash2, Link2, FileDown, ExternalLink } from 'lucide-react'
 import { useCrm } from '../store'
-import { SectionHead, Seg, Modal, Field, Avatar, Pill, EVENT_COLORS, Empty, CsvButton } from '../components/ui'
+import { SectionHead, Seg, Modal, Field, Avatar, Pill, EVENT_COLORS, Empty, CsvButton, toneVar } from '../components/ui'
 import { downloadICS, gcalTemplateUrl } from '../lib/ics'
 import { cn, isoDate, todayISO, monthMatrix, MONTHS, WEEKDAYS_S, addDays } from '../lib'
 
