@@ -4,7 +4,7 @@ import {
   ScanLine, Camera, ImagePlus, Loader2, Check, X, RotateCcw, UserPlus, Sparkles,
 } from 'lucide-react'
 import { Modal, Field, Avatar } from './ui'
-import { scanVisitingCard, disposeScanner, onScanProgress } from '../lib/cardscan'
+import { scanVisitingCard, disposeScanner, onScanProgress, prefetchScanner } from '../lib/cardscan'
 import { compressImage, pickImage } from '../lib/media'
 import { useCrm } from '../store'
 
@@ -29,7 +29,9 @@ export default function CardScanModal({ open, onClose, contact = null }) {
       return
     }
     const off = onScanProgress(setProgress)
-    return () => { off(); /* keep worker warm across opens */ }
+    /* warm the OCR engine while the user lines up the photo — first scan is the slow one */
+    prefetchScanner()
+    return () => { off() }
   }, [open])
 
   const set = (k, v) => setDraft(d => ({ ...d, [k]: v }))
@@ -55,7 +57,14 @@ export default function CardScanModal({ open, onClose, contact = null }) {
       setStep('review')
     } catch (e) {
       console.error(e)
-      setErr(String(e?.message || e))
+      const msg = String(e?.message || e)
+      setErr(
+        /timed out/i.test(msg)
+          ? 'The scan took too long — check your connection (first run needs a short download) and try a clearer photo.'
+          : /Failed to fetch|NetworkError|load TesseractCore|OCR/i.test(msg)
+            ? `Could not start the OCR engine. ${msg}`
+            : msg
+      )
       setStep('pick')
     } finally {
       busy.current = false
@@ -157,13 +166,25 @@ export default function CardScanModal({ open, onClose, contact = null }) {
           )}
           <Loader2 size={22} className="mx-auto mb-3 animate-spin" style={{ color: 'var(--t-indigo)' }} />
           <div className="text-[14px] font-semibold">Reading the card…</div>
-          <div className="text-[12px] mt-1" style={{ color: 'var(--muted)' }}>
+          <div className="text-[12px] mt-1 capitalize" style={{ color: 'var(--muted)' }}>
             {progress.status || 'starting'} · {Math.round((progress.progress || 0) * 100)}%
           </div>
+          {progress.detail && (
+            <div className="text-[10.5px] mt-1 truncate max-w-[360px] mx-auto" style={{ color: 'var(--faint)' }} title={progress.detail}>
+              {progress.detail}
+            </div>
+          )}
           <div className="mx-auto mt-4 h-1.5 rounded-full overflow-hidden" style={{ width: 220, background: 'var(--chipbg)' }}>
             <div className="h-full rounded-full transition-all"
-              style={{ width: `${Math.round((progress.progress || 0) * 100)}%`, background: 'linear-gradient(90deg,var(--i1),var(--i2))' }} />
+              style={{ width: `${Math.max(4, Math.round((progress.progress || 0) * 100))}%`, background: 'linear-gradient(90deg,var(--i1),var(--i2))' }} />
           </div>
+          <p className="text-[11.5px] mt-4 max-w-[340px] mx-auto leading-snug" style={{ color: 'var(--faint)' }}>
+            First run downloads a small OCR engine (~5–15 MB). After that, scans are faster and work offline.
+          </p>
+          <button type="button" className="btn btn-ghost btn-sm mt-4"
+            onClick={() => { busy.current = false; disposeScanner(); setStep('pick'); setErr('Scan cancelled') }}>
+            Cancel
+          </button>
         </div>
       )}
 
