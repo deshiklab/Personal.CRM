@@ -141,7 +141,7 @@ export default function Tour({ autoStart = false }) {
         }} />
       {/* the card */}
       <div className="panel fixed z-[282] p-4 fadein"
-        style={{ top, left, width: W, maxWidth: 'calc(100vw - 20px)', borderRadius: 16 }}>
+        style={{ top, left, width: Math.min(W, window.innerWidth - 20), maxWidth: 'calc(100vw - 20px)', borderRadius: 16 }}>
         <div className="flex items-start gap-2.5">
           <div className="w-7 h-7 rounded-lg grid place-items-center flex-none"
             style={{ background: 'rgba(129,140,248,.18)', color: 'var(--i2)' }}>
@@ -151,8 +151,8 @@ export default function Tour({ autoStart = false }) {
             <div className="text-[13.5px] font-extrabold">{s.title}</div>
             <div className="text-[12px] mt-1 leading-snug" style={{ color: 'var(--muted)' }}>{s.body}</div>
           </div>
-          <button className="icon-btn flex-none" style={{ width: 24, height: 24 }} onClick={() => stop()} aria-label="Close tour">
-            <X size={12} />
+          <button className="icon-btn flex-none" onClick={() => stop()} aria-label="Close tour">
+            <X size={13} />
           </button>
         </div>
 

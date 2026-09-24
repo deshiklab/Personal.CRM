@@ -77,7 +77,7 @@ export default function EmailPage() {
                   {mb.connected ? `${mb.address} · ${count} msgs · synced ${tsRel(mb.lastSync)}` : p.desc}
                 </div>
               </div>
-              <div className="flex items-center gap-2 flex-none">
+              <div className="flex items-center gap-2 flex-none flex-wrap justify-end">
                 {mb.connected ? (
                   <>
                     <button className="btn btn-ghost btn-sm" disabled={busy === 'sync:' + p.id} onClick={() => sync(p.id)}>

@@ -146,11 +146,11 @@ export default function LockScreen({ mode }) {
           </button>
 
           {mode === 'setup' ? (
-            <button className="text-[12px] font-semibold text-center hover:underline" style={{ color: 'var(--faint)' }} onClick={skipPinSetup}>
+            <button className="text-[12px] font-semibold text-center hover:underline py-2.5 sm:py-0" style={{ color: 'var(--faint)' }} onClick={skipPinSetup}>
               Skip for now — set it later in Settings
             </button>
           ) : (
-            <button className="text-[11.5px] font-semibold text-center inline-flex items-center gap-1 justify-center mt-1"
+            <button className="text-[11.5px] font-semibold text-center inline-flex items-center gap-1 justify-center mt-1 py-2.5 sm:py-1 w-full sm:w-auto"
               style={{ color: '#f8717188' }} onClick={doForgot}>
               <Trash2 size={12} /> Forgot pincode? Wipe app & start blank
             </button>

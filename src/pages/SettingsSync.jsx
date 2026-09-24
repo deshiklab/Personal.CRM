@@ -193,14 +193,14 @@ function RulesTable() {
                     <td><span className="text-[11.5px] whitespace-nowrap" style={{ color: 'var(--faint)' }}>{r.lastRun ? tsRel(r.lastRun) : 'never'}</span></td>
                     <td>
                       <div className="flex gap-1.5 justify-end">
-                        <button className="icon-btn" style={{ width: 28, height: 28, opacity: RULE_CAN_RUN(r.source) ? 1 : .4 }}
+                        <button className="icon-btn" style={{ opacity: RULE_CAN_RUN(r.source) ? 1 : .4 }}
                           title={RULE_CAN_RUN(r.source) ? 'Run now' : `${r.source} cannot be reached from a browser — this build will not fake it`}
                           onClick={async () => { if (!RULE_CAN_RUN(r.source)) { runRuleNow(r.id); return } setRunning(r.id); await runRuleNow(r.id); setRunning(null) }}>
                           {running === r.id ? <RefreshCw size={13} className="spin" /> : <Play size={13} />}
                         </button>
                         {confirmDel === r.id
                           ? <button className="btn btn-danger btn-sm" onClick={() => { deleteRule(r.id); setConfirmDel(null) }}>Sure?</button>
-                          : <button className="icon-btn" style={{ width: 28, height: 28 }} title="Delete rule" onClick={() => { setConfirmDel(r.id); setTimeout(() => setConfirmDel(c => c === r.id ? null : c), 2500) }}><Trash2 size={13} /></button>}
+                          : <button className="icon-btn" title="Delete rule" onClick={() => { setConfirmDel(r.id); setTimeout(() => setConfirmDel(c => c === r.id ? null : c), 2500) }}><Trash2 size={14} /></button>}
                       </div>
                     </td>
                   </tr>

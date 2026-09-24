@@ -67,7 +67,7 @@ function CrashScreen({ error, stack, onRetry }) {
 
   return (
     <div className="min-h-screen grid place-items-center p-5" style={{ background: 'var(--bg)' }}>
-      <div className="card w-full max-w-[560px] p-6" style={{ borderRadius: 20 }}>
+      <div className="card w-full max-w-[560px] p-5 sm:p-6" style={{ borderRadius: 20 }}>
         <div className="flex items-start gap-3">
           <div className="w-11 h-11 rounded-2xl grid place-items-center flex-none"
             style={{ background: 'rgba(251,113,133,.14)', color: '#fb7185' }}>
@@ -88,12 +88,12 @@ function CrashScreen({ error, stack, onRetry }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 mt-4">
-          <button className="btn btn-primary" onClick={() => location.reload()}>
+          <button className="btn btn-primary w-full sm:w-auto" onClick={() => location.reload()}>
             <RefreshCw size={14} /> Reload the app
           </button>
-          <button className="btn btn-ghost" onClick={onRetry}>Try this screen again</button>
-          <button className="btn btn-ghost" onClick={copy}><Copy size={13} /> Copy details</button>
-          <a className="btn btn-ghost" href={mailto}><Mail size={13} /> Email support</a>
+          <button className="btn btn-ghost w-full sm:w-auto" onClick={onRetry}>Try this screen again</button>
+          <button className="btn btn-ghost w-full sm:w-auto" onClick={copy}><Copy size={13} /> Copy details</button>
+          <a className="btn btn-ghost w-full sm:w-auto" href={mailto}><Mail size={13} /> Email support</a>
         </div>
 
         {newest && (
@@ -106,7 +106,7 @@ function CrashScreen({ error, stack, onRetry }) {
               was at that moment.
             </div>
             <button
-              className="btn btn-ghost btn-sm mt-2.5"
+              className="btn btn-ghost btn-sm mt-2.5 w-full sm:w-auto"
               onClick={() => { if (confirm('Restore the snapshot from ' + new Date(newest.at).toLocaleString() + '? Current data will be replaced.')) crm.restoreSnapshotById(newest.id) }}>
               <History size={13} /> Restore this snapshot
             </button>

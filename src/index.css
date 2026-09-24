@@ -94,6 +94,17 @@ body::before{
 @layer components {
   .icon-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;flex:none;border-radius:10px;border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:.15s;background:transparent}
   .icon-btn:hover{color:var(--text);border-color:var(--border2);background:var(--hover)}
+
+  /* ── phones: controls have to be thumb-sized, not mouse-sized ──
+   * A 28px target is fine with a cursor and hopeless with a fingertip, so on
+   * small screens every button, chip-sized control and icon button grows. */
+  @media (max-width: 640px) {
+    .btn{min-height:42px;padding:10px 16px}
+    .btn-sm{min-height:38px;padding:9px 13px;font-size:13px}
+    .icon-btn{width:38px;height:38px;border-radius:12px}
+    /* long words/values must wrap rather than push the layout sideways */
+    .truncate{overflow-wrap:anywhere}
+  }
 }
 
 

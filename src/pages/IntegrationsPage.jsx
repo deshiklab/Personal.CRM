@@ -54,7 +54,7 @@ export default function IntegrationsPage() {
             <div key={i} className="card p-3.5 flex items-center gap-3" style={{ borderRadius: 14 }}>
               <div className="w-9 h-9 rounded-xl grid place-items-center flex-none" style={{ background: r.color + '1c', color: r.color }}><r.icon size={16} /></div>
               <div className="min-w-0 flex-1">
-                <div className="text-[13px] font-bold flex items-center gap-2">{r.name}
+                <div className="text-[13px] font-bold flex items-center gap-2 flex-wrap">{r.name}
                   <StatusPill ok={r.ok && !r.warn} warn={r.warn || r.unavailable}
                     label={r.unavailable ? 'NOT IN THIS BUILD' : r.ok ? (r.warn ? 'DEMO' : 'LIVE') : 'OFF'} />
                 </div>

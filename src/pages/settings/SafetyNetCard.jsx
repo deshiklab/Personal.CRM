@@ -44,7 +44,8 @@ export default function SafetyNetCard() {
             last {SNAPSHOT_LIMITS.MAX_COUNT} and drops the oldest when it runs out of room.
           </div>
         </div>
-        <button className="btn btn-primary btn-sm" onClick={() => { takeSnapshotNow('manual'); toast?.('Snapshot saved — you can roll back to it any time') }}>
+        <button className="btn btn-primary btn-sm w-full sm:w-auto justify-center"
+          onClick={() => { takeSnapshotNow('manual'); toast?.('Snapshot saved — you can roll back to it any time') }}>
           <Camera size={13} /> Take snapshot now
         </button>
       </div>
@@ -71,11 +72,11 @@ export default function SafetyNetCard() {
       ) : (
         <div className="mt-4">
           {snapshots.map((s, i) => (
-            <div key={s.id} className="flex items-center gap-3 py-2.5 border-b last:border-0"
+            <div key={s.id} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 py-2.5 border-b last:border-0"
               style={{ borderColor: 'rgba(255,255,255,.05)' }}>
               <div className="min-w-0 flex-1">
                 <div className="text-[13px] font-semibold flex items-center gap-2 flex-wrap">
-                  {new Date(s.at).toLocaleString()}
+                  {new Date(s.at).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   <Pill color="#818cf8">{s.label}</Pill>
                   {i === 0 && <Pill color="#34d399">newest</Pill>}
                 </div>
@@ -85,23 +86,23 @@ export default function SafetyNetCard() {
               </div>
 
               {confirming === s.id ? (
-                <div className="flex items-center gap-1.5 flex-none">
-                  <span className="text-[11.5px] font-semibold" style={{ color: 'var(--muted)' }}>Replace current data?</span>
-                  <button className="btn btn-danger btn-sm" onClick={() => { restoreSnapshotById(s.id); setConfirming(null) }}>
+                <div className="flex items-center gap-1.5 flex-wrap w-full sm:w-auto sm:flex-none">
+                  <span className="text-[11.5px] font-semibold w-full sm:w-auto" style={{ color: 'var(--muted)' }}>Replace current data?</span>
+                  <button className="btn btn-danger btn-sm flex-1 sm:flex-none" onClick={() => { restoreSnapshotById(s.id); setConfirming(null) }}>
                     Yes, restore
                   </button>
-                  <button className="btn btn-ghost btn-sm" onClick={() => setConfirming(null)}>Cancel</button>
+                  <button className="btn btn-ghost btn-sm flex-1 sm:flex-none" onClick={() => setConfirming(null)}>Cancel</button>
                 </div>
               ) : (
-                <div className="flex items-center gap-1.5 flex-none">
+                <div className="flex items-center gap-1.5 justify-end sm:justify-start w-full sm:w-auto sm:flex-none">
                   <button className="btn btn-ghost btn-sm" onClick={() => setConfirming(s.id)} title="Roll back to this snapshot">
                     <History size={12} /> Restore
                   </button>
-                  <button className="icon-btn" style={{ width: 28, height: 28 }} onClick={() => downloadSnapshot(s.id)} title="Download as JSON">
-                    <Download size={13} />
+                  <button className="icon-btn" onClick={() => downloadSnapshot(s.id)} title="Download as JSON">
+                    <Download size={14} />
                   </button>
-                  <button className="icon-btn" style={{ width: 28, height: 28 }} onClick={() => deleteSnapshotById(s.id)} title="Delete this snapshot">
-                    <Trash2 size={13} />
+                  <button className="icon-btn" onClick={() => deleteSnapshotById(s.id)} title="Delete this snapshot">
+                    <Trash2 size={14} />
                   </button>
                 </div>
               )}

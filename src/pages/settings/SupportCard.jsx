@@ -70,7 +70,7 @@ export default function SupportCard() {
         </button>
         <a className="btn btn-ghost btn-sm" href={LEGAL_URLS.privacy} target="_blank" rel="noreferrer">Privacy</a>
         <a className="btn btn-ghost btn-sm" href={LEGAL_URLS.terms} target="_blank" rel="noreferrer">Terms</a>
-        <span className="text-[11px] ml-auto" style={{ color: 'var(--faint)' }}>{COPYRIGHT}</span>
+        <span className="text-[11px] w-full sm:w-auto sm:ml-auto sm:text-right" style={{ color: 'var(--faint)' }}>{COPYRIGHT}</span>
       </div>
     </Card>
   )

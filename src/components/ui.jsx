@@ -225,7 +225,7 @@ export function GuideLink({ slug, label = 'Guide' }) {
       data-tip-body="Opens the matching article in the knowledge base."
       data-tip-learn={slug}
       aria-label={`${label} for this screen`}
-      className="inline-flex items-center gap-1 text-[11px] font-bold px-1.5 py-0.5 rounded-full"
+      className="inline-flex items-center gap-1 text-[12px] sm:text-[11px] font-bold px-2.5 sm:px-1.5 py-0.5 rounded-full min-h-[34px] sm:min-h-0"
       style={{
         background: 'var(--hover)', border: '1px solid var(--border)',
         color: 'var(--muted)', cursor: 'pointer', verticalAlign: 'middle',
