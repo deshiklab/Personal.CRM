@@ -1,6 +1,6 @@
 /* Personal CRM — offline-first service worker
  * The whole app builds to ONE inlined HTML file, so caching the shell = offline app. */
-const VERSION = 'pcrm-v4'
+const VERSION = 'pcrm-v5'
 /* OCR assets under ./ocr/ are cache-first on first use (too large to precache). */
 const SHELL = ['./', './index.html', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png']
@@ -45,4 +45,23 @@ self.addEventListener('fetch', e => {
       return res
     }).catch(() => hit))
   )
+})
+
+/* Open the app (and deep-link when extra.key is present) when the user taps a reminder. */
+self.addEventListener('notificationclick', event => {
+  event.notification.click && event.notification.close()
+  try { event.notification.close() } catch {}
+  const data = event.notification.data || {}
+  let path = './'
+  if (data.type === 'task') path = './#/tasks'
+  else if (data.type === 'follow-up' || data.type === 'birthday') path = './#/contacts' + (data.contactId ? ('?open=' + data.contactId) : '')
+  else if (data.type === 'event') path = './#/calendar'
+  else path = './#/notifications'
+  event.waitUntil((async () => {
+    const all = await clients.matchAll({ type: 'window', includeUncontrolled: true })
+    for (const c of all) {
+      if ('focus' in c) { try { await c.focus(); c.navigate && c.navigate(path) } catch {}; return }
+    }
+    if (clients.openWindow) return clients.openWindow(path)
+  })())
 })
