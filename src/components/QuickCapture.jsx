@@ -7,6 +7,9 @@ import {
 import { useCrm } from '../store'
 import { daysAheadISO } from '../lib'
 
+/* Dev-only helpers (the demo transcript simulator) never ship in a build */
+const DEV = import.meta.env.DEV || (() => { try { return localStorage.getItem('pcrm-dev') === '1' } catch { return false } })()
+
 /* ── demo dictation lines for browsers without the Speech API ── */
 const DEMO_LINES = [
   'New lead Tanvir Hasan phone 01711 552299 from the Dhaka trade expo',
@@ -277,9 +280,11 @@ export default function QuickCapture() {
                         {listening ? <><Square size={14} /> Stop</> : <><Mic size={15} /> Start talking</>}
                       </button>
                     )}
-                    <button className="btn btn-ghost" onClick={simulate} disabled={listening}>
-                      <Mic size={14} /> Simulate incoming audio
-                    </button>
+                    {DEV && (
+                      <button className="btn btn-ghost" onClick={simulate} disabled={listening}>
+                        <Mic size={14} /> Simulate incoming audio
+                      </button>
+                    )}
                   </div>
                 </div>
 

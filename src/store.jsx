@@ -6,9 +6,19 @@ import * as icslib from './lib/ics'
 import * as ds from './lib/drivesync'
 import * as gs from './lib/gistsync'
 import { notifyOwner, notifyConfigured } from './lib/notify'
+import * as snap from './lib/snapshots'
 
 const KEY = 'pcrm-v1'
-const load = () => { try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s) } catch {} return null }
+/* Fields that must be arrays. A half-written or hand-edited blob should lose
+ * the broken field and fall back to the seed — not take the whole app down. */
+const ARRAY_FIELDS = ['contacts', 'tasks', 'events', 'notes', 'tags', 'groups', 'rules', 'audit', 'activity', 'imports', 'emails', 'kbArticles']
+const load = () => {
+  let s
+  try { s = JSON.parse(localStorage.getItem(KEY) || 'null') } catch { return null }
+  if (!s || typeof s !== 'object' || Array.isArray(s)) return null
+  ARRAY_FIELDS.forEach(k => { if (s[k] != null && !Array.isArray(s[k])) delete s[k] })
+  return s
+}
 
 /* ── groups model ────────────────────────────────────────────────────────────
  * A contact can belong to MANY groups. `groupIds: []` is the canonical field;
@@ -89,12 +99,15 @@ export function CrmProvider({ children }) {
   }, [theme])
   const toggleTheme = () => { setTheme(t => t === 'dark' ? 'light' : 'dark') }
 
+  const wiping = useRef(false)
   useEffect(() => {
+    if (wiping.current) return          // a factory reset owns localStorage now
     try {
       localStorage.setItem(KEY, JSON.stringify({
         contacts, tasks, events, notes, tags, groups, rules, audit,
-        activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock, profile,
+        activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, lock, profile,
         kbArticles, helpPrefs,
+        gist: { gistId: gist.gistId },   // the token is kept apart — see lib/secrets
       }))
     } catch {}
   }, [contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock, profile, kbArticles, helpPrefs])
@@ -457,10 +470,11 @@ export function CrmProvider({ children }) {
   }))
   const voteArticle = (id, v) => setHelpPrefs(p => ({ ...p, votes: { ...(p.votes || {}), [id]: v } }))
 
-  const buildBackup = () => JSON.stringify({
+  const buildBackupObject = () => ({
     app: 'personal-crm', version: 2, exportedAt: new Date().toISOString(),
     data: { contacts, tasks, events, notes, tags, groups, rules, relFreq, audit, activity, imports, snoozes, notifState, notifPrefs, widgetPrefs, mailboxes, emails, profile, kbArticles, helpPrefs },
-  }, null, 2)
+  })
+  const buildBackup = () => JSON.stringify(buildBackupObject(), null, 2)
 
   const driveBackupNow = async () => {
     const json = buildBackup()
@@ -629,6 +643,34 @@ export function CrmProvider({ children }) {
   }
   const verifyPin = async pin => !!(lock?.hash && (await hashPin(pin, lock.salt)) === lock.hash)
 
+  /* ── pincode brute-force throttle ────────────────────────────────────────
+   * A 4-digit pincode is only 10,000 combinations and the hash lives on this
+   * device, so an unthrottled check is brute-forceable by anyone who can run
+   * script on it. Every failure raises the price of the next guess. */
+  const PIN_LADDER = [0, 0, 0, 0, 30e3, 60e3, 120e3, 300e3, 900e3]  // index = failures-1
+  const PIN_FREE_ATTEMPTS = 4
+  const pinLockedUntil = () => (lock?.lockedUntil && lock.lockedUntil > Date.now() ? lock.lockedUntil : 0)
+  const pinStatus = () => {
+    const until = pinLockedUntil()
+    const fails = lock?.fails || 0
+    return {
+      fails, until,
+      locked: until > 0,
+      msLeft: until ? until - Date.now() : 0,
+      attemptsLeft: Math.max(0, PIN_FREE_ATTEMPTS - fails),
+    }
+  }
+  const pinFail = () => {
+    const fails = (lock?.fails || 0) + 1
+    const ms = PIN_LADDER[Math.min(fails - 1, PIN_LADDER.length - 1)]
+    const lockedUntil = ms ? Date.now() + ms : 0
+    setLock(l => ({ ...(l || {}), fails, lockedUntil, lastFailAt: new Date().toISOString() }))
+    logAudit('system', 'Failed pincode attempt', 'App lock',
+      `${fails} consecutive${ms ? ` · locked for ${Math.round(ms / 1000)}s` : ''}`, 'warn')
+    return { fails, lockedUntil, ms }
+  }
+  const pinOk = () => setLock(l => (l ? { ...l, fails: 0, lockedUntil: 0, lastFailAt: null } : l))
+
   const setupPin = async pin => {
     const salt = uid()
     const hash = await hashPin(pin, salt)
@@ -643,12 +685,16 @@ export function CrmProvider({ children }) {
     toast('Pincode setup skipped — you can set it anytime in Settings → App lock', 'warn')
   }
   const unlockWithPin = async pin => {
-    if (await verifyPin(pin)) { setSessionUnlocked(true); return true }
+    if (pinLockedUntil()) return false
+    if (await verifyPin(pin)) { pinOk(); setSessionUnlocked(true); return true }
+    pinFail()
     return false
   }
   const lockNow = () => setSessionUnlocked(false)
   const changePin = async (oldPin, newPin) => {
-    if (!(await verifyPin(oldPin))) return false
+    if (pinLockedUntil()) return false
+    if (!(await verifyPin(oldPin))) { pinFail(); return false }
+    pinOk()
     const salt = uid()
     const hash = await hashPin(newPin, salt)
     setLock({ salt, hash, setAt: new Date().toISOString() })
@@ -657,12 +703,42 @@ export function CrmProvider({ children }) {
     return true
   }
   const removePin = async pin => {
-    if (!(await verifyPin(pin))) return false
+    if (pinLockedUntil()) return false
+    if (!(await verifyPin(pin))) { pinFail(); return false }
+    pinOk()
     setLock({ hash: null, skipped: true })
     logAudit('user', 'App lock removed', 'App lock')
     toast('App lock removed', 'warn')
     return true
   }
+
+  /* ── rolling local snapshots (the safety net under every destructive action) ── */
+  const [snapshots, setSnapshots] = useState(() => snap.listSnapshots())
+  const refreshSnapshots = () => setSnapshots(snap.listSnapshots())
+  const takeSnapshotNow = (label = 'manual') => {
+    const rec = snap.takeSnapshot(buildBackupObject(), label, { force: true })
+    refreshSnapshots()
+    if (rec) logAudit('user', 'Snapshot saved', label, `${Math.round(rec.bytes / 1024)} KB`)
+    return rec
+  }
+  const restoreSnapshotById = id => {
+    const obj = snap.readSnapshot(id)
+    if (!obj) { toast('That snapshot could not be read', 'warn'); return false }
+    const ok = restoreAll(obj)
+    if (ok) { logAudit('user', 'Restored a snapshot', obj.exportedAt || id, 'Rolled back to an earlier copy', 'warn'); refreshSnapshots() }
+    return ok
+  }
+  const downloadSnapshot = id => {
+    const obj = snap.readSnapshot(id)
+    if (!obj) { toast('That snapshot could not be read', 'warn'); return false }
+    const el = document.createElement('a')
+    el.href = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' }))
+    el.download = `personal-crm-snapshot-${String(obj.exportedAt || id).slice(0, 10)}.json`
+    document.body.appendChild(el); el.click(); el.remove()
+    toast('⬇️ Snapshot downloaded')
+    return true
+  }
+  const deleteSnapshotById = id => { snap.deleteSnapshot(id); refreshSnapshots(); toast('Snapshot deleted', 'warn') }
 
   /* factory reset to a BLANK crm — PIN-confirmed; wipes everything incl. pincode */
   const blankState = () => ({
@@ -679,10 +755,15 @@ export function CrmProvider({ children }) {
     syncState: null, lock: null, __blank: true,
   })
   const factoryReset = async pin => {
-    if (lock?.hash && !(await verifyPin(pin))) return false
+    if (pinLockedUntil()) return false
+    if (lock?.hash && !(await verifyPin(pin))) { pinFail(); return false }
+    /* no pinOk() here: the whole lock — counter included — goes with the wipe,
+       and its state update would re-save the old data before the reload lands */
     try {
+      wiping.current = true
       localStorage.setItem(KEY, JSON.stringify(blankState()))
       localStorage.removeItem('pcrm-theme')
+      secrets.clearSecrets()
     } catch {}
     location.reload()
     return true
@@ -704,6 +785,23 @@ export function CrmProvider({ children }) {
   const snapshotCore = () => ({
     contacts, tasks, events, notes, tags, groups, rules, relFreq, emails,
   })
+  /* auto: one after every burst of edits (the ring de-dupes and rate-limits) */
+  const coreFingerprint = useMemo(() => JSON.stringify(snapshotCore()), [contacts, tasks, events, notes, tags, groups, rules, relFreq, emails])
+  useEffect(() => {
+    const t = setTimeout(() => { if (snap.takeSnapshot(buildBackupObject(), 'auto')) refreshSnapshots() }, 9000)
+    return () => clearTimeout(t)
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coreFingerprint])
+
+  /* auto: once on start-up, but only if the newest copy is getting stale */
+  useEffect(() => {
+    const newest = snapshots[0]?.at ? new Date(snapshots[0].at).getTime() : 0
+    if (Date.now() - newest > 6 * 3600e3) {
+      if (snap.takeSnapshot(buildBackupObject(), 'startup', { force: true })) refreshSnapshots()
+    }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const applySyncSnapshot = d => {
     if (Array.isArray(d.contacts)) setContacts(d.contacts.map(normalizeContact))
     if (Array.isArray(d.tasks)) setTasks(d.tasks)
@@ -1050,7 +1148,7 @@ export function CrmProvider({ children }) {
     return { state: 'ok', since, every }
   }
 
-  const resetAll = () => { try { localStorage.removeItem(KEY) } catch {} location.reload() }
+  const resetAll = () => { try { localStorage.removeItem(KEY) } catch {} secrets.clearSecrets(); location.reload() }
 
   /* ── notifications (derived feed + dismiss/snooze/read state) ── */
   const dismissNotif = (key, on = true) => setNotifState(s => ({ ...s, [key]: { ...(s[key] || {}), dismissed: on } }))
@@ -1128,6 +1226,8 @@ export function CrmProvider({ children }) {
     widgetPrefs, toggleWidget, moveWidget, resetWidgets, DEFAULT_WIDGET_ORDER,
     theme, toggleTheme,
     kbArticles, upsertKbArticle, deleteKbArticle,
+    snapshots, takeSnapshotNow, restoreSnapshotById, deleteSnapshotById, downloadSnapshot, refreshSnapshots,
+    pinStatus, PIN_FREE_ATTEMPTS,
     helpPrefs, patchHelpPrefs, toggleBookmark, voteArticle,
   }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

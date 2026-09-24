@@ -32,6 +32,16 @@ import ShortcutsOverlay from './components/ShortcutsOverlay'
 import Tour from './components/Tour'
 import { useNavigate } from 'react-router-dom'
 
+/* Support diagnostic — add ?simulate-crash anywhere in the URL and this throws
+ * during render, so we can prove the crash screen still catches a fault instead
+ * of leaving a white page. Nothing else reads it. */
+const CrashProbe = () => {
+  if (typeof location !== 'undefined' && location.hash.includes('simulate-crash')) {
+    throw new Error('Simulated crash — this is the diagnostic crash screen.')
+  }
+  return null
+}
+
 export default function App() {
   const { lock, sessionUnlocked, profile } = useCrm()
   const { pathname } = useLocation()
@@ -73,6 +83,7 @@ export default function App() {
   if (lock.hash && !sessionUnlocked) return <LockScreen mode="unlock" />
   return (
     <div className="flex h-screen overflow-hidden">
+      <CrashProbe />
       <Sidebar open={navOpen} onClose={() => setNavOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0">
         <Topbar onMenu={() => setNavOpen(true)} />

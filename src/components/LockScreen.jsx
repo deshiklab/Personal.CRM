@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Lock, Unlock, ShieldCheck, Trash2, Loader2, Zap } from 'lucide-react'
+import { Lock, Unlock, ShieldCheck, Trash2, Loader2, Zap, Timer } from 'lucide-react'
 import { useCrm } from '../store'
 
 /* Full-screen gate shown before the app:
@@ -10,7 +10,7 @@ import { useCrm } from '../store'
  * component gets a new identity on every render, so React remounts the <input>
  * on each keystroke and the field loses focus — that is why every digit needed
  * another tap. Keep this outside the component body. */
-function PinField({ value, set, label, innerRef, onEnter, onError = () => {}, nextRef }) {
+function PinField({ value, set, label, innerRef, onEnter, onError = () => {}, nextRef, disabled = false }) {
   return (
     <label className="block">
       <span className="text-[11.5px] font-semibold uppercase tracking-wide" style={{ color: 'var(--faint)' }}>{label}</span>
@@ -19,7 +19,7 @@ function PinField({ value, set, label, innerRef, onEnter, onError = () => {}, ne
         className="input mt-1.5 text-center"
         style={{ fontSize: 22, letterSpacing: 10, fontFamily: 'monospace', padding: '12px 14px' }}
         type="password" inputMode="numeric" autoComplete="off" maxLength={6}
-        placeholder="••••"
+        placeholder="••••" disabled={disabled}
         value={value}
         onChange={e => {
           const v = e.target.value.replace(/\D/g, '')
@@ -39,7 +39,7 @@ function PinField({ value, set, label, innerRef, onEnter, onError = () => {}, ne
 }
 
 export default function LockScreen({ mode }) {
-  const { setupPin, skipPinSetup, unlockWithPin, factoryReset } = useCrm()
+  const { setupPin, skipPinSetup, unlockWithPin, factoryReset, pinStatus } = useCrm()
   const [pin, setPin] = useState('')
   const [pin2, setPin2] = useState('')
   const [err, setErr] = useState('')
@@ -48,6 +48,16 @@ export default function LockScreen({ mode }) {
   const ref = useRef(null)
   const ref2 = useRef(null)
   useEffect(() => { ref.current?.focus() }, [mode])
+
+  /* live countdown while a lockout is running */
+  const [now, setNow] = useState(Date.now())
+  const st = pinStatus ? pinStatus() : { locked: false, msLeft: 0, fails: 0, attemptsLeft: 4 }
+  useEffect(() => {
+    if (!st.locked) return
+    const iv = setInterval(() => setNow(Date.now()), 500)
+    return () => clearInterval(iv)
+  }, [st.locked])
+  const secsLeft = st.locked ? Math.max(1, Math.ceil((st.until - now) / 1000)) : 0
 
   const doSetup = async () => {
     if (pin.length < 4) return setErr('At least 4 digits')
@@ -58,11 +68,18 @@ export default function LockScreen({ mode }) {
   }
 
   const doUnlock = async () => {
-    if (!pin) return
+    if (!pin || st.locked) return
     setBusy(true)
     const okPin = await unlockWithPin(pin)
     setBusy(false)
-    if (!okPin) { setAttempts(a => a + 1); setErr('Wrong pincode'); setPin(''); ref.current?.focus() }
+    if (!okPin) {
+      setAttempts(a => a + 1); setPin('')
+      const after = pinStatus ? pinStatus() : { locked: false, attemptsLeft: 0 }
+      setErr(!after.locked && after.attemptsLeft > 0
+        ? `Wrong pincode — ${after.attemptsLeft} attempt${after.attemptsLeft === 1 ? '' : 's'} left before a lockout`
+        : 'Wrong pincode')
+      ref.current?.focus()
+    }
   }
 
   const doForgot = () => {
@@ -96,7 +113,7 @@ export default function LockScreen({ mode }) {
               <PinField value={pin2} set={setPin2} label="Repeat pincode" innerRef={ref2} onEnter={doSetup} onError={setErr} />
             </>
           ) : (
-            <PinField value={pin} set={setPin} label="Pincode" innerRef={ref} onEnter={doUnlock} onError={setErr} />
+            <PinField value={pin} set={setPin} label="Pincode" innerRef={ref} onEnter={doUnlock} onError={setErr} disabled={st.locked} />
           )}
 
           {!!err && (
@@ -105,10 +122,25 @@ export default function LockScreen({ mode }) {
             </div>
           )}
 
+          {mode === 'unlock' && st.locked && (
+            <div className="flex items-start gap-2 rounded-xl p-3 mb-1"
+              style={{ background: 'rgba(251,113,133,.10)', border: '1px solid rgba(251,113,133,.32)' }}>
+              <Timer size={15} className="flex-none mt-0.5" style={{ color: '#fb7185' }} />
+              <div className="text-[12.5px] leading-snug">
+                <b style={{ color: '#fb7185' }}>Too many wrong pincodes.</b>{' '}
+                <span style={{ color: 'var(--muted)' }}>
+                  Try again in {secsLeft}s. Waiting gets longer with each wrong guess — that is what keeps a
+                  4-digit pincode from being guessed by a machine.
+                </span>
+              </div>
+            </div>
+          )}
+
           <button
             className="btn btn-primary w-full mt-1 justify-center"
-            disabled={busy || (mode === 'setup' ? pin.length < 4 || pin2.length < 4 : pin.length < 4)}
+            disabled={busy || st.locked || (mode === 'setup' ? pin.length < 4 || pin2.length < 4 : pin.length < 4)}
             onClick={mode === 'setup' ? doSetup : doUnlock}>
+            {mode === 'unlock' && st.locked ? <Timer size={15} /> : null}
             {busy ? <Loader2 size={15} className="animate-spin" /> : mode === 'setup' ? <ShieldCheck size={15} /> : <Unlock size={15} />}
             {mode === 'setup' ? 'Set pincode & start' : 'Unlock'}
           </button>
