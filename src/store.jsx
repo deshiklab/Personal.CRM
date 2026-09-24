@@ -7,6 +7,7 @@ import * as ds from './lib/drivesync'
 import * as gs from './lib/gistsync'
 import { notifyOwner, notifyConfigured } from './lib/notify'
 import * as snap from './lib/snapshots'
+import * as secrets from './lib/secrets'
 
 const KEY = 'pcrm-v1'
 /* Fields that must be arrays. A half-written or hand-edited blob should lose
@@ -78,7 +79,7 @@ export function CrmProvider({ children }) {
   const [lock, setLock] = useState(init?.lock || null)
   const [sessionUnlocked, setSessionUnlocked] = useState(false)   // in-memory only
   /* github gist is the no-OAuth sync backend: token + created gist id */
-  const [gist, setGist] = useState(init?.gist || { token: '', gistId: null })
+  const [gist, setGist] = useState(() => ({ token: secrets.getGistToken(), gistId: init?.gist?.gistId || null }))
   const syncBusy = useRef(false)
   const [syncReport, setSyncReport] = useState(null)     // { conflicts, fromRemote, rev }
   /* knowledge base: articles the user wrote themselves + help preferences.
@@ -111,6 +112,9 @@ export function CrmProvider({ children }) {
       }))
     } catch {}
   }, [contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock, profile, kbArticles, helpPrefs])
+
+  /* the gist token is mirrored into its own key — never into the data blob */
+  useEffect(() => { secrets.setGistToken(gist.token) }, [gist.token])
 
   /* ── toasts ── */
   const toast = (msg, tone = 'ok') => {

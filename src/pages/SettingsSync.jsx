@@ -509,7 +509,7 @@ function GistSyncCard() {
 
       <p className="text-[11px] mt-3 flex items-start gap-1.5" style={{ color: 'var(--faint)' }}>
         <ShieldCheck size={12} className="mt-[1px] flex-none" />
-        <span>The token sits only in this browser's localStorage (like everything else in this app) and it can see ONLY gists, nothing else.
+        <span>The token is kept in its own storage slot on this device — never inside your data, so it is left out of every backup, export and snapshot — and it can see ONLY gists, nothing else.
         Revoke it any time at github.com/settings/tokens. Use the SAME token on every device you want to sync.
         ⚠️ Pick ONE sync backend on all devices — Gist here, or Drive in the Google hub below.</span>
       </p>
