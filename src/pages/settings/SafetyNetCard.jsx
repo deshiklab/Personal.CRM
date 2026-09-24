@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { History, Camera, Download, Trash2, ShieldAlert, Info } from 'lucide-react'
 import { useCrm } from '../../store'
 import { Card, Pill } from '../../components/ui'
-import { SNAPSHOT_LIMITS } from '../../lib/snapshots'
 import { getBackend } from '../../lib/storage'
 import { tsRel } from '../../lib'
 
@@ -20,7 +19,7 @@ const kb = b => (b >= 1024 * 1024 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.m
 export default function SafetyNetCard() {
   const {
     snapshots, takeSnapshotNow, restoreSnapshotById, deleteSnapshotById, downloadSnapshot,
-    pinStatus, toast,
+    pinStatus, toast, can, isPro,
   } = useCrm()
   const [confirming, setConfirming] = useState(null)
   const pin = pinStatus ? pinStatus() : { fails: 0, locked: false }
@@ -41,15 +40,21 @@ export default function SafetyNetCard() {
             {pin.fails > 0 && <Pill color="#fb7185">{pin.fails} failed pin attempt{pin.fails === 1 ? '' : 's'}</Pill>}
           </div>
           <div className="text-[11.5px] mt-0.5" style={{ color: 'var(--faint)' }}>
-            Automatic local copies of everything — kept on this device, never uploaded. The app keeps the
-            last {SNAPSHOT_LIMITS.MAX_COUNT} and drops the oldest when it runs out of room.
+            Manual snapshots are always free. Automatic rolling copies after edits are a{' '}
+            {can?.('auto_snapshots') ? 'Pro feature (on)' : <><a href="#/pro" style={{ color: 'var(--t-indigo)' }}>Pro feature</a> (off)</>}.
+            {' '}Keeps about {can?.('auto_snapshots') ? 12 : 3} copies and drops the oldest when full.
             {' '}Storage: <b style={{ color: 'var(--text)' }}>{getBackend() === 'native' ? 'Android Preferences (survives app updates)' : 'this browser’s local storage'}</b>.
           </div>
         </div>
-        <button className="btn btn-primary btn-sm w-full sm:w-auto justify-center"
-          onClick={() => { takeSnapshotNow('manual'); toast?.('Snapshot saved — you can roll back to it any time') }}>
-          <Camera size={13} /> Take snapshot now
-        </button>
+        <div className="flex flex-col gap-1 items-stretch sm:items-end">
+          <button className="btn btn-primary btn-sm w-full sm:w-auto justify-center"
+            onClick={() => { takeSnapshotNow('manual'); toast?.('Snapshot saved — you can roll back to it any time') }}>
+            <Camera size={13} /> Take snapshot now
+          </button>
+          {!can?.('auto_snapshots') && (
+            <span className="text-[10.5px] text-right" style={{ color: 'var(--faint)' }}>Auto-snapshots · Pro</span>
+          )}
+        </div>
       </div>
 
       {pin.locked && (

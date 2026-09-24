@@ -21,6 +21,29 @@ any time with `npm run keystore:debug`.
 
 ---
 
+
+---
+
+## Phase 2 · v2.0.0 — Make it sellable
+
+Live web: <https://deshiklab.github.io/Personal.CRM/>
+
+| Capability | Detail |
+|---|---|
+| **Pro (one-time)** | Google Play Billing `personal_crm_pro_lifetime` · web licence keys `PCRM1-…` |
+| **Free** | Full CRM up to 75 contacts · in-app inbox · manual backups · light/dark |
+| **Pro unlocks** | Device reminders · unlimited contacts · auto-snapshots · analytics 6M/12M · graph export · Ocean theme · Drive/Gist auto-sync |
+| **Local-first** | No accounts · offline key verify · data never required to leave the device |
+| **Launch docs** | [`docs/OPS-LAUNCH.md`](docs/OPS-LAUNCH.md) · closed test · MoR web keys · store assets |
+
+```bash
+npm ci && npm run build
+npm run mint-keys -- --count 20 --csv keys.csv   # MoR stock (keep offline)
+npm run capture:store                            # 1080×1920 Play screenshots
+./scripts/build-aab.sh                           # needs Android SDK + keystore env
+```
+
+---
 ## ✅ What's inside (17 screens)
 
 | Area | Route | What you get |

@@ -100,4 +100,4 @@ export const snapshotStats = () => {
   return { count: list.length, bytes: list.reduce((n, s) => n + (s.bytes || 0), 0), newest: list[0]?.at || null }
 }
 
-export const SNAPSHOT_LIMITS = { MAX_COUNT, MAX_BYTES, MIN_GAP_MS }
+export const SNAPSHOT_LIMITS = { MAX_COUNT, MAX_COUNT_FREE, MAX_COUNT_PRO, MAX_BYTES, MIN_GAP_MS }

@@ -2,6 +2,11 @@
 
 ## 2.0.0 — Phase 2 · Make it sellable (2026-09-25)
 
+### Launch polish
+- Settings: multi-device auto-sync labelled Pro; Safety net explains auto vs manual
+- `docs/PHASE3.md` — post-closed-test ideas (non-goals restated)
+- README Phase 2 table + launch commands
+
 ### Pro feature gates · mint · real screenshots
 - Gate auto-snapshots, Drive/Gist auto-sync interval, analytics 6M/12M, graph SVG/PNG export
 - Ocean extra theme (Pro); free stays light/dark
@@ -44,10 +49,10 @@
 - Free/pro tier, offline HMAC licence keys, contact cap 75
 - Pro screen Free vs Pro · KB `pro.lifetime`
 
-### Still optional / ops
-- Capture real 1080×1920 screenshots from a device into `docs/store-assets/`
-- Upload signed AAB to closed testing; recruit 14–16 testers
-- Create Play product + license testers
+### Ops (owner — outside the repo)
+- Play product + license testers · signed AAB · closed test (see `OPS-LAUNCH.md`)
+- MoR storefront + mint key pool · set `BRAND.proWebUrl` when live
+- Optional physical-device screenshots
 
 ## 1.x — Phase 0 / Phase 1
 

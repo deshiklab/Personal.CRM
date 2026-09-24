@@ -268,7 +268,7 @@ function DangerZone() {
 function GoogleHub() {
   const {
     gcal, googleClientId, googleMode, saveGoogleClientId, connectGoogleLive, disconnectGoogle, syncing, syncState, syncReport, syncNow, setSyncEnabled, gist, saveGistToken, syncProvider,
-    syncGoogleCalendar, syncGoogleContacts, driveState, driveBackupNow, driveRestoreNow, restoreAll, toast,
+    syncGoogleCalendar, syncGoogleContacts, driveState, driveBackupNow, driveRestoreNow, restoreAll, toast, can, isPro,
   } = useCrm()
   const [cid, setCid] = useState(googleClientId || '')
   const [busy, setBusy] = useState('')
@@ -362,7 +362,15 @@ function GoogleHub() {
           status={syncState.enabled
             ? (syncState.lastSyncAt ? `rev ${syncState.lastRev} · synced ${tsRel(syncState.lastSyncAt)} · via ${syncProvider()}` : 'on — press Sync now')
             : 'off'}>
-          <Toggle on={syncState.enabled} onChange={setSyncEnabled} disabled={!live} />
+          <Toggle on={syncState.enabled} onChange={v => {
+            if (v && !can?.('drive_autosync')) {
+              setSyncEnabled(true) // still allow "armed" so manual works; background interval is gated in store
+              toast?.('Background auto-sync is Pro — manual Sync now stays free', 'warn')
+              return
+            }
+            setSyncEnabled(v)
+          }} disabled={!live && syncProvider() === 'none'} />
+          {!can?.('drive_autosync') && <span className="chip" style={{ fontSize: 10 }}>AUTO · PRO</span>}
           <Btn k="syncdev" className="btn btn-primary btn-sm" disabled={syncProvider() === 'none' || !syncState.enabled}
             onClick={run('syncdev', () => syncNow({ manual: true }))}>
             {syncing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} Sync now
@@ -379,7 +387,7 @@ function GoogleHub() {
       <p className="text-[11px] mt-3" style={{ color: 'var(--faint)' }}>
         Multi-device sync keeps <b style={{ color: 'var(--text)' }}>contacts · tasks · events · notes · tags · groups · rules · emails</b> aligned
         between this app on every device (phone APK, installed PWA, browser tab) through one <b style={{ color: 'var(--text)' }}>personal-crm-sync.json</b> in your Drive —
-        three-way merged, so edits and deletes never clobber each other. Auto-syncs every minute and whenever the app regains focus.
+        three-way merged, so edits and deletes never clobber each other. Manual Sync now is free; background auto-sync every minute is a Pro feature.
         Manual <b style={{ color: 'var(--text)' }}>Drive backup</b> above stays a separate, full archive.
       </p>
 
