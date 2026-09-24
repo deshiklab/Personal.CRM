@@ -169,6 +169,7 @@ export default function QuickCapture() {
     <>
       {/* ── Floating Action Button ── */}
       <button onClick={() => { setOpen(true); setTab('lead') }}
+        data-tip="quickcapture.fab" data-tour="fab"
         className="safe-bottom fixed z-[60] flex items-center justify-center gap-2 font-bold transition-transform hover:scale-105 active:scale-95 right-4 bottom-4 w-14 h-14 rounded-full md:right-6 md:bottom-6 md:w-auto md:h-auto md:rounded-2xl md:px-5 md:py-3.5"
         style={{ background: 'linear-gradient(120deg,var(--i1),var(--i2))', color: '#0a0c11', boxShadow: '0 10px 30px rgba(129,140,248,.4)', fontSize: 13.5 }}
         title="Quick Capture (name + number → lead)">

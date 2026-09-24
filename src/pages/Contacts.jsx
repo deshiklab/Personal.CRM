@@ -105,7 +105,7 @@ export default function Contacts() {
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--faint)' }} />
-          <input className="input" style={{ paddingLeft: 38 }} placeholder="Search name, role, company…" value={q} onChange={e => setQ(e.target.value)} />
+          <input className="input" style={{ paddingLeft: 38 }} placeholder="Search name, role, company…" data-tip="contacts.search" value={q} onChange={e => setQ(e.target.value)} />
         </div>
         <select className="input" style={{ width: 'auto' }} value={groupF} onChange={e => setGroupF(e.target.value)}>
           <option value="">All groups</option>
@@ -180,7 +180,7 @@ export default function Contacts() {
               const cgs = contactGroupIds(c)
               const isSel = selSet.has(c.id)
               return (
-                <tr key={c.id} className="rowclick" onClick={() => setOpenId(c.id)}
+                <tr key={c.id} className="rowclick" onClick={() => setOpenId(c.id)} data-tip-contact={c.id}
                   style={isSel ? { background: 'var(--hover)' } : undefined}>
                   <td onClick={e => e.stopPropagation()}>
                     <input type="checkbox" checked={isSel} onChange={() => toggleSel(c.id)} aria-label={`Select ${c.name}`}

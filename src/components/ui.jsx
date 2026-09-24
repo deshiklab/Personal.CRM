@@ -1,6 +1,8 @@
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
-import { X, Download } from 'lucide-react'
+import { X, Download, HelpCircle } from 'lucide-react'
 import { cn, initials, hashColor, relDay, daysUntil } from '../lib'
+import { SCREEN_GUIDE } from '../lib/kb'
 import { downloadCSV } from '../lib/csv'
 
 export function CsvButton({ headers, rows, filename, label = 'CSV' }) {
@@ -19,13 +21,19 @@ export function Panel({ className = '', children, ...rest }) {
   return <div className={cn('panel', className)} {...rest}>{children}</div>
 }
 
-export function SectionHead({ kicker, title, sub, right }) {
+export function SectionHead({ kicker, title, sub, right, help }) {
+  /* no `help` prop? fall back to the article for this screen (help={false} opts out) */
+  const { pathname } = useLocation()
+  const guide = help === false ? null : (help || SCREEN_GUIDE[pathname] || null)
   return (
     <div className="mb-5">
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
+        <div className="min-w-0">
           {kicker && <div className="text-[11px] font-bold tracking-[.12em] uppercase text-indigo-300 mb-1">{kicker}</div>}
-          <h2 className="text-[20px] font-bold tracking-tight">{title}</h2>
+          <h2 className="text-[20px] font-bold tracking-tight flex items-center gap-2">
+            {title}
+            {guide && <GuideLink slug={guide} />}
+          </h2>
         </div>
         {right && <div className="flex items-center gap-2">{right}</div>}
       </div>
@@ -203,3 +211,26 @@ export const EVENT_COLORS = {
   personal: '#a78bfa', birthday: '#f472b6', task: '#94a3b8',
 }
 export const PRIORITY_COLORS = { high: '#fb7185', med: '#fbbf24', low: '#94a3b8' }
+
+/* Small "?" next to a screen title — opens that screen's knowledge-base article.
+   Optional: pass `help="article.slug"` to any SectionHead. */
+export function GuideLink({ slug, label = 'Guide' }) {
+  const navigate = useNavigate()
+  return (
+    <button
+      type="button"
+      onClick={() => navigate(`/knowledge?a=${encodeURIComponent(slug)}`)}
+      data-tip-with-title="Read the guide"
+      data-tip-title={`${label} for this screen`}
+      data-tip-body="Opens the matching article in the knowledge base."
+      data-tip-learn={slug}
+      aria-label={`${label} for this screen`}
+      className="inline-flex items-center gap-1 text-[11px] font-bold px-1.5 py-0.5 rounded-full"
+      style={{
+        background: 'var(--hover)', border: '1px solid var(--border)',
+        color: 'var(--muted)', cursor: 'pointer', verticalAlign: 'middle',
+      }}>
+      <HelpCircle size={11} /> {label}
+    </button>
+  )
+}

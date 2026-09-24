@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Users, CheckSquare, StickyNote, Calendar, UsersRound, Tag, Plus, CornerDownLeft, History, Zap } from 'lucide-react'
+import { Search, Users, CheckSquare, StickyNote, Calendar, UsersRound, Tag, Plus, CornerDownLeft, History, Zap, BookOpen, Keyboard, Compass } from 'lucide-react'
 import { useCrm } from '../store'
 import { contactGroupIds } from '../store'
 import { Avatar, Panel } from './ui'
 import { cn } from '../lib'
+import { ARTICLES, searchArticles } from '../lib/kb'
 
 const TYPES = [
   { id: 'contacts', label: 'Contacts', icon: Users, color: '#818cf8' },
@@ -13,6 +14,7 @@ const TYPES = [
   { id: 'events', label: 'Events', icon: Calendar, color: '#a78bfa' },
   { id: 'groups', label: 'Groups', icon: UsersRound, color: '#34d399' },
   { id: 'tags', label: 'Tags', icon: Tag, color: '#f472b6' },
+  { id: 'help', label: 'Help', icon: BookOpen, color: '#22d3ee' },
 ]
 const TMAP = Object.fromEntries(TYPES.map(t => [t.id, t]))
 
@@ -21,11 +23,16 @@ const ACTIONS = [
   { type: 'action', id: 'a2', title: 'New task', subtitle: 'Drop it on the kanban', to: '/tasks?new=1' },
   { type: 'action', id: 'a3', title: 'New note', subtitle: 'Markdown, with contact links', to: '/notes?new=1' },
   { type: 'action', id: 'a4', title: 'New event', subtitle: 'Schedule on the calendar', to: '/calendar?new=1' },
+  { type: 'action', id: 'a5', title: 'Knowledge base', subtitle: 'The manual — searchable offline', to: '/knowledge', icon: BookOpen },
+  { type: 'action', id: 'a6', title: 'Keyboard shortcuts', subtitle: 'Every shortcut in the app', to: '/knowledge?a=ref.shortcuts', icon: Keyboard,
+    run: () => window.dispatchEvent(new CustomEvent('crm:shortcuts')) },
+  { type: 'action', id: 'a7', title: 'Guided tour', subtitle: 'Spotlight walkthrough of the screen', to: '/knowledge', icon: Compass,
+    run: () => window.dispatchEvent(new CustomEvent('crm:tour')) },
 ]
 
 export default function GlobalSearch() {
   const crm = useCrm()
-  const { contacts, tasks, notes, events, groups, tags, contactById, groupById, tagById } = crm
+  const { contacts, tasks, notes, events, groups, tags, contactById, groupById, tagById, kbArticles } = crm
   const navigate = useNavigate()
   const inputRef = useRef(null)
   const [open, setOpen] = useState(false)
@@ -85,8 +92,17 @@ export default function GlobalSearch() {
       type: 'tags', id: t.id, title: t.name, subtitle: 'Tag',
       keywords: t.icon, to: `/tags?tag=${t.id}`,
     }))
+    /* knowledge base — the manual, plus anything the user wrote */
+    const kb = [...ARTICLES, ...(kbArticles || []).map(a => ({ ...a, mine: true }))]
+    kb.forEach(a => items.push({
+      type: 'help', id: a.id, title: a.title,
+      subtitle: a.summary || 'Knowledge base article',
+      keywords: `${(a.tags || []).join(' ')} ${a.body || ''}`.slice(0, 900),
+      badge: a.mine ? 'yours' : null,
+      to: `/knowledge?a=${encodeURIComponent(a.id)}`,
+    }))
     return items
-  }, [contacts, tasks, notes, events, groups, tags, contactById, groupById, tagById])
+  }, [contacts, tasks, notes, events, groups, tags, contactById, groupById, tagById, kbArticles])
 
   /* scoring + filtering */
   const results = useMemo(() => {
@@ -144,6 +160,7 @@ export default function GlobalSearch() {
 
   const exec = item => {
     if (!item) return
+    if (item.run) { setOpen(false); item.run(); return }
     if (item.type !== 'action') {
       setRecents(r => [{ type: item.type, id: item.id }, ...r.filter(x => !(x.type === item.type && x.id === item.id))].slice(0, 6))
     }
@@ -164,6 +181,7 @@ export default function GlobalSearch() {
   const sectionTitle = id => {
     if (id === 'recent') return <span className="inline-flex items-center gap-1.5"><History size={11} /> Recent</span>
     if (id === 'actions') return <span className="inline-flex items-center gap-1.5"><Zap size={11} /> Quick actions</span>
+    if (id === 'help') return <span className="inline-flex items-center gap-1.5"><BookOpen size={11} /> Knowledge base</span>
     return TMAP[id]?.label
   }
   const total = results.length

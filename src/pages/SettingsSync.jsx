@@ -590,7 +590,7 @@ function AppLockCard() {
           <Lock size={18} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-bold text-[15px]">App lock (pincode)</div>
+          <div className="font-bold text-[15px]" data-tip="settings.lock">App lock (pincode)</div>
           <div className="text-[11.5px]" style={{ color: 'var(--faint)' }}>
             {hasPin ? 'On — pincode required at every start and after 15 min in the background. Sessions exist only in memory.' : 'Off — your app opens straight away.'}
           </div>
@@ -612,7 +612,7 @@ function AppLockCard() {
 
       <div className="mt-4 pt-4 flex flex-wrap items-center gap-2" style={{ borderTop: '1px dashed var(--border)' }}>
         <div className="text-[12.5px] font-extrabold w-full mb-1">Local data (no account needed)</div>
-        <button className="btn btn-primary btn-sm" onClick={download}><CloudDownload size={13} /> Download all data (.json)</button>
+        <button className="btn btn-primary btn-sm" onClick={download} data-tip="settings.backup"><CloudDownload size={13} /> Download all data (.json)</button>
         <label className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }}>
           <Upload size={13} /> Restore from a data file…
           <input ref={el => { fileRef.current = el }} type="file" accept=".json,application/json" className="hidden"
@@ -631,7 +631,7 @@ function AppLockCard() {
             Erases ALL data, settings, sync tokens and the pincode itself from this app.{hasPin ? ' Requires your pincode.' : ''} Download a copy first.
           </div>
         </div>
-        <button className="btn btn-danger btn-sm" onClick={() => setModal('wipe')}>Wipe everything…</button>
+        <button className="btn btn-danger btn-sm" onClick={() => setModal('wipe')} data-tip="settings.wipe">Wipe everything…</button>
       </div>
 
       {/* modals */}

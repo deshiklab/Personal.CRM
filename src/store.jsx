@@ -71,6 +71,12 @@ export function CrmProvider({ children }) {
   const [gist, setGist] = useState(init?.gist || { token: '', gistId: null })
   const syncBusy = useRef(false)
   const [syncReport, setSyncReport] = useState(null)     // { conflicts, fromRemote, rev }
+  /* knowledge base: articles the user wrote themselves + help preferences.
+   * Both live with the rest of the data so they travel in every backup. */
+  const [kbArticles, setKbArticles] = useState(init?.kbArticles || [])
+  const [helpPrefs, setHelpPrefs]   = useState(init?.helpPrefs || {
+    tips: true, tourDone: false, tourStep: 0, bookmarks: [], votes: {}, seenVersion: '',
+  })
   const [webhooks, setWebhooks]   = useState(init?.webhooks || {
     url: '', on: { lead: true, contact: false, task_done: true, touch: false }, log: [],
   })
@@ -88,9 +94,10 @@ export function CrmProvider({ children }) {
       localStorage.setItem(KEY, JSON.stringify({
         contacts, tasks, events, notes, tags, groups, rules, audit,
         activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock, profile,
+        kbArticles, helpPrefs,
       }))
     } catch {}
-  }, [contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock, profile])
+  }, [contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock, profile, kbArticles, helpPrefs])
 
   /* ── toasts ── */
   const toast = (msg, tone = 'ok') => {
@@ -431,9 +438,28 @@ export function CrmProvider({ children }) {
     return false
   }
 
+  /* ── knowledge base ── */
+  const upsertKbArticle = a => {
+    const id = a.id || uid()
+    setKbArticles(list => {
+      const i = list.findIndex(x => x.id === id)
+      if (i < 0) return [{ ...a, id, mine: true, updated: todayISO() }, ...list]
+      const next = [...list]
+      next[i] = { ...next[i], ...a, id, mine: true, updated: todayISO() }
+      return next
+    })
+    return id
+  }
+  const deleteKbArticle = id => setKbArticles(list => list.filter(a => a.id !== id))
+  const patchHelpPrefs = patch => setHelpPrefs(p => ({ ...p, ...(typeof patch === 'function' ? patch(p) : patch) }))
+  const toggleBookmark = id => setHelpPrefs(p => ({
+    ...p, bookmarks: (p.bookmarks || []).includes(id) ? p.bookmarks.filter(b => b !== id) : [id, ...(p.bookmarks || [])],
+  }))
+  const voteArticle = (id, v) => setHelpPrefs(p => ({ ...p, votes: { ...(p.votes || {}), [id]: v } }))
+
   const buildBackup = () => JSON.stringify({
     app: 'personal-crm', version: 2, exportedAt: new Date().toISOString(),
-    data: { contacts, tasks, events, notes, tags, groups, rules, relFreq, audit, activity, imports, snoozes, notifState, notifPrefs, widgetPrefs, mailboxes, emails, profile },
+    data: { contacts, tasks, events, notes, tags, groups, rules, relFreq, audit, activity, imports, snoozes, notifState, notifPrefs, widgetPrefs, mailboxes, emails, profile, kbArticles, helpPrefs },
   }, null, 2)
 
   const driveBackupNow = async () => {
@@ -469,6 +495,8 @@ export function CrmProvider({ children }) {
     if (d.notifState) setNotifState(d.notifState); if (d.notifPrefs) setNotifPrefs(d.notifPrefs)
     if (d.widgetPrefs) setWidgetPrefs(d.widgetPrefs)
     if (d.mailboxes) setMailboxes(d.mailboxes); if (d.emails) setEmails(d.emails)
+    if (Array.isArray(d.kbArticles)) setKbArticles(d.kbArticles)
+    if (d.helpPrefs) setHelpPrefs(p => ({ ...p, ...d.helpPrefs }))
     logAudit('user', 'Restored backup', parsed?.exportedAt || 'unknown date', `${d.contacts.length} contacts · ${d.tasks?.length || 0} tasks`, 'ok')
     logActivity(`Restored a backup (${d.contacts.length} contacts)`)
     toast('♻️ Backup restored')
@@ -1099,6 +1127,8 @@ export function CrmProvider({ children }) {
     notifState, notifPrefs, buildNotifications, dismissNotif, snoozeNotif, unsnoozeNotif, markNotifRead, markAllNotifsRead, toggleNotifPref,
     widgetPrefs, toggleWidget, moveWidget, resetWidgets, DEFAULT_WIDGET_ORDER,
     theme, toggleTheme,
+    kbArticles, upsertKbArticle, deleteKbArticle,
+    helpPrefs, patchHelpPrefs, toggleBookmark, voteArticle,
   }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

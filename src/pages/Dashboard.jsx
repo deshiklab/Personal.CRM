@@ -29,7 +29,7 @@ export default function Dashboard() {
           <button className="btn btn-ghost btn-sm" onClick={() => setEdit(true)}><Settings2 size={13} /> Customize</button>
         )} />
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4" data-tour="widgets">
         {visible.map(id => {
           const meta = WIDGET_META[id]
           const Comp = WIDGET_COMPONENTS[id]

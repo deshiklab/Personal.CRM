@@ -119,7 +119,7 @@ export default function Tasks() {
               onDrop={e => { e.preventDefault(); const id = e.dataTransfer.getData('text/task'); if (id) moveTask(id, col.id); setDragId(null); setOverCol(null) }}>
               <div className="flex items-center gap-2 px-1.5 pb-2.5">
                 <span className="dot" style={{ background: col.color }} />
-                <span className="text-[12.5px] font-bold">{col.name}</span>
+                <span className="text-[12.5px] font-bold" data-tip={`tasks.${col.id}`}>{col.name}</span>
                 {items.length !== tasks.filter(t => t.column === col.id).length &&
                   <span className="text-[10px]" style={{ color: 'var(--faint)' }}>of {tasks.filter(t => t.column === col.id).length}</span>}
                 <span className="chip ml-auto">{items.length}</span>

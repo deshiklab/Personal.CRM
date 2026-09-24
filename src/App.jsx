@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { BookOpen } from 'lucide-react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import Topbar from './components/Topbar'
@@ -25,13 +26,44 @@ import About from './pages/About'
 import IntegrationsPage from './pages/IntegrationsPage'
 import FollowUps from './pages/FollowUps'
 import Notifications from './pages/Notifications'
+import KnowledgeBase from './pages/KnowledgeBase'
+import TooltipHost from './components/Tooltip'
+import ShortcutsOverlay from './components/ShortcutsOverlay'
+import Tour from './components/Tour'
+import { useNavigate } from 'react-router-dom'
 
 export default function App() {
   const { lock, sessionUnlocked, profile } = useCrm()
   const { pathname } = useLocation()
   const [navOpen, setNavOpen] = useState(false)
+  const navigate = useNavigate()
+  const { helpPrefs } = useCrm() || {}
   /* never leave the mobile drawer hanging across a route change */
   useEffect(() => { setNavOpen(false) }, [pathname])
+
+  /* ── go-mode: press g then a letter to jump to a screen ── */
+  useEffect(() => {
+    let armed = false
+    let timer = null
+    const GO = {
+      d: '/', c: '/contacts', t: '/tasks', n: '/notes', e: '/calendar', b: '/birthdays',
+      f: '/follow-ups', i: '/notifications', g: '/groups', r: '/graph', a: '/analytics',
+      k: '/knowledge', s: '/settings', h: '/history', m: '/import',
+    }
+    const onKey = e => {
+      const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable
+      if (typing || e.metaKey || e.ctrlKey || e.altKey) return
+      if (armed) {
+        const to = GO[e.key.toLowerCase()]
+        clearTimeout(timer); armed = false
+        if (to) { e.preventDefault(); navigate(to) }
+        return
+      }
+      if (e.key === 'g') { armed = true; timer = setTimeout(() => { armed = false }, 1600) }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => { window.removeEventListener('keydown', onKey); clearTimeout(timer) }
+  }, [navigate])
   /* gate order: register (first launch, skippable) → pincode setup → unlock.
      Registration comes first so the owner notification carries a real name. */
   if (!profile) return <RegistrationScreen />
@@ -64,6 +96,7 @@ export default function App() {
             <Route path="/integrations" element={<IntegrationsPage />} />
             <Route path="/settings" element={<SettingsSync />} />
             <Route path="/about" element={<About />} />
+            <Route path="/knowledge" element={<KnowledgeBase />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
@@ -71,6 +104,36 @@ export default function App() {
       <GlobalSearch />
       <QuickCapture />
       <ToastHost />
+      {/* help layer: tooltips read data-tip off any element, ? opens shortcuts,
+          and the tour spotlights one control at a time */}
+      <TooltipHost enabled={helpPrefs?.tips !== false} />
+      <ShortcutsOverlay />
+      <Tour autoStart={pathname === '/'} />
+      <HelpFab />
     </div>
+  )
+}
+
+
+/* Floating help button — one tap to the manual, no matter where you are. */
+function HelpFab() {
+  const navigate = useNavigate()
+  return (
+    <button
+      onClick={() => navigate('/knowledge')}
+      data-tip-with-title="Knowledge base"
+      data-tip-title="Knowledge base"
+      data-tip-body="The manual, the glossary and your own articles — searchable offline."
+      data-tip-learn="notes.kb"
+      className="fixed z-[55] w-9 h-9 rounded-full grid place-items-center safe-bottom hidden md:grid"
+      aria-label="Open knowledge base"
+      style={{
+        left: 14, bottom: 14,
+        background: 'var(--panel)', border: '1px solid var(--border2)',
+        color: 'var(--muted)', cursor: 'pointer', boxShadow: '0 8px 24px rgba(0,0,0,.4)',
+      }}
+    >
+      <BookOpen size={15} />
+    </button>
   )
 }
