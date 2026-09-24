@@ -244,6 +244,97 @@ function PrefsCard({ mutedTypes }) {
           {reminderPrefs?.lastSyncAt && <div>Last sync · {new Date(reminderPrefs.lastSyncAt).toLocaleString()}</div>}
           {pending != null && <div>Scheduled · {pending}</div>}
         </div>
+
+        {/* Quiet hours + lead times — Pro only, disabled when free */}
+        <div className={`mb-3 ${!proReminders ? 'opacity-50 pointer-events-none' : ''}`} aria-disabled={!proReminders}>
+          <div className="text-[11px] font-bold uppercase tracking-[.09em] mb-2" style={{ color: 'var(--faint)' }}>Quiet hours</div>
+          <p className="text-[11px] mb-2 leading-snug" style={{ color: 'var(--faint)' }}>
+            Nudges that would fire in this window slide to the end hour (local time).
+          </p>
+          <div className="flex items-center gap-2 mb-3">
+            <label className="flex-1 text-[12px]">
+              <span className="sr-only">Quiet hours start</span>
+              <select className="input" style={{ padding: '6px 8px', fontSize: 12 }}
+                disabled={!proReminders || busy}
+                value={reminderPrefs?.quietHours?.start ?? 22}
+                onChange={e => {
+                  const start = +e.target.value
+                  patchReminderPrefs({ quietHours: { ...(reminderPrefs.quietHours || {}), start, end: reminderPrefs?.quietHours?.end ?? 7 } })
+                }}>
+                {Array.from({ length: 24 }, (_, h) => (
+                  <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>
+                ))}
+              </select>
+            </label>
+            <span className="text-[11px]" style={{ color: 'var(--faint)' }}>→</span>
+            <label className="flex-1 text-[12px]">
+              <span className="sr-only">Quiet hours end</span>
+              <select className="input" style={{ padding: '6px 8px', fontSize: 12 }}
+                disabled={!proReminders || busy}
+                value={reminderPrefs?.quietHours?.end ?? 7}
+                onChange={e => {
+                  const end = +e.target.value
+                  patchReminderPrefs({ quietHours: { ...(reminderPrefs.quietHours || {}), end, start: reminderPrefs?.quietHours?.start ?? 22 } })
+                }}>
+                {Array.from({ length: 24 }, (_, h) => (
+                  <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="text-[11px] font-bold uppercase tracking-[.09em] mb-2" style={{ color: 'var(--faint)' }}>Lead times</div>
+          <p className="text-[11px] mb-2 leading-snug" style={{ color: 'var(--faint)' }}>
+            When to nudge on the day (or minutes before an event with a time).
+          </p>
+          <div className="flex flex-col gap-2">
+            {[
+              { id: 'task', label: 'Tasks', options: [
+                { v: 8 * 60, l: '08:00' }, { v: 9 * 60, l: '09:00' }, { v: 10 * 60, l: '10:00' },
+                { v: 12 * 60, l: '12:00' }, { v: 17 * 60, l: '17:00' }, { v: 18 * 60, l: '18:00' },
+              ]},
+              { id: 'follow-up', label: 'Follow-ups', options: [
+                { v: 9 * 60, l: '09:00' }, { v: 10 * 60, l: '10:00' }, { v: 11 * 60, l: '11:00' },
+                { v: 14 * 60, l: '14:00' }, { v: 16 * 60, l: '16:00' },
+              ]},
+              { id: 'birthday', label: 'Birthdays', options: [
+                { v: 8 * 60, l: '08:00' }, { v: 9 * 60, l: '09:00' }, { v: 10 * 60, l: '10:00' },
+                { v: 12 * 60, l: '12:00' },
+              ]},
+              { id: 'event', label: 'Events', options: [
+                { v: 15, l: '15 min before' }, { v: 30, l: '30 min before' },
+                { v: 60, l: '1 hour before' }, { v: 120, l: '2 hours before' },
+                { v: 9 * 60, l: '09:00 if no time' },
+              ]},
+            ].map(row => (
+              <div key={row.id} className="flex items-center gap-2">
+                <span className="text-[12px] font-medium w-[88px] flex-none">{row.label}</span>
+                <select className="input flex-1" style={{ padding: '6px 8px', fontSize: 12 }}
+                  disabled={!proReminders || busy}
+                  value={reminderPrefs?.leadMinutes?.[row.id] ?? row.options[0].v}
+                  onChange={e => {
+                    const leadMinutes = { ...(reminderPrefs.leadMinutes || {}), [row.id]: +e.target.value }
+                    patchReminderPrefs({ leadMinutes })
+                  }}>
+                  {row.options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+                </select>
+              </div>
+            ))}
+          </div>
+          <button type="button" className="btn btn-ghost btn-sm w-full mt-2"
+            disabled={!proReminders || busy || perm !== 'granted'}
+            onClick={async () => {
+              setBusy(true)
+              try {
+                const r = await resyncReminders()
+                setPending(r?.scheduled ?? 0)
+                toast(r?.ok ? `Schedule updated · ${r.scheduled || 0} armed` : 'Could not resync', r?.ok ? 'ok' : 'warn')
+              } finally { setBusy(false) }
+            }}>
+            Apply schedule
+          </button>
+        </div>
+
         <div className="flex flex-col gap-2">
           <button type="button" className="btn btn-primary btn-sm w-full" disabled={busy || !proReminders}
             onClick={enableOs}>

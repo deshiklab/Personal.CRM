@@ -13,6 +13,8 @@ export const BRAND = {
   mobileLabel: '+880 1711-853769',
   year: 2026,
   version: '2.0.0',
+  /** MoR checkout URL for web Pro — set when storefront is live */
+  proWebUrl: '',
 }
 
 export const COPYRIGHT = `© ${BRAND.year} ${BRAND.publisher}. All rights reserved.`

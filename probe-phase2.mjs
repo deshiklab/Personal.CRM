@@ -68,6 +68,13 @@ await page.goto(BASE + '#/notifications', { waitUntil: 'domcontentloaded' })
 await page.waitForTimeout(600)
 ok('Notifications page loads', (await page.getByText('Notification Center').count()) > 0 || (await page.getByText('Inbox categories').count()) > 0)
 ok('Device reminders section present', (await page.getByText('Device reminders').count()) > 0)
+ok('Quiet hours controls present', (await page.getByText('Quiet hours').count()) > 0)
+ok('Lead times controls present', (await page.getByText('Lead times').count()) > 0)
+ok('ops docs present',
+  ['OPS-LAUNCH.md','TESTER-EMAILS.md','WEB-KEYS-MOR.md'].every(f => fs.existsSync(path.join(__dirname, 'docs', f))))
+ok('PNG store assets present',
+  fs.existsSync(path.join(__dirname, 'docs/store-assets/feature-graphic.png'))
+  && fs.readdirSync(path.join(__dirname, 'docs/store-assets')).filter(f => f.startsWith('screenshot-') && f.endsWith('.png')).length >= 8)
 ok('Pro gate copy or enable button',
   (await page.getByText('Unlock Pro for reminders').count())
   + (await page.getByText('Enable device reminders').count())

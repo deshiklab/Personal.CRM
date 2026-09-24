@@ -79,7 +79,9 @@ Capture from a real device or Android emulator at xxxhdpi. Avoid browser chrome.
 ### Feature graphic (1024×500)
 
 Dark canvas `#0a0c11`, indigo accent `#818cf8`, title **Personal CRM**, subtitle **Private · On-device · One-time Pro**, footer **BITSCOL · www.bitscol.com**.  
-SVG template: `docs/store-assets/feature-graphic.svg` — export PNG 1024×500 for Console.
+PNG ready: `docs/store-assets/feature-graphic.png` (1024×500). SVG source alongside.
+Stylized phone PNGs: `screenshot-01-…png` through `08` — replace with real device captures before production if you can.
+Hi-res icon: `docs/store-assets/icon-512.png`.
 
 ### App icon
 

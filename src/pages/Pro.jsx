@@ -247,6 +247,17 @@ export default function Pro() {
               Bought on the web via a Merchant of Record? Paste the key you were emailed.
               Verification is offline — nothing is sent to BITSCOL.
             </p>
+            {BRAND.proWebUrl ? (
+              <a className="btn btn-ghost btn-sm mb-3 inline-flex" href={BRAND.proWebUrl}
+                target="_blank" rel="noopener noreferrer">
+                <ExternalLink size={14} /> Buy on the web
+              </a>
+            ) : (
+              <p className="text-[11.5px] mb-3 leading-snug" style={{ color: 'var(--faint)' }}>
+                Web checkout is fulfilled with a <span className="font-mono">PCRM1-</span> key from BITSCOL / our Merchant of Record.
+                Android users can buy on Google Play instead.
+              </p>
+            )}
             <Field label="Your key">
               <input className="input font-mono text-[12.5px]" value={key}
                 onChange={e => setKey(e.target.value)}

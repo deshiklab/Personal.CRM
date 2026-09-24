@@ -2,6 +2,13 @@
 
 ## 2.0.0 — Phase 2 · Make it sellable (2026-09-25)
 
+### Ops pack · reminders UI · web keys
+- Inbox: quiet hours + per-type lead times + Apply schedule (Pro)
+- `docs/OPS-LAUNCH.md`, `TESTER-EMAILS.md`, `WEB-KEYS-MOR.md`
+- Play-ready PNGs: feature graphic, icon-512, 8 phone screenshots
+- Pro screen: optional `BRAND.proWebUrl` “Buy on the web”; MoR copy when empty
+
+
 ### Local reminders
 - `@capacitor/local-notifications` — on-device nudges for tasks, follow-ups, birthdays, events
 - `src/lib/reminders.js` — schedule/cancel/sync, quiet hours, web Notification fallback

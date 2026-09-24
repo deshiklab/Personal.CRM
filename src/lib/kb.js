@@ -210,7 +210,10 @@ Your unlock lives in its own storage slot, separate from CRM data, so a data res
 4. Use **Send test notification** to confirm.
 
 ## Quiet hours
-By default, reminders avoid late night (22:00–07:00 local) and slide to the morning.
+Open **Inbox → Device reminders** to set the quiet window (default 22:00–07:00 local). Nudges that would fire inside the window slide to the end hour.
+
+## Lead times
+Same panel: choose when tasks, follow-ups and birthdays fire on the day, and how many minutes before timed events. Tap **Apply schedule** (or Resync) after changes.
 
 ## Web / PWA note
 Browsers cannot wake a closed tab days ahead without extra permissions. Keep the installed PWA or use the Android app for reliable long-range nudges.
