@@ -85,13 +85,17 @@ if (jsonOut) {
   console.log(`# Product ${PRODUCT_ID_WEB} · pepper v1 lifetime`)
   console.log('# Keep offline. Do not commit.')
   console.log('')
-  rows.forEach(r => console.log(r.key))
+  rows.forEach(r => {
+  const payload = r.key.split('-')[1] || ''
+  console.log(r.key)
+  if (has('fingerprints')) console.error('# payload', payload)
+})
 }
 
 if (csvPath) {
-  const header = 'n,key,email,iat,exp,status,sold_to,order_id'
+  const header = 'n,key,payload,email,iat,exp,status,sold_to,order_id'
   const lines = rows.map(r =>
-    [r.n, r.key, r.email, r.iat, r.exp, r.status, r.sold_to, r.order_id]
+    [r.n, r.key, (r.key.split('-')[1]||''), r.email, r.iat, r.exp, r.status, r.sold_to, r.order_id]
       .map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))
   writeFileSync(csvPath, [header, ...lines].join('\n') + '\n', 'utf8')
   console.error(`Wrote ${csvPath}`)

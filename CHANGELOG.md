@@ -2,6 +2,10 @@
 
 ## 2.0.0 — Phase 2 · Make it sellable (2026-09-25)
 
+### Density + key revoke
+- Contacts: Comfort / Compact list density (persisted in helpPrefs)
+- Offline `KEY_BLOCKLIST` for revoked licence payloads; mint-keys CSV includes payload id
+
 ### Getting started + daily habit
 - Dashboard checklist: 7 steps, progress bar, auto-dismiss when complete (closed-tester friendly)
 - **Who to call today** widget — overdue / due-soon with one-tap Call / Log

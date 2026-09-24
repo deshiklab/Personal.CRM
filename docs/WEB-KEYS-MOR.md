@@ -158,6 +158,17 @@ Questions: sales@bitscol.com · www.bitscol.com · +8801711853769
 
 ---
 
+## Revoking a leaked key (offline blocklist)
+
+1. From the key `PCRM1-<payload>-<sig>`, copy the **payload** segment (middle).
+2. Add it to `KEY_BLOCKLIST` in `src/lib/entitlements.js`.
+3. Ship a new app build / web deploy. New unlocks with that payload fail verify.
+4. Devices that **already** redeemed keep Pro until factory reset (offline reality).
+
+```bash
+npm run mint-keys -- --count 1 --fingerprints   # stderr shows payload id
+```
+
 ## What we will not build (for now)
 
 - Server-side key issuance API  

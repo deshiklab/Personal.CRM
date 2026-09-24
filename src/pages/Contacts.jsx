@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Search, UserPlus, Star, Phone, Mail, Cake, Users, Clock, CheckCircle2, StickyNote, X, Heart, Gift, Globe, MessageCircle, Link2, Share2, Pencil, Trash2, Download, UsersRound, ScanLine, Camera, ImagePlus, IdCard, ZoomIn } from 'lucide-react'
+import { Search, UserPlus, Star, Phone, Mail, Cake, Users, Clock, CheckCircle2, StickyNote, X, Heart, Gift, Globe, MessageCircle, Link2, Share2, Pencil, Trash2, Download, UsersRound, ScanLine, Camera, ImagePlus, IdCard, ZoomIn, Rows3, List } from 'lucide-react'
 import { toVCF, downloadVCF } from '../lib/vcard'
 import { useCrm } from '../store'
 import { SectionHead, Avatar, TagPill, Pill, Modal, Drawer, Field, Empty, EVENT_COLORS, CsvButton } from '../components/ui'
@@ -32,7 +32,7 @@ export const socLabel = v => v.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/
 
 export default function Contacts() {
   const crm = useCrm()
-  const { contacts, groups, tags, followUpStatus, groupById, isPro, FREE_LIMITS } = crm
+  const { contacts, groups, tags, followUpStatus, groupById, isPro, FREE_LIMITS, helpPrefs, patchHelpPrefs } = crm
   const [params, setParams] = useSearchParams()
   const [q, setQ] = useState('')
   const [groupF, setGroupF] = useState(params.get('group') || '')
@@ -46,6 +46,9 @@ export default function Contacts() {
   const [scanOpen, setScanOpen] = useState(false)
   const [scanFor, setScanFor] = useState(null)   // contact to attach a card to, or null = new
   const [lightbox, setLightbox] = useState(null) // data-URL of card/photo to preview
+  const density = helpPrefs?.contactDensity === 'compact' ? 'compact' : 'comfortable'
+  const rowH = density === 'compact' ? 48 : 64
+  const setDensity = d => patchHelpPrefs?.({ contactDensity: d })
 
   useEffect(() => {
     let dirty = false
@@ -129,6 +132,16 @@ export default function Contacts() {
           <option value="recent">Sort: Recently contacted</option>
           <option value="overdue">Sort: Most overdue</option>
         </select>
+        <div className="flex items-center rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)' }} role="group" aria-label="List density">
+          <button type="button" className="btn btn-ghost btn-sm" style={{ borderRadius: 0, background: density === 'comfortable' ? 'var(--hover)' : 'transparent' }}
+            title="Comfortable rows" aria-pressed={density === 'comfortable'} onClick={() => setDensity('comfortable')}>
+            <Rows3 size={14} /> <span className="hidden sm:inline">Comfort</span>
+          </button>
+          <button type="button" className="btn btn-ghost btn-sm" style={{ borderRadius: 0, background: density === 'compact' ? 'var(--hover)' : 'transparent' }}
+            title="Compact rows — more on screen" aria-pressed={density === 'compact'} onClick={() => setDensity('compact')}>
+            <List size={14} /> <span className="hidden sm:inline">Compact</span>
+          </button>
+        </div>
       </div>
 
       {sel.length > 0 && (
@@ -210,7 +223,7 @@ export default function Contacts() {
         ) : (
           <VirtualList
             items={list}
-            rowHeight={64}
+            rowHeight={rowH}
             overscan={10}
             maxHeight={Math.min(720, Math.max(320, (typeof window !== 'undefined' ? window.innerHeight : 800) - 280))}
             ariaLabel={`${list.length} contacts`}
@@ -231,7 +244,7 @@ export default function Contacts() {
                   aria-label={`${c.name}${c.company ? ', ' + c.company : ''}`}
                   style={{
                     gridTemplateColumns: '34px 34px minmax(0,1fr)',
-                    height: 64,
+                    height: rowH,
                     borderBottom: '1px solid var(--hairline)',
                     background: isSel ? 'var(--hover)' : undefined,
                     cursor: 'pointer',
@@ -248,11 +261,13 @@ export default function Contacts() {
                     <Star size={15} style={{ color: c.starred ? '#fbbf24' : 'var(--faint)' }} fill={c.starred ? '#fbbf24' : 'none'} aria-hidden="true" />
                   </span>
                   <div className="min-w-0 flex items-center gap-3">
-                    <Avatar name={c.name} photo={c.photo} size={34} />
+                    <Avatar name={c.name} photo={c.photo} size={density === 'compact' ? 28 : 34} />
                     <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-[13.5px] truncate">{c.name}</div>
-                      <div className="text-[11.5px] truncate" style={{ color: 'var(--faint)' }}>{[c.role, c.company].filter(Boolean).join(' · ') || '—'}</div>
-                      <div className="md:hidden flex items-center gap-2 mt-0.5 flex-wrap">
+                      <div className={`font-semibold truncate ${density === 'compact' ? 'text-[13px]' : 'text-[13.5px]'}`}>{c.name}</div>
+                      {density !== 'compact' && (
+                        <div className="text-[11.5px] truncate" style={{ color: 'var(--faint)' }}>{[c.role, c.company].filter(Boolean).join(' · ') || '—'}</div>
+                      )}
+                      <div className={`md:hidden flex items-center gap-2 flex-wrap ${density === 'compact' ? '' : 'mt-0.5'}`}>
                         <Pill color={ST_TONE[st.state]}>{ST_LABEL[st.state]}{st.state === 'overdue' ? ` +${st.overdueBy}d` : ''}</Pill>
                         <span className="text-[11px]" style={{ color: 'var(--muted)' }}>{relDay(c.lastContact)}</span>
                       </div>

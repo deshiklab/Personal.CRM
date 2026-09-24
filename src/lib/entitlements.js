@@ -180,6 +180,24 @@ async function hmacSign(message) {
   return b64url(new Uint8Array(sig)).slice(0, 22)
 }
 
+
+/* ── revoked key payloads (offline blocklist) ───────────────────────────────
+ * Ship known-abused base64url *payload* segments here (the middle part of
+ * PCRM1-<payload>-<sig>). Matching keys fail verify even if the HMAC is valid.
+ * Already-redeemed installs are not remotely wiped — this only stops new unlocks.
+ * Support: mint-keys → fingerprintPayload() to get the id to add.
+ * ─────────────────────────────────────────────────────────────────────────── */
+export const KEY_BLOCKLIST = [
+  // e.g. 'eyJ2IjoxLCJwaWQiOiJwZXJzb25hbC1jcm0tcHJvIiwiaWF0IjoxMjM0fQ',
+]
+
+/** Stable fingerprint of a key's payload segment (for support logs / blocklist). */
+export function fingerprintPayload(keyOrPayloadB64) {
+  const raw = String(keyOrPayloadB64 || '').trim()
+  const m = raw.match(/^PCRM1-([A-Za-z0-9_-]+)-([A-Za-z0-9_-]+)$/i)
+  return (m ? m[1] : raw).slice(0, 80)
+}
+
 /**
  * Verify a web licence key offline.
  * @returns {{ ok: true, payload } | { ok: false, reason: string }}
@@ -196,6 +214,9 @@ export async function verifyLicenseKey(key) {
     payload = JSON.parse(unb64url(payloadB64))
   } catch {
     return { ok: false, reason: 'Key payload is damaged.' }
+  }
+  if (KEY_BLOCKLIST.includes(payloadB64) || KEY_BLOCKLIST.includes(payloadB64.toLowerCase())) {
+    return { ok: false, reason: 'This licence key has been revoked. Contact sales@bitscol.com if you believe that is wrong.' }
   }
   if (payload.v !== 1) return { ok: false, reason: 'Unsupported key version.' }
   if (payload.pid && payload.pid !== PRODUCT_ID_WEB && payload.pid !== PRODUCT_ID_PLAY) {
