@@ -1,6 +1,7 @@
 /* Personal CRM — offline-first service worker
  * The whole app builds to ONE inlined HTML file, so caching the shell = offline app. */
-const VERSION = 'pcrm-v2'
+const VERSION = 'pcrm-v4'
+/* OCR assets under ./ocr/ are cache-first on first use (too large to precache). */
 const SHELL = ['./', './index.html', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png']
 
