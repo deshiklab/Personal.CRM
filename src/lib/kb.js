@@ -166,6 +166,36 @@ Search matches name, role and company. Combine it with a group, a tag or a rhyth
     related: ['people.groups', 'people.tags', 'people.rel-rhythm', 'people.merge'],
   },
   {
+    id: 'people.cardscan', cat: 'people', title: 'Scan a visiting card',
+    blurb: 'Snap a card, read it on-device, confirm the fields, save the person.',
+    tags: ['visiting card', 'scan', 'ocr', 'photo', 'camera', 'business card'], updated: '2026-09-24',
+    body: `Handed a visiting card? **Scan card** on the Contacts screen (or on a contact itself) turns the photo into a draft contact — name, role, company, phone, email, website, address — without sending the image anywhere.
+
+## How it works
+1. Tap **Scan card** (Contacts header) or open a contact → **Photo & visiting card → Scan**.
+2. Take a photo or choose an image. Lay the card flat under even light.
+3. OCR runs **on this device** (Tesseract). The first run loads a small English model into the app cache; after that it works offline.
+4. Review every field. OCR guesses — fix anything it got wrong.
+5. Save. The card image is kept on the contact so you can re-read it later.
+
+## Photo & card on every contact
+Each contact has two image slots, both optional, both stored only on this device:
+
+- **Portrait** — shown instead of initials wherever the avatar appears. Add or change it from the contact drawer or the edit form.
+- **Visiting card** — the scan result, or any image you upload without OCR. Tap the thumbnail to enlarge.
+
+Images are compressed automatically (JPEG, long edge ≤ ~960 px for portraits, ≤ ~1400 px for cards) so they fit comfortably in local storage.
+
+## Tips for a clean read
+- Bright, even light; avoid glare on glossy cards.
+- Fill the frame; keep the card upright.
+- English cards read best today. Mixed scripts may need a manual tweak on the review step.
+
+> [!TIP] Already have the person? Open them and tap **Scan** — blank fields are filled from the card, existing ones are left alone.
+`,
+    related: ['people.contacts', 'data.import', 'privacy.local'],
+  },
+  {
     id: 'people.rel-rhythm', cat: 'people', title: 'Relationship rhythms',
     summary: 'How often you want to talk, and how the app nags you about it.',
     tags: ['rhythm', 'cadence', 'frequency', 'touch', 'rel'], updated: '2026-09-24',

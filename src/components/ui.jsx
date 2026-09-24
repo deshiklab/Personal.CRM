@@ -57,8 +57,18 @@ export function Stat({ icon: Icon, label, value, delta, tone = '#818cf8' }) {
   )
 }
 
-export function Avatar({ name = '', size = 36, className = '' }) {
+export function Avatar({ name = '', photo, size = 36, className = '' }) {
   const color = hashColor(name)
+  if (photo) {
+    return (
+      <div className={cn('rounded-full flex-none overflow-hidden', className)}
+        style={{ width: size, height: size, border: `1px solid ${color}44`, background: color + '22' }}
+        title={name}>
+        <img src={photo} alt={name || ''} width={size} height={size}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+      </div>
+    )
+  }
   return (
     <div className={cn('rounded-full grid place-items-center font-bold flex-none', className)}
       style={{ width: size, height: size, fontSize: size * 0.36, background: color + '22', color: toneVar(color), border: `1px solid ${color}44` }}>

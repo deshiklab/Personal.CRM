@@ -147,7 +147,7 @@ export default function TagsManager() {
                   <div className="label">Tagged contacts</div>
                   <div className="flex gap-1.5 flex-wrap">
                     {contacts.filter(c => c.tags.includes(selected.id)).slice(0, 8).map(c => (
-                      <span key={c.id} className="chip"><Avatar name={c.name} size={16} /> {c.name}</span>
+                      <span key={c.id} className="chip"><Avatar name={c.name} photo={c.photo} size={16} /> {c.name}</span>
                     ))}
                     {usage[selected.id] > 8 && <span className="chip">+{usage[selected.id] - 8} more</span>}
                   </div>
@@ -193,7 +193,7 @@ function BulkAssign({ tag }) {
               className={cn('flex items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors', on ? 'bg-indigo-400/15' : 'hover:bg-[var(--hover)]')}>
               <span className={cn('w-4 h-4 rounded grid place-items-center flex-none border',
                 on ? 'bg-indigo-400 border-indigo-400 text-[#0a0c11]' : 'border-white/25 text-transparent')}><CheckSquare size={11} /></span>
-              <Avatar name={c.name} size={24} />
+              <Avatar name={c.name} photo={c.photo} size={24} />
               <span className="text-[13px] font-medium flex-1 truncate">{c.name}</span>
               {has && <span className="chip" style={{ color: toneVar(tag.color), borderColor: tag.color + '40' }}>has tag</span>}
             </button>

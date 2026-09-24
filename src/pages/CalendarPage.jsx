@@ -148,7 +148,7 @@ function EventChip({ e, small, dragId, setDragId, onOpen }) {
       <span className="font-mono flex-none">{e.time}</span>
       <span className="truncate flex-1">{e.title}</span>
       {e.gcal === 'synced' && <Link2 size={9} className="flex-none opacity-70" />}
-      {contact && !small && <Avatar name={contact.name} size={13} />}
+      {contact && !small && <Avatar name={contact.name} photo={contact.photo} size={13} />}
     </button>
   )
 }
@@ -336,7 +336,7 @@ function EventDetail({ ev, onClose }) {
         </div>
         {contact && (
           <div className="flex items-center gap-2 pt-1">
-            <Avatar name={contact.name} size={26} />
+            <Avatar name={contact.name} photo={contact.photo} size={26} />
             <div>
               <div className="font-semibold text-[13px]">{contact.name}</div>
               <div className="text-[11px]" style={{ color: 'var(--faint)' }}>{contact.phone || contact.email || 'attendee'}</div>

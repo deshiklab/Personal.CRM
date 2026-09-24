@@ -136,7 +136,7 @@ export function CrmProvider({ children }) {
 
   /* ── contacts ── */
   const addContact = data => {
-    const c = normalizeContact({ id: uid(), role: '', company: '', phone: '', email: '', birthday: null, tags: [], rel: 'acquaintance', starred: false, introducedBy: null, interests: [], socials: {}, lastContact: todayISO(), createdAt: todayISO(), ...data })
+    const c = normalizeContact({ id: uid(), role: '', company: '', phone: '', email: '', birthday: null, tags: [], rel: 'acquaintance', starred: false, introducedBy: null, interests: [], socials: {}, photo: null, cardImage: null, address: '', lastContact: todayISO(), createdAt: todayISO(), ...data })
     setContacts(cs => [c, ...cs])
     logAudit('user', 'Added contact', c.name, c.company || 'No company')
     fireWebhook('contact', { name: c.name, email: c.email, phone: c.phone, group: c.groupIds[0] })

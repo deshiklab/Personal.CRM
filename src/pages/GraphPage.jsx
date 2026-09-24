@@ -327,7 +327,7 @@ export default function GraphPage() {
           {sel ? (
             <Card className="p-4 fadein">
               <div className="flex items-center gap-3">
-                <Avatar name={sel.name} size={42} />
+                <Avatar name={sel.name} photo={sel.photo} size={42} />
                 <div className="min-w-0 flex-1">
                   <div className="font-bold text-[14.5px] truncate">{sel.name}</div>
                   <div className="text-[11.5px] truncate" style={{ color: 'var(--faint)' }}>{[sel.role, sel.company].filter(Boolean).join(' · ') || '—'}</div>
@@ -360,7 +360,7 @@ export default function GraphPage() {
                   {(neighborsOf[selId] || []).map(x => contactById[x.id] && (
                     <button key={x.id} onClick={() => setSelId(x.id)}
                       className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-[var(--hover)] text-left">
-                      <Avatar name={contactById[x.id].name} size={22} />
+                      <Avatar name={contactById[x.id].name} photo={contactById[x.id].photo} size={22} />
                       <span className="text-[12.5px] font-medium flex-1 truncate">{contactById[x.id].name}</span>
                       <span className="chip" style={{ color: EDGE_COLORS[x.type], borderColor: EDGE_COLORS[x.type] + '45', fontSize: 10 }}>{EDGE_LABELS[x.type]}</span>
                     </button>

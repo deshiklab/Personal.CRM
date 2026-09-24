@@ -27,6 +27,7 @@ const ALL = [
   'probe-pin.mjs',
   'probe-safety.mjs',
   'probe-storage.mjs',
+  'probe-cardscan.mjs',
   'probe-contrast.mjs',
   'probe-kb.mjs',
   'probe-crud.mjs',

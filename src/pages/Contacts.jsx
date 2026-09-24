@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Search, UserPlus, Star, Phone, Mail, Cake, Users, Clock, CheckCircle2, StickyNote, X, Heart, Gift, Globe, MessageCircle, Link2, Share2, Pencil, Trash2, Download, UsersRound } from 'lucide-react'
+import { Search, UserPlus, Star, Phone, Mail, Cake, Users, Clock, CheckCircle2, StickyNote, X, Heart, Gift, Globe, MessageCircle, Link2, Share2, Pencil, Trash2, Download, UsersRound, ScanLine, Camera, ImagePlus, IdCard, ZoomIn } from 'lucide-react'
 import { toVCF, downloadVCF } from '../lib/vcard'
 import { useCrm } from '../store'
 import { SectionHead, Avatar, TagPill, Pill, Modal, Drawer, Field, Empty, EVENT_COLORS, CsvButton } from '../components/ui'
 import { relDay, fmtHuman, tsRel } from '../lib'
 import { contactGroupIds } from '../store'
 import PinConfirm from '../components/PinConfirm'
+import CardScanModal, { CardThumb } from '../components/CardScanModal'
+import { pickAndCompress } from '../lib/media'
 
 const ST_TONE = { overdue: '#fb7185', 'due-soon': '#fbbf24', ok: '#34d399', snoozed: '#94a3b8' }
 const ST_LABEL = { overdue: 'Overdue', 'due-soon': 'Due soon', ok: 'In touch', snoozed: 'Snoozed' }
@@ -40,6 +42,9 @@ export default function Contacts() {
   const [sel, setSel] = useState([])            // ids ticked for bulk actions
   const [editId, setEditId] = useState(null)    // contact being edited (null = none)
   const [confirm, setConfirm] = useState(null)  // { ids, label } pending delete
+  const [scanOpen, setScanOpen] = useState(false)
+  const [scanFor, setScanFor] = useState(null)   // contact to attach a card to, or null = new
+  const [lightbox, setLightbox] = useState(null) // data-URL of card/photo to preview
 
   useEffect(() => {
     let dirty = false
@@ -99,6 +104,9 @@ export default function Contacts() {
             { label: 'Interests', get: r => (r.interests || []).join('; ') },
             { label: 'Socials', get: r => Object.entries(r.socials || {}).map(([p, v]) => `${p}:${v}`).join('; ') },
           ]} />
+          <button className="btn btn-ghost btn-sm" onClick={() => { setScanFor(null); setScanOpen(true) }} title="Snap a visiting card — OCR runs on this device">
+            <ScanLine size={14} /> Scan card
+          </button>
           <button className="btn btn-primary btn-sm" onClick={() => setAddOpen(true)}><UserPlus size={14} /> Add contact</button>
         </div>} />
 
@@ -191,7 +199,7 @@ export default function Contacts() {
                   </td>
                   <td>
                     <div className="flex items-center gap-3">
-                      <Avatar name={c.name} size={34} />
+                      <Avatar name={c.name} photo={c.photo} size={34} />
                       <div className="min-w-0">
                         <div className="font-semibold text-[13.5px] truncate">{c.name}</div>
                         <div className="text-[11.5px] truncate" style={{ color: 'var(--faint)' }}>{[c.role, c.company].filter(Boolean).join(' · ') || '—'}</div>
@@ -230,7 +238,7 @@ export default function Contacts() {
         {list.length === 0 && (contacts.length === 0
           ? <Empty icon={Users} title="Your network starts here"
               steps={[
-                'Tap Add contact (or press C) and add the first person you want to stay close to.',
+                'Tap Add contact, or Scan card to fill the form from a visiting-card photo.',
                 'Tag them and put them in a group so they show up in Follow-ups.',
                 'Set how often you want to touch base — the app will remind you.',
               ]}
@@ -243,11 +251,26 @@ export default function Contacts() {
 
       <Drawer open={!!open} onClose={() => setOpenId(null)}>
         {open && <ContactDrawer contact={open} onOpen={id => setOpenId(id)} onClose={() => setOpenId(null)}
-          onEdit={id => setEditId(id)} onDelete={askDelete} />}
+          onEdit={id => setEditId(id)} onDelete={askDelete}
+          onScanCard={ct => { setScanFor(ct); setScanOpen(true) }}
+          onPreview={setLightbox} />}
       </Drawer>
 
       <ContactFormModal open={addOpen} onClose={() => setAddOpen(false)} />
       <ContactFormModal open={!!editId} onClose={() => setEditId(null)} contact={editId ? crm.contactById[editId] : null} />
+
+      <CardScanModal open={scanOpen} onClose={() => { setScanOpen(false); setScanFor(null) }} contact={scanFor} />
+
+      {/* full-size preview of a photo or visiting card */}
+      {lightbox && (
+        <div className="fixed inset-0 z-[80] grid place-items-center p-4" style={{ background: 'rgba(0,0,0,.72)' }}
+          onClick={() => setLightbox(null)}>
+          <button className="icon-btn absolute top-4 right-4" style={{ background: 'rgba(255,255,255,.12)', color: '#fff' }}
+            onClick={() => setLightbox(null)}><X size={18} /></button>
+          <img src={lightbox} alt="Preview" onClick={e => e.stopPropagation()}
+            style={{ maxWidth: 'min(920px, 96vw)', maxHeight: '88vh', borderRadius: 12, boxShadow: '0 20px 60px rgba(0,0,0,.45)' }} />
+        </div>
+      )}
 
       <PinConfirm
         open={!!confirm}
@@ -262,7 +285,7 @@ export default function Contacts() {
   )
 }
 
-function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete }) {
+function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete, onScanCard, onPreview }) {
   const crm = useCrm()
   const [noteTitle, setNoteTitle] = useState('')
   const [noteBody, setNoteBody] = useState('')
@@ -284,7 +307,20 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete }) {
   return (
     <div>
       <div className="flex items-start gap-4">
-        <Avatar name={c.name} size={56} />
+        <div className="relative flex-none group/av">
+          <Avatar name={c.name} photo={c.photo} size={56} />
+          <button type="button" className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full grid place-items-center"
+            style={{ background: 'var(--cardbg)', border: '1px solid var(--border)', color: 'var(--t-indigo)' }}
+            title={c.photo ? 'Change photo' : 'Add photo'}
+            onClick={async () => {
+              const r = await pickAndCompress({ maxEdge: 640, quality: 0.72, capture: 'user' })
+              if (!r) return
+              crm.updateContact(c.id, { photo: r.dataUrl })
+              crm.toast?.('Photo saved on this device')
+            }}>
+            <Camera size={12} />
+          </button>
+        </div>
         <div className="min-w-0 flex-1">
           <h3 className="text-[18px] font-bold tracking-tight truncate">{c.name}</h3>
           <div className="text-[12.5px]" style={{ color: 'var(--muted)' }}>{[c.role, c.company].filter(Boolean).join(' · ') || 'No role set'}</div>
@@ -295,6 +331,58 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete }) {
           </div>
         </div>
         <button className="icon-btn" onClick={onClose}><X size={16} /></button>
+      </div>
+
+      {/* Photo + visiting card */}
+      <div className="card p-3 mt-4">
+        <div className="text-[10.5px] font-bold uppercase tracking-[.1em] mb-2" style={{ color: 'var(--faint)' }}>Photo & visiting card</div>
+        <div className="flex flex-wrap items-stretch gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1 rounded-xl p-2"
+            style={{ background: 'var(--cardbg2)', border: '1px solid var(--border)' }}>
+            <Avatar name={c.name} photo={c.photo} size={40} />
+            <div className="min-w-0 flex-1">
+              <div className="text-[12.5px] font-semibold truncate">{c.photo ? 'Portrait on file' : 'No photo yet'}</div>
+              <div className="text-[11px]" style={{ color: 'var(--faint)' }}>Stored on this device only</div>
+            </div>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={async () => {
+              const r = await pickAndCompress({ maxEdge: 640, quality: 0.72 })
+              if (!r) return
+              crm.updateContact(c.id, { photo: r.dataUrl })
+              crm.toast?.('Photo saved')
+            }}><Camera size={13} /> {c.photo ? 'Change' : 'Add'}</button>
+            {c.photo && (
+              <>
+                <button type="button" className="icon-btn" title="View photo" onClick={() => onPreview?.(c.photo)}><ZoomIn size={13} /></button>
+                <button type="button" className="icon-btn" title="Remove photo" style={{ color: 'var(--t-rose)' }}
+                  onClick={() => { crm.updateContact(c.id, { photo: null }); crm.toast?.('Photo removed') }}><Trash2 size={13} /></button>
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-2 min-w-0 flex-1 rounded-xl p-2"
+            style={{ background: 'var(--cardbg2)', border: '1px solid var(--border)' }}>
+            {c.cardImage
+              ? <CardThumb src={c.cardImage} size={64} onClick={() => onPreview?.(c.cardImage)} />
+              : <div className="rounded-lg grid place-items-center flex-none" style={{ width: 64, height: 40, background: 'var(--chipbg)', color: 'var(--faint)' }}><IdCard size={18} /></div>}
+            <div className="min-w-0 flex-1">
+              <div className="text-[12.5px] font-semibold truncate">{c.cardImage ? 'Visiting card on file' : 'No visiting card yet'}</div>
+              <div className="text-[11px]" style={{ color: 'var(--faint)' }}>{c.cardImage ? 'Tap thumbnail to enlarge' : 'Scan or upload one'}</div>
+            </div>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => onScanCard?.(c)} title="Scan a visiting card for this person">
+              <ScanLine size={13} /> {c.cardImage ? 'Rescan' : 'Scan'}
+            </button>
+            <button type="button" className="btn btn-ghost btn-sm" title="Upload a card image without OCR"
+              onClick={async () => {
+                const r = await pickAndCompress({ maxEdge: 1400, quality: 0.8 })
+                if (!r) return
+                crm.updateContact(c.id, { cardImage: r.dataUrl })
+                crm.toast?.('Visiting card saved')
+              }}><ImagePlus size={13} /> Upload</button>
+            {c.cardImage && (
+              <button type="button" className="icon-btn" title="Remove card" style={{ color: 'var(--t-rose)' }}
+                onClick={() => { crm.updateContact(c.id, { cardImage: null }); crm.toast?.('Card removed') }}><Trash2 size={13} /></button>
+            )}
+          </div>
+        </div>
       </div>
 
       {(() => {
@@ -350,6 +438,7 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete }) {
       <div className="card p-4 mt-5 flex flex-col gap-2.5 text-[13px]">
         {c.phone && <div className="flex items-center gap-3"><Phone size={14} style={{ color: 'var(--t-sky)' }} /> {c.phone}</div>}
         {c.email && <div className="flex items-center gap-3 truncate"><Mail size={14} style={{ color: 'var(--t-sky)' }} /> {c.email}</div>}
+        {c.address && <div className="flex items-center gap-3"><Globe size={14} style={{ color: 'var(--t-sky)' }} /> {c.address}</div>}
         {c.birthday && <div className="flex items-center gap-3"><Cake size={14} style={{ color: 'var(--t-sky)' }} /> {fmtHuman(c.birthday)}</div>}
         <div className="flex items-center gap-3"><Clock size={14} style={{ color: 'var(--t-sky)' }} /> Last contacted {relDay(c.lastContact).toLowerCase()}</div>
         {c.anniversary && <div className="flex items-center gap-3"><Heart size={14} style={{ color: 'var(--t-sky)' }} /> Anniversary {fmtHuman(c.anniversary)}</div>}
@@ -533,7 +622,7 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete }) {
 function ContactFormModal({ open, onClose, contact = null }) {
   const { addContact, updateContact, groups, relFreq, tags, toast, contacts } = useCrm()
   const editing = !!contact
-  const blank = { name: '', role: '', company: '', phone: '', email: '', birthday: '', anniversary: '', groupIds: ['g_leads'], rel: 'acquaintance', tags: [], introducedBy: '', interests: '', giftIdeas: '', linkedin: '', website: '' }
+  const blank = { name: '', role: '', company: '', phone: '', email: '', birthday: '', anniversary: '', groupIds: ['g_leads'], rel: 'acquaintance', tags: [], introducedBy: '', interests: '', giftIdeas: '', linkedin: '', website: '', address: '', photo: null, cardImage: null }
   const [f, setF] = useState(blank)
   useEffect(() => {
     if (!open) return
@@ -545,6 +634,7 @@ function ContactFormModal({ open, onClose, contact = null }) {
       tags: [...(contact.tags || [])], introducedBy: contact.introducedBy || '',
       interests: (contact.interests || []).join(', '), giftIdeas: contact.giftIdeas || '',
       linkedin: contact.socials?.linkedin || '', website: contact.socials?.website || '',
+      address: contact.address || '', photo: contact.photo || null, cardImage: contact.cardImage || null,
     } : { ...blank, groupIds: groups[0] ? [groups[0].id] : [] })
   }, [open, contact]) // eslint-disable-line
   const set = (k, v) => setF(x => ({ ...x, [k]: v }))
@@ -553,6 +643,24 @@ function ContactFormModal({ open, onClose, contact = null }) {
 
   return (
     <Modal open={open} onClose={onClose} title={editing ? `Edit ${contact.name}` : 'Add contact'} wide>
+      <div className="flex flex-wrap items-center gap-3 mb-4 p-3 rounded-xl" style={{ background: 'var(--cardbg2)', border: '1px solid var(--border)' }}>
+        <Avatar name={f.name || 'New'} photo={f.photo} size={56} />
+        <div className="min-w-0 flex-1">
+          <div className="text-[12.5px] font-semibold">Portrait & visiting card</div>
+          <div className="text-[11px]" style={{ color: 'var(--faint)' }}>Optional · stays on this device · compressed automatically</div>
+        </div>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={async () => {
+          const r = await pickAndCompress({ maxEdge: 640, quality: 0.72 })
+          if (r) set('photo', r.dataUrl)
+        }}><Camera size={13} /> {f.photo ? 'Change photo' : 'Add photo'}</button>
+        {f.photo && <button type="button" className="btn btn-ghost btn-sm" style={{ color: 'var(--t-rose)' }} onClick={() => set('photo', null)}>Remove</button>}
+        <button type="button" className="btn btn-ghost btn-sm" onClick={async () => {
+          const r = await pickAndCompress({ maxEdge: 1400, quality: 0.8 })
+          if (r) set('cardImage', r.dataUrl)
+        }}><IdCard size={13} /> {f.cardImage ? 'Change card' : 'Upload card'}</button>
+        {f.cardImage && <button type="button" className="btn btn-ghost btn-sm" style={{ color: 'var(--t-rose)' }} onClick={() => set('cardImage', null)}>Remove card</button>}
+        {f.cardImage && <CardThumb src={f.cardImage} size={72} />}
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="Name *"><input className="input" value={f.name} onChange={e => set('name', e.target.value)} placeholder="Full name" /></Field>
         <Field label="Phone"><input className="input" value={f.phone} onChange={e => set('phone', e.target.value)} placeholder="+880 …" /></Field>
@@ -591,6 +699,9 @@ function ContactFormModal({ open, onClose, contact = null }) {
         <Field label="Website">
           <input className="input" value={f.website || ''} onChange={e => set('website', e.target.value)} placeholder="https://…" />
         </Field>
+        <Field label="Address">
+          <input className="input" value={f.address || ''} onChange={e => set('address', e.target.value)} placeholder="Street, city" />
+        </Field>
       </div>
       <div className="mt-4">
         <div className="label">Tags</div>
@@ -608,6 +719,9 @@ function ContactFormModal({ open, onClose, contact = null }) {
               ...f, birthday: f.birthday || null, anniversary: f.anniversary || null,
               introducedBy: f.introducedBy.trim() || null,
               giftIdeas: f.giftIdeas.trim(),
+              address: (f.address || '').trim(),
+              photo: f.photo || null,
+              cardImage: f.cardImage || null,
               interests: f.interests.split(',').map(s => s.trim().toLowerCase()).filter(Boolean),
               socials: Object.fromEntries([['linkedin', f.linkedin], ['website', f.website]].filter(([, v]) => (v || '').trim()).map(([k, v]) => [k, v.trim()])),
             }

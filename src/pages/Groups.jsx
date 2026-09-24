@@ -69,7 +69,7 @@ export default function Groups() {
               <div className="flex items-center mt-4">
                 <div className="flex -space-x-2">
                   {members.slice(0, 5).map(m => (
-                    <div key={m.id} style={{ border: '2px solid var(--bg)', borderRadius: 99 }}><Avatar name={m.name} size={26} /></div>
+                    <div key={m.id} style={{ border: '2px solid var(--bg)', borderRadius: 99 }}><Avatar name={m.name} photo={m.photo} size={26} /></div>
                   ))}
                 </div>
                 {members.length > 5 && <span className="chip ml-2">+{members.length - 5}</span>}

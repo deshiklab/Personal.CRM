@@ -92,7 +92,7 @@ function Upcoming() {
             <span className="dot" style={{ background: EVENT_COLORS[e.type] || '#94a3b8' }} />
             <span className="font-mono text-[11.5px] w-[74px] flex-none" style={{ color: 'var(--muted)' }}>{e.date.slice(5)} · {e.time}</span>
             <span className="text-[13px] font-medium truncate flex-1">{e.title}</span>
-            {contact && <Avatar name={contact.name} size={22} />}
+            {contact && <Avatar name={contact.name} photo={contact.photo} size={22} />}
           </div>
         )
       })}
@@ -113,7 +113,7 @@ function StayInTouch() {
       <div className="flex flex-col gap-2">
         {overdue.map(({ c, s }) => (
           <button key={c.id} onClick={() => navigate('/follow-ups')} className="card hoverable p-3 flex items-center gap-3 text-left w-full">
-            <Avatar name={c.name} size={34} />
+            <Avatar name={c.name} photo={c.photo} size={34} />
             <div className="min-w-0 flex-1">
               <div className="text-[13px] font-semibold truncate">{c.name}</div>
               <div className="text-[11.5px]" style={{ color: 'var(--muted)' }}>{s.since}d since contact</div>
@@ -166,7 +166,7 @@ function Birthdays() {
       {list.length === 0 && <Empty icon={Cake} title="No birthdays on file" />}
       {list.map(({ c, occ, d, turning }) => (
         <div key={c.id} className="flex items-center gap-3 py-2.5 border-b last:border-0" style={{ borderColor: 'var(--hairline)' }}>
-          <Avatar name={c.name} size={30} />
+          <Avatar name={c.name} photo={c.photo} size={30} />
           <div className="min-w-0 flex-1">
             <div className="text-[13px] font-semibold truncate">{c.name}</div>
             <div className="text-[11px]" style={{ color: 'var(--faint)' }}>{MONTHS_S[+occ.slice(5, 7) - 1]} {+occ.slice(8)} · turns {turning}</div>

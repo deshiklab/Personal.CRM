@@ -27,7 +27,8 @@
     "lucide-react": "latest",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.30.0"
+    "react-router-dom": "^6.30.0",
+    "tesseract.js": "^5.1.1"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",

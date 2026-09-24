@@ -108,7 +108,7 @@ export default function Birthdays() {
                 style={d === 0 ? { borderColor: 'rgba(244,114,182,.55)', boxShadow: '0 0 32px rgba(244,114,182,.15)' } : {}}>
                 {d === 0 && <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(200px 90px at 85% -20%, rgba(244,114,182,.14), transparent 70%)' }} />}
                 <div className="flex items-center gap-3">
-                  <Avatar name={c.name} size={44} />
+                  <Avatar name={c.name} photo={c.photo} size={44} />
                   <div className="min-w-0 flex-1">
                     <div className="font-bold text-[14px] truncate">{c.name}</div>
                     <div className="text-[11.5px]" style={{ color: 'var(--muted)' }}>

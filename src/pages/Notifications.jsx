@@ -158,7 +158,7 @@ function NotifCard({ n, snoozed, dismissedCard }) {
           </div>
         )}
       </div>
-      {contact && <Avatar name={contact.name} size={30} className="flex-none mt-0.5" />}
+      {contact && <Avatar name={contact.name} photo={contact.photo} size={30} className="flex-none mt-0.5" />}
     </Card>
   )
 }

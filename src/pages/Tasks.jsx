@@ -186,7 +186,7 @@ function TaskCard({ t, dragId, setDragId, onOpen }) {
             </div>
           )}
         </div>
-        {contact && <Avatar name={contact.name} size={24} />}
+        {contact && <Avatar name={contact.name} photo={contact.photo} size={24} />}
       </div>
     </div>
   )
