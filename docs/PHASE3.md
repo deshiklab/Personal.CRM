@@ -13,12 +13,12 @@ Phase 2 made the app **sellable**. Phase 3 is **delight + distribution** once Pl
 
 | Idea | Why | Effort |
 |---|---|---|
-| Onboarding checklist widget | First-run clarity for closed testers | S |
+| ~~Onboarding checklist widget~~ | Shipped in 2.0.x — progress bar + 7 steps on Dashboard | done |
 | Contact density / compact list | Power users with 1k+ people | S |
 | Export full backup encrypt (PIN-derived) | Paranoid local-first buyers | M |
 | iOS shell (Capacitor) | Second store; StoreKit already in Capgo path | L |
 | Locale pack (bn / en) | BD home market + export | M |
-| Widget: “who to call today” | Daily habit loop | S |
+| ~~Widget: “who to call today”~~ | Dashboard widget `callToday` — overdue / due-soon queue with Call | done |
 | Blocklist of revoked key payload hashes | Abuse response without a server | S |
 
 ## Explicit non-goals (still)

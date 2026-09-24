@@ -37,7 +37,7 @@ const normalizeContact = c => {
   return { ...c, groupIds: ids, groupId: ids[0] || null }
 }
 
-const DEFAULT_WIDGET_ORDER = ['stats','growth','taskCols','upcoming','stayInTouch','syncHealth','birthdays','topTags','overdueCountdown','taskHeatmap','activityFeed']
+const DEFAULT_WIDGET_ORDER = ['stats','callToday','growth','taskCols','upcoming','stayInTouch','syncHealth','birthdays','topTags','overdueCountdown','taskHeatmap','activityFeed']
 const Ctx = createContext(null)
 export const useCrm = () => useContext(Ctx)
 
@@ -91,7 +91,7 @@ export function CrmProvider({ children }) {
    * Both live with the rest of the data so they travel in every backup. */
   const [kbArticles, setKbArticles] = useState(init?.kbArticles || [])
   const [helpPrefs, setHelpPrefs]   = useState(init?.helpPrefs || {
-    tips: true, tourDone: false, tourStep: 0, tourStarted: false, onboardDone: false, bookmarks: [], votes: {}, seenVersion: '',
+    tips: true, tourDone: false, tourStep: 0, tourStarted: false, onboardDone: false, seenPro: false, bookmarks: [], votes: {}, seenVersion: '',
   })
   const [webhooks, setWebhooks]   = useState(init?.webhooks || {
     url: '', on: { lead: true, contact: false, task_done: true, touch: false }, log: [],
@@ -855,7 +855,7 @@ export function CrmProvider({ children }) {
     emails: [], googleClientId: '', gist: { token: '', gistId: null },
     icsFeeds: [], driveState: { fileId: null, lastBackup: null, lastRestore: null, lastContactsSync: null },
     syncState: null, lock: null, profile: null, kbArticles: [],
-    helpPrefs: { tips: true, tourDone: false, tourStep: 0, tourStarted: false, onboardDone: false, bookmarks: [], votes: {}, seenVersion: '' },
+    helpPrefs: { tips: true, tourDone: false, tourStep: 0, tourStarted: false, onboardDone: false, seenPro: false, bookmarks: [], votes: {}, seenVersion: '' },
     __blank: true,
   })
   const factoryReset = async pin => {

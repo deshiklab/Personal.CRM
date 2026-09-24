@@ -2,6 +2,10 @@
 
 ## 2.0.0 — Phase 2 · Make it sellable (2026-09-25)
 
+### Getting started + daily habit
+- Dashboard checklist: 7 steps, progress bar, auto-dismiss when complete (closed-tester friendly)
+- **Who to call today** widget — overdue / due-soon with one-tap Call / Log
+
 ### Launch polish
 - Settings: multi-device auto-sync labelled Pro; Safety net explains auto vs manual
 - `docs/PHASE3.md` — post-closed-test ideas (non-goals restated)

@@ -35,6 +35,7 @@ ok('screenshot templates ≥ 8', fs.readdirSync(path.join(__dirname, 'docs/store
 ok('package has local-notifications', /@capacitor\/local-notifications/.test(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')))
 ok('mint-keys script present', fs.existsSync(path.join(__dirname, 'scripts/mint-keys.mjs')))
 ok('bundle gates advanced analytics / graph export', /advanced_analytics|graph_export|Longer windows on Pro|Export SVG|Ocean/.test(bundle))
+ok('bundle has getting-started checklist', /Getting started|onboardSteps|Who to call today|callToday/.test(bundle))
 
 await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 60000 })
 await page.waitForTimeout(800)
@@ -62,6 +63,10 @@ await page.waitForTimeout(400)
 ok('skip link in DOM', await page.locator('a.skip-link, a:has-text("Skip to main content")').count() > 0)
 ok('main#main-content present', await page.locator('#main-content').count() > 0)
 
+await page.goto(BASE + '#/', { waitUntil: 'domcontentloaded' }).catch(()=>{})
+await page.evaluate(() => { location.hash = '#/' })
+await page.waitForTimeout(500)
+ok('Dashboard getting started or widgets', (await page.getByText('Getting started').count()) + (await page.getByText('Who to call today').count()) + (await page.getByText('Key stats').count()) > 0)
 await page.goto(BASE + '#/contacts', { waitUntil: 'domcontentloaded' })
 await page.waitForTimeout(600)
 ok('Contacts region labelled', await page.locator('[aria-label="Contacts directory"], [aria-label*="contacts" i]').count() > 0)

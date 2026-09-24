@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Users, CheckSquare, CalendarClock, HeartHandshake, ArrowRight, RefreshCw, Activity, Clock, Cake, Tag, Timer, Flame, TrendingUp, BarChart3 } from 'lucide-react'
+import { Users, CheckSquare, CalendarClock, HeartHandshake, ArrowRight, RefreshCw, Activity, Clock, Cake, Tag, Timer, Flame, TrendingUp, BarChart3, Phone } from 'lucide-react'
 import { useCrm } from '../store'
 import { Card, Stat, Avatar, Pill, Sparkline, MiniBars, Empty, EVENT_COLORS } from './ui'
 import { todayISO, daysUntil, parseISO, MONTHS_S, tsRel, isoDate, addDays } from '../lib'
@@ -8,6 +8,7 @@ import { toneVar } from './ui'
 
 export const WIDGET_META = {
   stats:            { title: 'Key stats',          icon: Users,          span: 3 },
+  callToday:        { title: 'Who to call today',  icon: Phone,          span: 1 },
   growth:           { title: 'Contact growth',     icon: TrendingUp,     span: 2 },
   taskCols:         { title: 'Tasks by column',    icon: BarChart3,      span: 1 },
   upcoming:         { title: 'Upcoming events',    icon: CalendarClock,  span: 1 },
@@ -286,8 +287,66 @@ function ActivityFeed() {
   )
 }
 
+
+function CallToday() {
+  const { contacts, followUpStatus, markContacted, toast } = useCrm()
+  const list = useMemo(() => {
+    return contacts
+      .map(c => {
+        const st = followUpStatus(c)
+        const score =
+          st.state === 'overdue' ? 1000 + (st.overdueBy || 0) :
+          st.state === 'due-soon' ? 500 + (3 - (st.dueIn || 0)) :
+          st.state === 'snoozed' ? 50 :
+          Math.max(0, 30 - (st.since || 0))
+        return { c, st, score }
+      })
+      .filter(x => x.st.state === 'overdue' || x.st.state === 'due-soon' || (x.st.state === 'ok' && (x.st.since || 0) > 14))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5)
+  }, [contacts, followUpStatus])
+
+  return (
+    <Card className="p-5">
+      <Head title="Who to call today" to="/follow-ups" linkLabel="Follow-ups" />
+      {list.length === 0 && (
+        <Empty icon={Phone} title="You are in rhythm">
+          Nobody is overdue or due soon. Enjoy the quiet — or add someone new.
+        </Empty>
+      )}
+      <div className="flex flex-col gap-1">
+        {list.map(({ c, st }) => (
+          <div key={c.id} className="flex items-center gap-2.5 py-2 border-b last:border-0" style={{ borderColor: 'var(--hairline)' }}>
+            <Avatar name={c.name} photo={c.photo} size={28} />
+            <div className="min-w-0 flex-1">
+              <Link to={`/contacts?open=${c.id}`} className="block text-[13px] font-semibold truncate" style={{ color: 'var(--text)', textDecoration: 'none' }}>
+                {c.name}
+              </Link>
+              <div className="text-[11px] truncate" style={{ color: 'var(--faint)' }}>
+                {st.state === 'overdue' ? `${st.overdueBy}d overdue` : st.state === 'due-soon' ? `due in ${st.dueIn}d` : `${st.since}d since last`}
+                {c.phone ? ` · ${c.phone}` : ''}
+              </div>
+            </div>
+            {c.phone ? (
+              <a className="btn btn-ghost btn-sm" href={`tel:${c.phone.replace(/\s+/g, '')}`} title={`Call ${c.name}`}
+                onClick={() => { try { markContacted?.(c.id) } catch {} }}>
+                <Phone size={13} /> Call
+              </a>
+            ) : (
+              <button type="button" className="btn btn-ghost btn-sm"
+                onClick={() => { markContacted?.(c.id); toast?.(`Logged touch with ${c.name.split(' ')[0]}`) }}>
+                Log
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </Card>
+  )
+}
+
 export const WIDGET_COMPONENTS = {
-  stats: StatsRow, growth: Growth, taskCols: TaskCols, upcoming: Upcoming,
+  stats: StatsRow, callToday: CallToday, growth: Growth, taskCols: TaskCols, upcoming: Upcoming,
   stayInTouch: StayInTouch, syncHealth: SyncHealth, birthdays: Birthdays,
   topTags: TopTags, overdueCountdown: OverdueCountdown, taskHeatmap: TaskHeatmap,
   activityFeed: ActivityFeed,
