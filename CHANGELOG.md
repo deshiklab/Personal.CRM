@@ -2,6 +2,11 @@
 
 ## 2.0.0 — Phase 2 · Make it sellable (2026-09-25)
 
+### Locale pack (bn / en)
+- Settings → Language: English / বাংলা (persisted in helpPrefs.locale)
+- Nav, topbar, dashboard, welcome, post-tour demo choice translated
+- `src/lib/i18n.jsx` + `src/locales/{en,bn}.js` — offline, no CDN
+
 ### Welcome & demo choice
 - First-launch Welcome: restore backup · Google · GitHub Gist · start fresh
 - After guided tour: keep sample data or wipe to a blank CRM (profile/lock kept)

@@ -6,6 +6,7 @@ import {
 import { useCrm } from '../store'
 import { notifyConfigured } from '../lib/notify'
 import { BRAND } from '../brand'
+import { useT } from '../lib/i18n'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
@@ -17,6 +18,7 @@ export default function RegistrationScreen() {
     restoreBackupFile, saveGoogleClientId, connectGoogleLive, saveGistToken, syncNow,
     clearDemoData,
   } = useCrm()
+  const { t } = useT()
 
   /* panel: home | register | restore | google | gist */
   const [panel, setPanel] = useState('home')
@@ -138,12 +140,12 @@ export default function RegistrationScreen() {
         {back && (
           <button type="button" className="flex items-center justify-center gap-1.5 w-full mt-4 text-[12px] font-semibold hover:underline"
             style={{ color: 'var(--faint)' }} onClick={back} disabled={busy}>
-            <ChevronLeft size={13} /> Back
+            <ChevronLeft size={13} /> {t('welcome.back')}
           </button>
         )}
         <p className="text-[10.5px] text-center mt-5 leading-snug" style={{ color: 'var(--faint)' }}>
           <ShieldCheck size={10} className="inline -mt-[2px] mr-1" />
-          {BRAND.app} has no server and no account. Everything stays on this device unless you connect a backend you control.
+          {t('welcome.footer', { app: BRAND.app })}
         </p>
       </div>
     </div>
@@ -154,34 +156,34 @@ export default function RegistrationScreen() {
     const opts = [
       {
         id: 'fresh', icon: Sparkles, color: '#a78bfa',
-        title: 'I’m new — start fresh',
-        body: 'Explore with sample people, then keep or wipe them after the tour.',
+        title: t('welcome.freshTitle'),
+        body: t('welcome.freshBody'),
         onClick: () => setPanel('register'),
         primary: true,
       },
       {
         id: 'restore', icon: HardDrive, color: '#38bdf8',
-        title: 'Restore a backup',
-        body: 'Plain .json or encrypted .pcrm.json from another install.',
+        title: t('welcome.restoreTitle'),
+        body: t('welcome.restoreBody'),
         onClick: () => setPanel('restore'),
       },
       {
         id: 'google', icon: Cloud, color: '#34d399',
-        title: 'Connect with Google',
-        body: 'Your OAuth Client ID → Calendar, Contacts & Drive backup.',
+        title: t('welcome.googleTitle'),
+        body: t('welcome.googleBody'),
         onClick: () => setPanel('google'),
       },
       {
         id: 'gist', icon: CloudUpload, color: '#f472b6',
-        title: 'Multi-device sync via GitHub Gist',
-        body: 'One private gist keeps phone, PWA and browser in sync.',
+        title: t('welcome.gistTitle'),
+        body: t('welcome.gistBody'),
         onClick: () => setPanel('gist'),
       },
     ]
     return (
       <Shell
-        title={`Welcome to ${BRAND.app}`}
-        sub="Brand-new device? Pick how you want to begin. Nothing leaves this phone unless you choose a sync path."
+        title={t('welcome.title', { app: BRAND.app })}
+        sub={t('welcome.sub')}
       >
         <div className="flex flex-col gap-2.5">
           {opts.map(o => {
@@ -210,7 +212,7 @@ export default function RegistrationScreen() {
         <button type="button" className="text-[12px] font-semibold text-center hover:underline w-full mt-4"
           style={{ color: 'var(--faint)' }}
           onClick={finishAsFresh}>
-          Skip setup — open with sample data
+          {t('welcome.skipSetup')}
         </button>
       </Shell>
     )
@@ -220,14 +222,14 @@ export default function RegistrationScreen() {
   if (panel === 'register') {
     return (
       <Shell
-        title="Who should we greet?"
-        sub="Stored on this device only. You can skip and fill this in later under Settings → Identity."
+        title={t('welcome.whoTitle')}
+        sub={t('welcome.whoSub')}
         back={() => setPanel('home')}
       >
         <div className="flex flex-col gap-3">
           <label className="block">
             <span className="text-[11.5px] font-semibold uppercase tracking-wide" style={{ color: 'var(--faint)' }}>
-              Your name *
+              {t('welcome.name')}
             </span>
             <div className="relative mt-1.5">
               <UserRound size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--faint)' }} />
@@ -239,7 +241,7 @@ export default function RegistrationScreen() {
 
           <label className="block">
             <span className="text-[11.5px] font-semibold uppercase tracking-wide" style={{ color: 'var(--faint)' }}>
-              Email *
+              {t('welcome.email')}
             </span>
             <div className="relative mt-1.5">
               <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--faint)' }} />
@@ -251,7 +253,7 @@ export default function RegistrationScreen() {
 
           <label className="block">
             <span className="text-[11.5px] font-semibold uppercase tracking-wide" style={{ color: 'var(--faint)' }}>
-              Mobile <span style={{ textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
+              {t('welcome.mobile')} <span style={{ textTransform: 'none', letterSpacing: 0 }}>{t('welcome.mobileOpt')}</span>
             </span>
             <div className="relative mt-1.5">
               <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--faint)' }} />
@@ -267,21 +269,20 @@ export default function RegistrationScreen() {
             <input type="checkbox" checked={share} onChange={e => setShare(e.target.checked)}
               style={{ marginTop: 3, width: 15, height: 15, accentColor: 'var(--i1)', flex: 'none' }} />
             <span className="text-[11.5px] leading-snug" style={{ color: 'var(--muted)' }}>
-              Also send my name and email to <b style={{ color: 'var(--text)' }}>{BRAND.publisher}</b> at{' '}
-              <b style={{ color: 'var(--text)' }}>{BRAND.email}</b> so they can register my copy.
-              {!notifyConfigured() && <i> (not yet configured — nothing will be sent)</i>}
+              {t('welcome.shareBitscol', { publisher: BRAND.publisher, email: BRAND.email })}
+              {!notifyConfigured() && <i>{t('welcome.shareNotConfigured')}</i>}
             </span>
           </label>
 
           <button className="btn btn-primary w-full mt-1 justify-center" disabled={busy || !name.trim() || !email.trim()}
             onClick={submitRegister}>
-            {busy ? 'Setting up…' : <><ArrowRight size={15} /> Continue with sample data</>}
+            {busy ? t('welcome.settingUp') : <><ArrowRight size={15} /> {t('welcome.continueSample')}</>}
           </button>
 
           <button type="button" className="text-[12px] font-semibold text-center hover:underline"
             style={{ color: 'var(--faint)' }}
             onClick={finishAsFresh}>
-            Skip identity — explore first
+            {t('welcome.skipIdentity')}
           </button>
         </div>
       </Shell>
@@ -292,8 +293,8 @@ export default function RegistrationScreen() {
   if (panel === 'restore') {
     return (
       <Shell
-        title="Restore a backup"
-        sub="Works offline. Encrypted files need the passphrase you set when exporting."
+        title={t('welcome.restoreTitle2')}
+        sub={t('welcome.restoreSub')}
         back={() => { setPendingFile(null); setPass(''); setPanel('home') }}
       >
         {!pendingFile ? (
@@ -302,23 +303,22 @@ export default function RegistrationScreen() {
               disabled={busy}
               onClick={() => fileRef.current?.click()}>
               {busy ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
-              Choose backup file…
+              {t('welcome.chooseFile')}
             </button>
             <input ref={fileRef} type="file" accept=".json,application/json,.pcrm.json" className="hidden"
               onChange={e => { const f = e.target.files?.[0]; if (f) onPickFile(f); e.target.value = '' }} />
             <p className="text-[11.5px] leading-snug text-center" style={{ color: 'var(--muted)' }}>
-              Accepts plain <span className="font-mono text-[11px]">.json</span> and encrypted{' '}
-              <span className="font-mono text-[11px]">.pcrm.json</span> (AES-GCM).
+              {t('welcome.acceptHint')}
             </p>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
             <p className="text-[12.5px] leading-relaxed" style={{ color: 'var(--muted)' }}>
-              This file is encrypted. Enter the passphrase (or app pincode) used when it was exported.
+              {t('welcome.unlockEnc')}
               {pendingFile?.hint ? <> Hint: <b style={{ color: 'var(--text)' }}>{pendingFile.hint}</b></> : null}
             </p>
             <div>
-              <div className="text-[11.5px] font-semibold mb-1" style={{ color: 'var(--faint)' }}>Passphrase</div>
+              <div className="text-[11.5px] font-semibold mb-1" style={{ color: 'var(--faint)' }}>{t('welcome.passphrase')}</div>
               <div className="relative">
                 <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--faint)' }} />
                 <input className="input" type="password" autoComplete="off" style={{ paddingLeft: 38 }}
@@ -329,7 +329,7 @@ export default function RegistrationScreen() {
             </div>
             <button type="button" className="btn btn-primary w-full justify-center" disabled={busy || !pass}
               onClick={okEncImport}>
-              {busy ? <Loader2 size={15} className="animate-spin" /> : <KeyRound size={15} />} Decrypt & restore
+              {busy ? <Loader2 size={15} className="animate-spin" /> : <KeyRound size={15} />} {t('welcome.decrypt')}
             </button>
           </div>
         )}
@@ -341,8 +341,8 @@ export default function RegistrationScreen() {
   if (panel === 'google') {
     return (
       <Shell
-        title="Connect with Google"
-        sub="Bring your own OAuth Client ID (Web). Tokens stay in memory — never stored with your CRM data."
+        title={t('welcome.googleTitle2')}
+        sub={t('welcome.googleSub')}
         back={() => setPanel('home')}
       >
         <div className="flex flex-col gap-3">
@@ -353,13 +353,13 @@ export default function RegistrationScreen() {
             <li>Enable Calendar, People and Drive APIs</li>
           </ol>
           <div>
-            <div className="text-[11.5px] font-semibold mb-1" style={{ color: 'var(--faint)' }}>OAuth Client ID</div>
+            <div className="text-[11.5px] font-semibold mb-1" style={{ color: 'var(--faint)' }}>{t('welcome.clientId')}</div>
             <input className="input font-mono text-[12px]" value={cid} onChange={e => setCid(e.target.value)}
               placeholder="xxxx.apps.googleusercontent.com" autoComplete="off" />
           </div>
           <button type="button" className="btn btn-primary w-full justify-center" disabled={busy || !cid.trim()}
             onClick={doGoogle}>
-            {busy ? <Loader2 size={15} className="animate-spin" /> : <Cloud size={15} />} Save &amp; connect
+            {busy ? <Loader2 size={15} className="animate-spin" /> : <Cloud size={15} />} {t('welcome.saveConnect')}
           </button>
           <p className="text-[11px] leading-snug" style={{ color: 'var(--faint)' }}>
             After connecting you can set your name, then use Settings → Google hub for Contacts / Calendar / Drive.
@@ -373,8 +373,8 @@ export default function RegistrationScreen() {
   if (panel === 'gist') {
     return (
       <Shell
-        title="Multi-device sync via GitHub Gist"
-        sub="No Google needed. A private gist on your account carries the CRM between devices."
+        title={t('welcome.gistTitle2')}
+        sub={t('welcome.gistSub')}
         back={() => setPanel('home')}
       >
         <div className="flex flex-col gap-3">
@@ -385,13 +385,13 @@ export default function RegistrationScreen() {
             <li>Paste it below — we pull any existing sync file automatically</li>
           </ol>
           <div>
-            <div className="text-[11.5px] font-semibold mb-1" style={{ color: 'var(--faint)' }}>GitHub token (gist scope)</div>
+            <div className="text-[11.5px] font-semibold mb-1" style={{ color: 'var(--faint)' }}>{t('welcome.gistToken')}</div>
             <input className="input font-mono text-[12px]" type="password" value={tok}
               onChange={e => setTok(e.target.value)} placeholder="ghp_…" autoComplete="off" />
           </div>
           <button type="button" className="btn btn-primary w-full justify-center" disabled={busy || tok.trim().length < 20}
             onClick={doGist}>
-            {busy ? <Loader2 size={15} className="animate-spin" /> : <CloudUpload size={15} />} Save &amp; sync
+            {busy ? <Loader2 size={15} className="animate-spin" /> : <CloudUpload size={15} />} {t('welcome.saveSync')}
           </button>
           <p className="text-[11px] leading-snug" style={{ color: 'var(--faint)' }}>
             The token is kept in its own storage slot — never inside backups or exports.

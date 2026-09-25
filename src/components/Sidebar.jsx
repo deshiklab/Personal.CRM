@@ -4,9 +4,11 @@ import { useCrm } from '../store'
 import { BRAND, COPYRIGHT } from '../brand'
 import { daysUntil, tsRel } from '../lib'
 import { toneVar } from './ui'
+import { useT } from '../lib/i18n'
 
 export default function Sidebar({ open = false, onClose = () => {} }) {
   const {contacts, tasks, rules, gcal, followUpStatus, buildNotifications, profile, isRegistered } = useCrm()
+  const { t } = useT()
 
   const dueToday = tasks.filter(t => t.column !== 'done' && t.due && daysUntil(t.due) <= 0).length
   const overdue = contacts.filter(c => followUpStatus(c).state === 'overdue').length
@@ -17,26 +19,26 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
   const NAV_TIP = { '/': 'dashboard', '/notifications': 'inbox', '/follow-ups': 'followups' }
 
   const NAV = [
-    { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
-    { to: '/contacts', label: 'Contacts', icon: Users },
-    { to: '/tasks', label: 'Tasks', icon: CheckSquare, badge: dueToday, tone: '#fbbf24' },
-    { to: '/notes', label: 'Notes', icon: StickyNote },
-    { to: '/email', label: 'Email', icon: Mail },
-    { to: '/calendar', label: 'Calendar', icon: Calendar },
-    { to: '/birthdays', label: 'Birthdays', icon: Gift },
-    { to: '/follow-ups', label: 'Follow-Ups', icon: HeartHandshake, badge: overdue, tone: '#fb7185' },
-    { to: '/notifications', label: 'Inbox', icon: Bell, badge: unread, tone: '#f472b6' },
-    { to: '/groups', label: 'Groups', icon: UsersRound },
-    { to: '/graph', label: 'Network', icon: Network },
-    { to: '/analytics', label: 'Analytics', icon: BarChart3 },
-    { to: '/tags', label: 'Tags', icon: Tag },
-    { to: '/import', label: 'Import', icon: FileUp },
-    { to: '/history', label: 'History', icon: History },
-    { to: '/integrations', label: 'Integrations', icon: Plug },
-    { to: '/knowledge', label: 'Knowledge', icon: BookOpen },
-    { to: '/settings', label: 'Settings', icon: Settings2 },
-    { to: '/pro', label: 'Pro', icon: Crown },
-    { to: '/about', label: 'About', icon: Info },
+    { to: '/', label: t('nav.dashboard'), icon: LayoutDashboard, end: true },
+    { to: '/contacts', label: t('nav.contacts'), icon: Users },
+    { to: '/tasks', label: t('nav.tasks'), icon: CheckSquare, badge: dueToday, tone: '#fbbf24' },
+    { to: '/notes', label: t('nav.notes'), icon: StickyNote },
+    { to: '/email', label: t('nav.email'), icon: Mail },
+    { to: '/calendar', label: t('nav.calendar'), icon: Calendar },
+    { to: '/birthdays', label: t('nav.birthdays'), icon: Gift },
+    { to: '/follow-ups', label: t('nav.followups'), icon: HeartHandshake, badge: overdue, tone: '#fb7185' },
+    { to: '/notifications', label: t('nav.inbox'), icon: Bell, badge: unread, tone: '#f472b6' },
+    { to: '/groups', label: t('nav.groups'), icon: UsersRound },
+    { to: '/graph', label: t('nav.network'), icon: Network },
+    { to: '/analytics', label: t('nav.analytics'), icon: BarChart3 },
+    { to: '/tags', label: t('nav.tags'), icon: Tag },
+    { to: '/import', label: t('nav.import'), icon: FileUp },
+    { to: '/history', label: t('nav.history'), icon: History },
+    { to: '/integrations', label: t('nav.integrations'), icon: Plug },
+    { to: '/knowledge', label: t('nav.knowledge'), icon: BookOpen },
+    { to: '/settings', label: t('nav.settings'), icon: Settings2 },
+    { to: '/pro', label: t('nav.pro'), icon: Crown },
+    { to: '/about', label: t('nav.about'), icon: Info },
   ]
 
   return (
@@ -54,14 +56,16 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
         <div className="w-8 h-8 rounded-xl grid place-items-center text-[15px] font-black flex-none"
           style={{ background: 'linear-gradient(120deg,#818cf8,#38bdf8 55%,#34d399)', color: '#0a0c11', boxShadow: '0 4px 18px rgba(129,140,248,.35)' }}>⚡</div>
         <div className="block leading-tight min-w-0">
-          <div className="text-[14px] font-extrabold tracking-tight truncate">Personal CRM</div>
+          <div className="text-[14px] font-extrabold tracking-tight truncate">{t('app.name')}</div>
           <div className="text-[10.5px] font-semibold" style={{ color: 'var(--faint)' }}>
-            <span className="block truncate">{isRegistered ? `${profile.name.trim().split(/\s+/)[0]}'s workspace` : 'BiTsCol workspace'}</span>
+            <span className="block truncate">{isRegistered
+              ? t('app.workspace', { name: profile.name.trim().split(/\s+/)[0] })
+              : t('app.workspaceDefault')}</span>
           </div>
         </div>
       </div>
 
-      <nav aria-label="Primary" className="flex-1 overflow-y-auto p-2.5 flex flex-col gap-1">
+      <nav aria-label={t('nav.primary')} className="flex-1 overflow-y-auto p-2.5 flex flex-col gap-1">
         {NAV.map(n => (
           <NavLink key={n.to} to={n.to} end={n.end} onClick={onClose}
             data-tip={`nav.${NAV_TIP[n.to] || n.to.slice(1)}`}
@@ -82,14 +86,14 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
 
       <div className="p-3 block safe-bottom">
         <div className="card p-3">
-          <div className="text-[10.5px] font-bold uppercase tracking-[.08em] mb-2" style={{ color: 'var(--faint)' }}>Sync status</div>
+          <div className="text-[10.5px] font-bold uppercase tracking-[.08em] mb-2" style={{ color: 'var(--faint)' }}>{t('nav.syncStatus')}</div>
           <div className="flex items-center gap-2 text-[12px] font-semibold" style={{ color: gcal.connected ? 'var(--t-green)' : 'var(--t-amber)' }}>
             <span className="dot" style={{ background: gcal.connected ? '#34d399' : '#fbbf24' }} />
-            {gcal.connected ? `Google · ${tsRel(gcal.lastSync)}` : 'Google not connected'}
+            {gcal.connected ? t('nav.googleOk', { when: tsRel(gcal.lastSync) }) : t('nav.googleOff')}
           </div>
           <div className="flex items-center gap-2 text-[12px] mt-1.5" style={{ color: 'var(--muted)' }}>
             <span className="dot" style={{ background: enabledRules ? '#34d399' : '#6b7382' }} />
-            {enabledRules}/{rules.length} rules active
+            {t('nav.rulesActive', { n: enabledRules, total: rules.length })}
           </div>
         </div>
         <div className="mt-2.5 text-center leading-tight">

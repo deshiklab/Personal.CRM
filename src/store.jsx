@@ -92,7 +92,7 @@ export function CrmProvider({ children }) {
    * Both live with the rest of the data so they travel in every backup. */
   const [kbArticles, setKbArticles] = useState(init?.kbArticles || [])
   const [helpPrefs, setHelpPrefs]   = useState(init?.helpPrefs || {
-    tips: true, tourDone: false, tourStep: 0, tourStarted: false, onboardDone: false, seenPro: false, contactDensity: 'comfortable', bookmarks: [], votes: {}, seenVersion: '', demoChoiceDone: false, hasDemoData: true, welcomeSetup: null,
+    tips: true, tourDone: false, tourStep: 0, tourStarted: false, onboardDone: false, seenPro: false, contactDensity: 'comfortable', locale: 'en', bookmarks: [], votes: {}, seenVersion: '', demoChoiceDone: false, hasDemoData: true, welcomeSetup: null,
   })
   const [webhooks, setWebhooks]   = useState(init?.webhooks || {
     url: '', on: { lead: true, contact: false, task_done: true, touch: false }, log: [],
@@ -121,6 +121,11 @@ export function CrmProvider({ children }) {
     document.documentElement.dataset.theme = theme
     storage.setItem('pcrm-theme', theme)
   }, [theme])
+  useEffect(() => {
+    const loc = helpPrefs?.locale === 'bn' ? 'bn' : 'en'
+    try { document.documentElement.lang = loc === 'bn' ? 'bn' : 'en' } catch {}
+  }, [helpPrefs?.locale])
+
   const THEMES_FREE = ['dark', 'light']
   const THEMES_PRO = ['dark', 'light', 'ocean']
   const toggleTheme = () => {
@@ -536,6 +541,11 @@ export function CrmProvider({ children }) {
   }
   const deleteKbArticle = id => setKbArticles(list => list.filter(a => a.id !== id))
   const patchHelpPrefs = patch => setHelpPrefs(p => ({ ...p, ...(typeof patch === 'function' ? patch(p) : patch) }))
+  const setLocale = id => {
+    const loc = id === 'bn' ? 'bn' : 'en'
+    setHelpPrefs(p => ({ ...p, locale: loc }))
+    try { document.documentElement.lang = loc === 'bn' ? 'bn' : 'en' } catch {}
+  }
   const toggleBookmark = id => setHelpPrefs(p => ({
     ...p, bookmarks: (p.bookmarks || []).includes(id) ? p.bookmarks.filter(b => b !== id) : [id, ...(p.bookmarks || [])],
   }))
@@ -919,7 +929,7 @@ export function CrmProvider({ children }) {
     emails: [], googleClientId: '', gist: { token: '', gistId: null },
     icsFeeds: [], driveState: { fileId: null, lastBackup: null, lastRestore: null, lastContactsSync: null },
     syncState: null, lock: null, profile: null, kbArticles: [],
-    helpPrefs: { tips: true, tourDone: false, tourStep: 0, tourStarted: false, onboardDone: false, seenPro: false, contactDensity: 'comfortable', bookmarks: [], votes: {}, seenVersion: '', demoChoiceDone: true, hasDemoData: false, welcomeSetup: null },
+    helpPrefs: { tips: true, tourDone: false, tourStep: 0, tourStarted: false, onboardDone: false, seenPro: false, contactDensity: 'comfortable', locale: 'en', bookmarks: [], votes: {}, seenVersion: '', demoChoiceDone: true, hasDemoData: false, welcomeSetup: null },
     __blank: true,
   })
   /* Wipe sample/demo CRM rows but KEEP identity, lock, licence, sync tokens.
@@ -1508,7 +1518,7 @@ export function CrmProvider({ children }) {
     kbArticles, upsertKbArticle, deleteKbArticle,
     snapshots, takeSnapshotNow, restoreSnapshotById, deleteSnapshotById, downloadSnapshot, refreshSnapshots,
     pinStatus, PIN_FREE_ATTEMPTS,
-    helpPrefs, patchHelpPrefs, toggleBookmark, voteArticle,
+    helpPrefs, patchHelpPrefs, setLocale, toggleBookmark, voteArticle,
     license, isPro, can, unlockWithKey, unlockComp, restorePurchases, refreshLicense, purchaseProLifetime, billingAvailable, getProProduct, FREE_LIMITS: ent.FREE_LIMITS, PRO_FEATURES: ent.PRO_FEATURES, tierLabel: () => ent.tierLabel(license)
   }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

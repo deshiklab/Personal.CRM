@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { X, ArrowRight, ArrowLeft, Compass, Sparkles, Eraser, Loader2 } from 'lucide-react'
 import { TOUR_STEPS } from '../lib/kb'
 import { useCrm } from '../store'
+import { useT } from '../lib/i18n'
 
 /* ═════════════════════════════════════════════════════════════════════════════
  * Guided tour — spotlight one control at a time and explain it.
@@ -36,6 +37,7 @@ const resolve = sel => {
 
 export default function Tour({ autoStart = false }) {
   const { helpPrefs, patchHelpPrefs, clearDemoData, keepDemoData, contacts } = useCrm()
+  const { t } = useT()
   const [step, setStep] = useState(-1)          // -1 = not running
   const [rect, setRect] = useState(null)
   const [card, setCard] = useState({ x: 0, y: 0, side: 'bottom' })
@@ -193,7 +195,7 @@ export default function Tour({ autoStart = false }) {
                     <div className="text-[13.5px] font-extrabold">{s.title}</div>
                     <div className="text-[12px] mt-1 leading-snug" style={{ color: 'var(--muted)' }}>{s.body}</div>
                   </div>
-                  <button className="icon-btn flex-none" onClick={() => stop()} aria-label="Close tour">
+                  <button className="icon-btn flex-none" onClick={() => stop()} aria-label={t('tour.close')}>
                     <X size={13} />
                   </button>
                 </div>
@@ -210,7 +212,7 @@ export default function Tour({ autoStart = false }) {
                     <button className="btn btn-ghost btn-sm" onClick={() => setStep(s => s - 1)}><ArrowLeft size={12} /></button>
                   )}
                   <button className="btn btn-primary btn-sm" onClick={() => (step + 1 >= TOUR_STEPS.length ? finish() : setStep(s => s + 1))}>
-                    {step + 1 >= TOUR_STEPS.length ? 'Done' : 'Next'} <ArrowRight size={12} />
+                    {step + 1 >= TOUR_STEPS.length ? t('tour.done') : t('tour.next')} <ArrowRight size={12} />
                   </button>
                 </div>
               </div>
@@ -231,12 +233,10 @@ export default function Tour({ autoStart = false }) {
               </div>
               <div className="min-w-0">
                 <h2 id="demo-choice-title" className="text-[16px] font-extrabold leading-snug">
-                  Keep exploring, or start blank?
+                  {t('tour.demoTitle')}
                 </h2>
                 <p className="text-[12.5px] mt-1.5 leading-snug" style={{ color: 'var(--muted)' }}>
-                  The people, tasks and notes you just saw are <b style={{ color: 'var(--text)' }}>sample data</b> —
-                  fictional names and numbers so the app feels alive on first open.
-                  Your profile and pincode stay either way.
+                  {t('tour.demoBody')}
                 </p>
               </div>
             </div>
@@ -247,9 +247,9 @@ export default function Tour({ autoStart = false }) {
                 disabled={busy} onClick={onKeepDemo}>
                 <Sparkles size={16} className="flex-none" />
                 <span className="flex-1 text-left">
-                  <span className="block text-[13.5px] font-extrabold">Continue with demo data</span>
+                  <span className="block text-[13.5px] font-extrabold">{t('tour.keep')}</span>
                   <span className="block text-[11.5px] font-medium opacity-80 mt-0.5">
-                    Keep learning with the sample network. Wipe later in Settings anytime.
+                    {t('tour.keepSub')}
                   </span>
                 </span>
               </button>
@@ -259,16 +259,16 @@ export default function Tour({ autoStart = false }) {
                 disabled={busy} onClick={onWipeDemo}>
                 {busy ? <Loader2 size={16} className="animate-spin flex-none" /> : <Eraser size={16} className="flex-none" />}
                 <span className="flex-1 text-left">
-                  <span className="block text-[13.5px] font-extrabold">Reset — wipe demo data</span>
+                  <span className="block text-[13.5px] font-extrabold">{t('tour.wipe')}</span>
                   <span className="block text-[11.5px] font-medium mt-0.5" style={{ color: 'var(--muted)' }}>
-                    Empty CRM. Ready for your real contacts, tasks and notes.
+                    {t('tour.wipeSub')}
                   </span>
                 </span>
               </button>
             </div>
 
             <p className="text-[10.5px] text-center mt-4 leading-snug" style={{ color: 'var(--faint)' }}>
-              This choice only appears once after the guided tour on a fresh install.
+              {t('tour.once')}
             </p>
           </div>
         </div>,

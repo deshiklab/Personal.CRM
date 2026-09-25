@@ -17,7 +17,7 @@ Phase 2 made the app **sellable**. Phase 3 is **delight + distribution** once Pl
 | ~~Contact density / compact list~~ | Contacts Comfort / Compact toggle (persisted) | done |
 | ~~Export full backup encrypt (PIN-derived)~~ | AES-GCM `.pcrm.json` · Settings Encrypted backup | done |
 | iOS shell (Capacitor) | Second store; StoreKit already in Capgo path | L |
-| Locale pack (bn / en) | BD home market + export | M |
+| ~~Locale pack (bn / en)~~ | Settings Language · `en`/`bn` catalogs · chrome + welcome + tour | done |
 | ~~Widget: “who to call today”~~ | Dashboard widget `callToday` — overdue / due-soon queue with Call | done |
 | ~~Blocklist of revoked key payload hashes~~ | `KEY_BLOCKLIST` in entitlements + mint fingerprints | done |
 

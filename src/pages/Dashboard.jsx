@@ -5,6 +5,7 @@ import { SectionHead, Card } from '../components/ui'
 import { Link } from 'react-router-dom'
 import { WIDGET_META, WIDGET_COMPONENTS } from '../components/dashboardWidgets'
 import { cn } from '../lib'
+import { useT } from '../lib/i18n'
 
 export default function Dashboard() {
   const {
@@ -12,6 +13,7 @@ export default function Dashboard() {
     profile, isRegistered, helpPrefs, patchHelpPrefs, contacts, lock,
     tasks, notes, isPro, snapshots, reminderPrefs,
   } = useCrm()
+  const { t } = useT()
   const firstName = isRegistered ? (profile.name.trim().split(/\s+/)[0] || 'there') : 'BiTsCol'
   const [edit, setEdit] = useState(false)
 
@@ -20,29 +22,29 @@ export default function Dashboard() {
     const snapOk = (snapshots?.length || 0) > 0
     const remOk = !!(reminderPrefs?.permission === 'granted' && reminderPrefs?.enabled !== false && isPro?.())
     return [
-      { id: 'person', n: 1, icon: UserPlus, title: 'Add a person',
-        body: contacts.length ? `${contacts.length} in your network` : 'Name, how you know them, stay-in-touch rhythm.',
+      { id: 'person', n: 1, icon: UserPlus, title: t('dash.stepPerson'),
+        body: contacts.length ? t('dash.stepPersonDone', { n: contacts.length }) : t('dash.stepPersonBody'),
         to: '/contacts?new=1', done: contacts.length > 0 },
-      { id: 'task', n: 2, icon: CheckSquare, title: 'Capture a task or note',
-        body: hasTaskOrNote ? 'You have items on the board.' : 'Quick Capture (⚡) or Tasks / Notes.',
+      { id: 'task', n: 2, icon: CheckSquare, title: t('dash.stepTask'),
+        body: hasTaskOrNote ? t('dash.stepTaskDone') : t('dash.stepTaskBody'),
         to: '/tasks', done: hasTaskOrNote },
-      { id: 'pin', n: 3, icon: Shield, title: 'Turn on a pincode',
-        body: lock?.hash ? 'App lock is on.' : 'Optional — stops a borrowed phone reading your network.',
+      { id: 'pin', n: 3, icon: Shield, title: t('dash.stepPin'),
+        body: lock?.hash ? t('dash.stepPinDone') : t('dash.stepPinBody'),
         to: '/settings', done: !!lock?.hash },
-      { id: 'snap', n: 4, icon: Camera, title: 'Take a safety-net snapshot',
-        body: snapOk ? 'You can roll back from Settings.' : 'Settings → Safety net → Take snapshot now.',
+      { id: 'snap', n: 4, icon: Camera, title: t('dash.stepSnap'),
+        body: snapOk ? t('dash.stepSnapDone') : t('dash.stepSnapBody'),
         to: '/settings', done: snapOk },
-      { id: 'kb', n: 5, icon: BookOpen, title: 'Open the knowledge base',
-        body: 'Short articles and a guided tour of every screen.',
+      { id: 'kb', n: 5, icon: BookOpen, title: t('dash.stepKb'),
+        body: t('dash.stepKbBody'),
         to: '/knowledge', done: !!helpPrefs?.tourDone },
-      { id: 'pro', n: 6, icon: Crown, title: 'Know Free vs Pro',
-        body: isPro?.() ? 'Pro is unlocked on this device.' : 'One-time unlock — reminders, unlimited contacts, auto backups.',
+      { id: 'pro', n: 6, icon: Crown, title: t('dash.stepPro'),
+        body: isPro?.() ? t('dash.stepProDone') : t('dash.stepProBody'),
         to: '/pro', done: !!isPro?.() || !!helpPrefs?.seenPro },
-      { id: 'remind', n: 7, icon: Bell, title: 'Arm device reminders (Pro)',
-        body: remOk ? 'OS nudges are armed.' : 'Inbox → Device reminders — local only, no account.',
+      { id: 'remind', n: 7, icon: Bell, title: t('dash.stepRemind'),
+        body: remOk ? t('dash.stepRemindDone') : t('dash.stepRemindBody'),
         to: '/notifications', done: remOk },
     ]
-  }, [contacts, tasks, notes, lock, snapshots, helpPrefs, isPro, reminderPrefs])
+  }, [contacts, tasks, notes, lock, snapshots, helpPrefs, isPro, reminderPrefs, t])
 
   const onboardDoneCount = onboardSteps.filter(s => s.done).length
   const onboardTotal = onboardSteps.length
@@ -62,22 +64,22 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-[1200px] mx-auto">
-      <SectionHead kicker="Overview" title={<>Good day, <span className="grad-text">{firstName}</span> 👋</>}
-        sub="Reorder with arrows, hide what you don't need — your layout is saved."
+      <SectionHead kicker={t('dash.kicker')} title={<>{t('dash.greeting', { name: firstName })} <span className="grad-text">👋</span></>}
+        sub={t('dash.sub')}
         right={edit ? (
           <>
-            <button className="btn btn-ghost btn-sm" onClick={() => { resetWidgets(); }}><RotateCcw size={13} /> Reset layout</button>
-            <button className="btn btn-primary btn-sm" onClick={() => setEdit(false)}>Done</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { resetWidgets(); }}><RotateCcw size={13} /> {t('dash.resetLayout')}</button>
+            <button className="btn btn-primary btn-sm" onClick={() => setEdit(false)}>{t('dash.done')}</button>
           </>
         ) : (
-          <button className="btn btn-ghost btn-sm" onClick={() => setEdit(true)}><Settings2 size={13} /> Customize</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => setEdit(true)}><Settings2 size={13} /> {t('dash.customize')}</button>
         )} />
 
 
       {/* First-run checklist — dismissed once (or when all steps done) */}
       {!helpPrefs?.onboardDone && (
-        <Card className="p-4 sm:p-5 mb-5 relative overflow-hidden" data-tour="onboard" role="region" aria-label="Getting started checklist">
-          <button type="button" className="icon-btn absolute top-3 right-3" title="Dismiss checklist" aria-label="Dismiss checklist"
+        <Card className="p-4 sm:p-5 mb-5 relative overflow-hidden" data-tour="onboard" role="region" aria-label={t('dash.gettingStarted')}>
+          <button type="button" className="icon-btn absolute top-3 right-3" title={t('dash.dismiss')} aria-label={t('dash.dismiss')}
             onClick={() => patchHelpPrefs({ onboardDone: true })}>
             <X size={14} />
           </button>
@@ -87,13 +89,13 @@ export default function Dashboard() {
               <Sparkles size={18} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[14px] font-bold tracking-tight">Getting started</div>
+              <div className="text-[14px] font-bold tracking-tight">{t('dash.gettingStarted')}</div>
               <p className="text-[12.5px] mt-0.5 leading-snug" style={{ color: 'var(--muted)' }}>
-                Everything stays on this device. No account. Closed testers: tick these once so we know the build is healthy.
+                {t('dash.gettingStartedBody')}
               </p>
               <div className="mt-2.5 flex items-center gap-2.5">
                 <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--chipbg)' }} role="progressbar"
-                  aria-valuenow={onboardDoneCount} aria-valuemin={0} aria-valuemax={onboardTotal} aria-label="Checklist progress">
+                  aria-valuenow={onboardDoneCount} aria-valuemin={0} aria-valuemax={onboardTotal} aria-label={t('dash.checklistProgress')}>
                   <div className="h-full rounded-full transition-all" style={{ width: `${onboardPct}%`, background: 'linear-gradient(90deg,var(--i1),var(--i2))' }} />
                 </div>
                 <span className="text-[11px] font-bold flex-none" style={{ color: 'var(--faint)' }}>{onboardDoneCount}/{onboardTotal}</span>
@@ -125,10 +127,10 @@ export default function Dashboard() {
           </ol>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <button type="button" className="btn btn-ghost btn-sm" onClick={() => window.dispatchEvent(new CustomEvent('crm:tour'))}>
-              Take the guided tour
+              {t('dash.tour')}
             </button>
             <button type="button" className="btn btn-ghost btn-sm" onClick={() => patchHelpPrefs({ onboardDone: true })}>
-              Got it — hide this
+              {t('dash.hideChecklist')}
             </button>
           </div>
         </Card>
@@ -159,7 +161,7 @@ export default function Dashboard() {
 
       {edit && widgetPrefs.hidden.length > 0 && (
         <div className="card p-4 mt-6" style={{ borderStyle: 'dashed' }}>
-          <div className="text-[10.5px] font-bold uppercase tracking-[.1em] mb-2" style={{ color: 'var(--faint)' }}>Hidden widgets — tap to bring back</div>
+          <div className="text-[10.5px] font-bold uppercase tracking-[.1em] mb-2" style={{ color: 'var(--faint)' }}>{t('dash.hiddenWidgets')}</div>
           <div className="flex gap-1.5 flex-wrap">
             {widgetPrefs.hidden.map(id => WIDGET_META[id] && (
               <button key={id} className="chip chip-btn" onClick={() => toggleWidget(id)}><Plus size={11} /> {WIDGET_META[id].title}</button>
@@ -168,7 +170,7 @@ export default function Dashboard() {
         </div>
       )}
       {edit && widgetPrefs.hidden.length === 0 && (
-        <div className="text-center text-[12px] mt-6" style={{ color: 'var(--faint)' }}>All widgets are visible — hide some to declutter.</div>
+        <div className="text-center text-[12px] mt-6" style={{ color: 'var(--faint)' }}>{t('dash.allVisible')}</div>
       )}
     </div>
   )

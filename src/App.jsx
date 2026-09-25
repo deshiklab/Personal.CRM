@@ -31,6 +31,7 @@ import KnowledgeBase from './pages/KnowledgeBase'
 import TooltipHost from './components/Tooltip'
 import ShortcutsOverlay from './components/ShortcutsOverlay'
 import Tour from './components/Tour'
+import { I18nProvider } from './lib/i18n'
 import { useNavigate } from 'react-router-dom'
 
 /* Support diagnostic — add ?simulate-crash anywhere in the URL and this throws
@@ -44,11 +45,24 @@ const CrashProbe = () => {
 }
 
 export default function App() {
-  const { lock, sessionUnlocked, profile } = useCrm()
+  const { lock, sessionUnlocked, profile, helpPrefs, setLocale } = useCrm()
   const { pathname } = useLocation()
   const [navOpen, setNavOpen] = useState(false)
   const navigate = useNavigate()
-  const { helpPrefs } = useCrm() || {}
+  const shell = <AppShell navOpen={navOpen} setNavOpen={setNavOpen} pathname={pathname} helpPrefs={helpPrefs} />
+  /* locale wraps every gate so Welcome / Lock / main all translate */
+  return (
+    <I18nProvider locale={helpPrefs?.locale || 'en'} setLocale={setLocale}>
+      {!profile ? <RegistrationScreen /> :
+       !lock ? <LockScreen mode="setup" /> :
+       (lock.hash && !sessionUnlocked) ? <LockScreen mode="unlock" /> :
+       shell}
+    </I18nProvider>
+  )
+}
+
+function AppShell({ navOpen, setNavOpen, pathname, helpPrefs }) {
+  const navigate = useNavigate()
   /* never leave the mobile drawer hanging across a route change */
   useEffect(() => { setNavOpen(false) }, [pathname])
 
@@ -75,13 +89,6 @@ export default function App() {
     window.addEventListener('keydown', onKey)
     return () => { window.removeEventListener('keydown', onKey); clearTimeout(timer) }
   }, [navigate])
-  /* gate order: register (first launch, skippable) → pincode setup → unlock.
-     Registration comes first so the owner notification carries a real name. */
-  if (!profile) return <RegistrationScreen />
-  /* pincode gate: setup is offered on FIRST launch (skippable), unlock is
-     required every start (in-memory session, auto-relocks when idle) */
-  if (!lock) return <LockScreen mode="setup" />
-  if (lock.hash && !sessionUnlocked) return <LockScreen mode="unlock" />
   return (
     <div className="flex h-screen overflow-hidden">
       <a href="#main-content" className="skip-link">Skip to main content</a>

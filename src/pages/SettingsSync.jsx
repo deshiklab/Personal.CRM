@@ -26,6 +26,7 @@ export default function SettingsSync() {
       <SectionHead kicker="Roadmap #9" title="Settings & Sync"
         sub="Connections, sync rules with per-rule conflict strategy, and a full audit trail." />
       <IdentityCard />
+      <LanguageCard />
       <SafetyNetCard />
       <GistSyncCard />
       <GoogleHub />
@@ -517,6 +518,7 @@ function GistSyncCard() {
 import IdentityCard from './settings/IdentityCard'
 import SafetyNetCard from './settings/SafetyNetCard'
 import SupportCard from './settings/SupportCard'
+import LanguageCard from './settings/LanguageCard'
 
 
 /* Hoisted to module scope: a component declared inside another one is a new
