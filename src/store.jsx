@@ -11,6 +11,7 @@ import * as secrets from './lib/secrets'
 import * as storage from './lib/storage'
 import * as ent from './lib/entitlements'
 import * as billing from './lib/billing'
+import * as secureBackup from './lib/secureBackup'
 import * as reminders from './lib/reminders'
 
 const KEY = 'pcrm-v1'
@@ -528,6 +529,38 @@ export function CrmProvider({ children }) {
     data: { contacts, tasks, events, notes, tags, groups, rules, relFreq, audit, activity, imports, snoozes, notifState, notifPrefs, widgetPrefs, mailboxes, emails, profile, kbArticles, helpPrefs },
   })
   const buildBackup = () => JSON.stringify(buildBackupObject(), null, 2)
+
+  /** AES-GCM envelope download. passphrase = app PIN or any phrase ≥4 chars. */
+  const exportEncryptedBackup = async (passphrase, { hint } = {}) => {
+    try {
+      const env = await secureBackup.encryptBackup(buildBackupObject(), passphrase, { hint })
+      const name = `personal-crm-backup-${new Date().toISOString().slice(0, 10)}.pcrm.json`
+      secureBackup.downloadJsonFile(env, name)
+      logAudit('user', 'Encrypted backup downloaded', name, 'AES-GCM · PBKDF2 · local only')
+      toast('🔒 Encrypted backup downloaded — remember the passphrase')
+      return true
+    } catch (e) {
+      toast(String(e?.message || e), 'warn')
+      return false
+    }
+  }
+
+  /** Restore plain JSON or encrypted .pcrm.json (passphrase required for enc). */
+  const restoreBackupFile = async (parsed, passphrase) => {
+    try {
+      let obj = parsed
+      if (secureBackup.isEncryptedBackup(parsed)) {
+        obj = await secureBackup.decryptBackup(parsed, passphrase)
+      } else if (!secureBackup.isPlainBackup(parsed)) {
+        toast('That file is not a Personal CRM backup', 'warn')
+        return false
+      }
+      return restoreAll(obj)
+    } catch (e) {
+      toast(String(e?.message || e), 'warn')
+      return false
+    }
+  }
 
   const driveBackupNow = async () => {
     const json = buildBackup()
@@ -1390,7 +1423,7 @@ export function CrmProvider({ children }) {
     mailboxes, emails, connectMailbox, disconnectMailbox, syncMailbox, logEmailTouch, triageEmailAsLead, ignoreEmail,
     googleClientId, googleMode, saveGoogleClientId, connectGoogleLive, syncGoogleCalendar, syncGoogleContacts,
     driveState, driveBackupNow, driveRestoreNow, restoreAll, disconnectGoogle,
-    webhooks, saveWebhooks, testWebhook, icsFeeds, addIcsFeed, syncIcsFeed, removeIcsFeed, syncing, syncState, syncReport, syncNow, setSyncEnabled, gist, saveGistToken, syncProvider, lock, sessionUnlocked, setupPin, skipPinSetup, unlockWithPin, lockNow, changePin, removePin, verifyPin, factoryReset, buildBackup,
+    webhooks, saveWebhooks, testWebhook, icsFeeds, addIcsFeed, syncIcsFeed, removeIcsFeed, syncing, syncState, syncReport, syncNow, setSyncEnabled, gist, saveGistToken, syncProvider, lock, sessionUnlocked, setupPin, skipPinSetup, unlockWithPin, lockNow, changePin, removePin, verifyPin, factoryReset, buildBackup, exportEncryptedBackup, restoreBackupFile,
     commitImport, rollbackImport, resolveAuditConflict, updateFrequency, snoozeFollowUp, unsnooze, resetAll,
     notifState, notifPrefs, buildNotifications, dismissNotif, snoozeNotif, unsnoozeNotif, markNotifRead, markAllNotifsRead, toggleNotifPref,
     reminderPrefs, patchReminderPrefs, requestReminderPermission, sendTestReminder, resyncReminders,

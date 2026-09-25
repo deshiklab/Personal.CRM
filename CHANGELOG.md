@@ -2,6 +2,11 @@
 
 ## 2.0.0 — Phase 2 · Make it sellable (2026-09-25)
 
+### Encrypted backup
+- AES-256-GCM export (PBKDF2 210k) — PIN or passphrase
+- Settings → Encrypted backup… / restore auto-detects `pcrm-enc-v1`
+- `docs/ENCRYPTED-BACKUP.md`
+
 ### Density + key revoke
 - Contacts: Comfort / Compact list density (persisted in helpPrefs)
 - Offline `KEY_BLOCKLIST` for revoked licence payloads; mint-keys CSV includes payload id

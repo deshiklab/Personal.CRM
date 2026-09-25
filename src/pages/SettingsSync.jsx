@@ -531,14 +531,20 @@ function PinRow({ v, set, ph }) {
 
 /* ── App lock (pincode) + local download/restore + PIN-confirmed blank reset ── */
 function AppLockCard() {
-  const { lock, setupPin, changePin, removePin, factoryReset, buildBackup, restoreAll, toast, lockNow } = useCrm()
-  const [modal, setModal] = useState('')      // 'set' | 'change' | 'remove' | 'wipe'
+  const {
+    lock, setupPin, changePin, removePin, factoryReset, buildBackup, restoreAll,
+    exportEncryptedBackup, restoreBackupFile, toast, lockNow,
+  } = useCrm()
+  const [modal, setModal] = useState('')      // 'set' | 'change' | 'remove' | 'wipe' | 'enc-export' | 'enc-import'
   const [a, setA] = useState('')              // first/new pin
   const [b, setB] = useState('')              // confirm new pin
   const [oldPin, setOldPin] = useState('')    // current pin
+  const [pass, setPass] = useState('')        // encrypted backup passphrase
+  const [pass2, setPass2] = useState('')
+  const [pendingFile, setPendingFile] = useState(null) // parsed JSON waiting for passphrase
   const [busy, setBusy] = useState(false)
   const fileRef = { current: null }
-  const close = () => { setModal(''); setA(''); setB(''); setOldPin('') }
+  const close = () => { setModal(''); setA(''); setB(''); setOldPin(''); setPass(''); setPass2(''); setPendingFile(null) }
   const hasPin = !!lock?.hash
   const valid = a.length >= 4 && b.length >= 4
 
@@ -551,10 +557,44 @@ function AppLockCard() {
     toast('⬇️ Full data downloaded as JSON — keep it somewhere safe')
   }
 
+  const downloadEncrypted = async () => {
+    const phrase = (pass || oldPin || '').trim()
+    if (pass) {
+      if (pass.length < 4) return toast('Passphrase must be at least 4 characters', 'warn')
+      if (pass !== pass2) return toast('Passphrases do not match', 'warn')
+    } else if (oldPin) {
+      if (oldPin.length < 4) return toast('Pincode must be at least 4 digits', 'warn')
+    } else {
+      return toast(hasPin ? 'Enter your pincode or a passphrase' : 'Enter a passphrase (at least 4 characters)', 'warn')
+    }
+    setBusy(true)
+    const ok = await exportEncryptedBackup(phrase, { hint: pass ? undefined : (hasPin ? 'app-pin' : undefined) })
+    setBusy(false)
+    if (ok) close()
+  }
+
   const restoreFile = f => {
     const r = new FileReader()
-    r.onload = () => { try { restoreAll(JSON.parse(r.result)) } catch { toast('Could not parse that backup file', 'warn') } }
+    r.onload = async () => {
+      let parsed
+      try { parsed = JSON.parse(r.result) } catch { toast('Could not parse that backup file', 'warn'); return }
+      if (parsed?.format === 'pcrm-enc-v1') {
+        setPendingFile(parsed)
+        setModal('enc-import')
+        return
+      }
+      try { restoreAll(parsed) } catch { toast('Could not restore that backup', 'warn') }
+    }
     r.readAsText(f)
+  }
+
+  const okEncImport = async () => {
+    if (!pendingFile) return
+    if (!pass || pass.length < 4) return toast('Enter the passphrase', 'warn')
+    setBusy(true)
+    const ok = await restoreBackupFile(pendingFile, pass)
+    setBusy(false)
+    if (ok) close()
   }
 
   const okSet = async () => {
@@ -614,9 +654,13 @@ function AppLockCard() {
       <div className="mt-4 pt-4 flex flex-wrap items-center gap-2" style={{ borderTop: '1px dashed var(--border)' }}>
         <div className="text-[12.5px] font-extrabold w-full mb-1">Local data (no account needed)</div>
         <button className="btn btn-primary btn-sm" onClick={download} data-tip="settings.backup"><CloudDownload size={13} /> Download all data (.json)</button>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setModal('enc-export')}
+          title="AES-GCM file locked with your PIN or a passphrase">
+          <Lock size={13} /> Encrypted backup…
+        </button>
         <label className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }}>
           <Upload size={13} /> Restore from a data file…
-          <input ref={el => { fileRef.current = el }} type="file" accept=".json,application/json" className="hidden"
+          <input ref={el => { fileRef.current = el }} type="file" accept=".json,application/json,.pcrm.json" className="hidden"
             onChange={e => { const f = e.target.files?.[0]; if (f) restoreFile(f); e.target.value = '' }} />
         </label>
         <span className="text-[10.5px]" style={{ color: 'var(--faint)' }}>Same format as Drive backup. Works fully offline.</span>
@@ -690,6 +734,59 @@ function AppLockCard() {
             <button className="btn btn-ghost btn-sm" onClick={close}>Cancel</button>
             <button className="btn btn-danger btn-sm" disabled={(hasPin && !oldPin) || busy} onClick={okWipe}>
               {busy ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />} Wipe everything
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={modal === 'enc-export'} onClose={close} title="Encrypted backup">
+        <div className="flex flex-col gap-3">
+          <p className="text-[12.5px] leading-relaxed" style={{ color: 'var(--muted)' }}>
+            Downloads an <b style={{ color: 'var(--text)' }}>AES-GCM</b> file (<span className="font-mono text-[11px]">.pcrm.json</span>).
+            Nobody can open it without the passphrase — including BITSCOL. If you forget it, the file is gone for good.
+          </p>
+          {hasPin && (
+            <div>
+              <div className="text-[11.5px] font-semibold mb-1" style={{ color: 'var(--faint)' }}>Use app pincode</div>
+              <PinRow v={oldPin} set={setOldPin} ph="App pincode" />
+              <p className="text-[11px] mt-1" style={{ color: 'var(--faint)' }}>Or leave blank and set a separate passphrase below.</p>
+            </div>
+          )}
+          <div>
+            <div className="text-[11.5px] font-semibold mb-1" style={{ color: 'var(--faint)' }}>Passphrase {hasPin ? '(optional if pincode set)' : '(required)'}</div>
+            <input className="input" type="password" autoComplete="new-password" value={pass}
+              onChange={e => setPass(e.target.value)} placeholder="At least 4 characters" />
+          </div>
+          <div>
+            <div className="text-[11.5px] font-semibold mb-1" style={{ color: 'var(--faint)' }}>Repeat passphrase</div>
+            <input className="input" type="password" autoComplete="new-password" value={pass2}
+              onChange={e => setPass2(e.target.value)} placeholder="Same again" disabled={!pass} />
+          </div>
+          <div className="flex justify-end gap-2 mt-1">
+            <button type="button" className="btn btn-ghost btn-sm" onClick={close}>Cancel</button>
+            <button type="button" className="btn btn-primary btn-sm" disabled={busy} onClick={downloadEncrypted}>
+              {busy ? <Loader2 size={13} className="animate-spin" /> : <Lock size={13} />} Download encrypted
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={modal === 'enc-import'} onClose={close} title="Unlock encrypted backup">
+        <div className="flex flex-col gap-3">
+          <p className="text-[12.5px] leading-relaxed" style={{ color: 'var(--muted)' }}>
+            This file is encrypted. Enter the passphrase (or app pincode) used when it was exported.
+            {pendingFile?.hint ? <> Hint: <b style={{ color: 'var(--text)' }}>{pendingFile.hint}</b></> : null}
+          </p>
+          <div>
+            <div className="text-[11.5px] font-semibold mb-1" style={{ color: 'var(--faint)' }}>Passphrase</div>
+            <input className="input" type="password" autoComplete="off" value={pass}
+              onChange={e => setPass(e.target.value)} placeholder="Passphrase or pincode"
+              onKeyDown={e => e.key === 'Enter' && okEncImport()} />
+          </div>
+          <div className="flex justify-end gap-2 mt-1">
+            <button type="button" className="btn btn-ghost btn-sm" onClick={close}>Cancel</button>
+            <button type="button" className="btn btn-primary btn-sm" disabled={busy || !pass} onClick={okEncImport}>
+              {busy ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />} Decrypt & restore
             </button>
           </div>
         </div>

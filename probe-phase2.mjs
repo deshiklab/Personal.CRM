@@ -37,6 +37,7 @@ ok('mint-keys script present', fs.existsSync(path.join(__dirname, 'scripts/mint-
 ok('bundle gates advanced analytics / graph export', /advanced_analytics|graph_export|Longer windows on Pro|Export SVG|Ocean/.test(bundle))
 ok('bundle has getting-started checklist', /Getting started|onboardSteps|Who to call today|callToday/.test(bundle))
 ok('bundle has contact density + key blocklist', /contactDensity|KEY_BLOCKLIST|Compact|Comfort/.test(bundle))
+ok('bundle has encrypted backup', /pcrm-enc-v1|exportEncryptedBackup|Encrypted backup|secureBackup|AES-GCM/.test(bundle))
 
 await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 60000 })
 await page.waitForTimeout(800)
