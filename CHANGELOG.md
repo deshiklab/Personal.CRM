@@ -2,6 +2,10 @@
 
 ## 2.0.0 — Phase 2 · Make it sellable (2026-09-25)
 
+### Ops pack refresh
+- `docs/OPS-LAUNCH.md` owner day-1 sequence · Phase 3 complete status
+- Store listing release notes + Pro screen App Store/Play labels
+
 ### iOS shell
 - Capacitor `ios/` project (bundle `com.bitscol.personalcrm`, iOS 15+)
 - StoreKit lifetime Pro via `@capgo/native-purchases` (same product id as Play)

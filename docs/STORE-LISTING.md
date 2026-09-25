@@ -31,7 +31,7 @@ PRO — ONE-TIME (no subscription)
 • Automatic rolling backups
 • Advanced analytics & network graph export
 • Extra themes · full history
-Buy once on Google Play, or redeem a web licence key. Unlock is verified on-device.
+Buy once on Google Play (Android) or the App Store (iOS), or redeem a web licence key. Unlock is verified on-device.
 
 WHY BITSCOL BUILT THIS
 Most CRMs are built for sales teams and company servers. Personal CRM is built for humans who want to remember people — mentors, clients, family — without feeding an ad network.
@@ -93,9 +93,10 @@ Already in `android/app/src/main/res/mipmap-*` and `public/icons/`. Play needs 5
 
 ```
 Personal CRM 2.0.0
-• Pro lifetime unlock via Play Billing (one-time)
+• Pro lifetime unlock via Play Billing / StoreKit (one-time)
 • Local device reminders for tasks, follow-ups, birthdays
-• Faster contacts list (thousands of people)
-• Accessibility: skip link, focus rings, reduced motion
+• Encrypted backup (PIN/passphrase) · Welcome restore / Gist / Google
+• English + বাংলা · contact density · offline key revoke list
+• Faster contacts list · a11y skip link & focus rings
 • Visiting-card scan, offline-first core
 ```

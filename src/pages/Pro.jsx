@@ -199,10 +199,10 @@ export default function Pro() {
           <Card className="p-5">
             <div className="flex items-center gap-2 mb-2">
               <Smartphone size={16} style={{ color: 'var(--t-sky)' }} />
-              <div className="font-bold text-[14px]">Google Play</div>
+              <div className="font-bold text-[14px]">App Store / Google Play</div>
               {playOk
                 ? <Pill color="#34d399">Billing ready</Pill>
-                : <Pill color="#94a3b8">{playOk ? 'Store ready' : 'App Store / Play'}</Pill>}
+                : <Pill color="#94a3b8">App Store / Play</Pill>}
             </div>
             <p className="text-[12.5px] leading-relaxed mb-3" style={{ color: 'var(--muted)' }}>
               Lifetime unlock as a one-time in-app product
@@ -283,13 +283,13 @@ export default function Pro() {
             {license.licenseKey && (
               <div className="sm:col-span-2 break-all">Key · <span className="font-mono text-[11px]">{license.licenseKey}</span></div>
             )}
-            {license.source === 'play' && license.play?.transactionId && (
-              <div className="sm:col-span-2 break-all">Play order · <span className="font-mono text-[11px]">{license.play.transactionId}</span></div>
+            {(license.source === 'play' || license.source === 'appstore') && license.play?.transactionId && (
+              <div className="sm:col-span-2 break-all">{license.source === 'appstore' ? 'App Store' : 'Play'} order · <span className="font-mono text-[11px]">{license.play.transactionId}</span></div>
             )}
           </div>
           <p className="text-[12px] mt-3 leading-snug" style={{ color: 'var(--faint)' }}>
             A factory reset of CRM data does <b style={{ color: 'var(--text)' }}>not</b> remove this unlock.
-            Only wiping the whole app storage (or uninstalling) clears it — keep your key or Play account safe.
+            Only wiping the whole app storage (or uninstalling) clears it — keep your key or store account safe.
           </p>
         </Card>
       )}

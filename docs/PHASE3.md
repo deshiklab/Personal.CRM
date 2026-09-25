@@ -2,12 +2,18 @@
 
 Phase 2 made the app **sellable**. Phase 3 is **delight + distribution** once Play closed test is running.
 
-## Do first (ops — outside the repo)
+## Product status
+
+**All Phase 3 product candidates are shipped** (onboarding checklist, density, encrypt backup, locale bn/en, iOS shell, call-today widget, key blocklist).
+
+## Do next (ops — outside the repo)
+
+Follow **`docs/OPS-LAUNCH.md`** owner day-1 sequence:
 
 1. Play product `personal_crm_pro_lifetime` + license testers  
-2. Signed AAB + closed track + 14–16 testers (`docs/OPS-LAUNCH.md`)  
+2. Signed AAB + closed track + 14–16 testers  
 3. MoR storefront + `npm run mint-keys` pool + set `BRAND.proWebUrl`  
-4. Optional: replace web-capture screenshots with physical-device shots  
+4. Optional: device screenshots · App Store / TestFlight when Android test is running  
 
 ## Product candidates (pick later)
 
