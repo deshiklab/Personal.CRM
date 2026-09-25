@@ -164,9 +164,11 @@ export default function QuickCapture() {
   }
 
   const Tab = ({ id, icon: Icon, children }) => (
-    <button onClick={() => setTab(id)}
-      className={`chip chip-btn ${tab === id ? 'on' : ''}`} style={{ padding: '7px 13px', fontSize: 12.5 }}>
-      <Icon size={14} /> {children}
+    <button type="button" onClick={() => setTab(id)}
+      className={`chip chip-btn ${tab === id ? 'on' : ''}`}
+      style={{ padding: '7px 13px', fontSize: 12.5, lineHeight: 1, gap: 6 }}>
+      <Icon size={14} className="flex-none" aria-hidden="true" />
+      <span className="leading-none">{children}</span>
     </button>
   )
 

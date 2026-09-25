@@ -37,9 +37,9 @@ function StatsRow() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       <Stat icon={Users} label="Contacts" value={contacts.length} delta="in your network" tone="#818cf8" />
-      <Stat icon={CheckSquare} label="Tasks due ≤ 7d" value={dueThisWeek} delta={`${tasks.filter(t => t.column === 'done').length} done`} tone="#38bdf8" />
-      <Stat icon={CalendarClock} label="Upcoming events" value={events.filter(e => e.date >= today).length} delta={`${thisMonth} 🎂 this month`} tone="#a78bfa" />
-      <Stat icon={HeartHandshake} label="Overdue follow-ups" value={overdue} delta="relationship rules" tone="#fb7185" />
+      <Stat icon={CheckSquare} label="Tasks due (7d)" value={dueThisWeek} delta={`${tasks.filter(t => t.column === 'done').length} done`} tone="#38bdf8" />
+      <Stat icon={CalendarClock} label="Upcoming" value={events.filter(e => e.date >= today).length} delta={`${thisMonth} birthdays this month`} tone="#a78bfa" />
+      <Stat icon={HeartHandshake} label="Overdue" value={overdue} delta="follow-ups need a touch" tone="#fb7185" />
     </div>
   )
 }

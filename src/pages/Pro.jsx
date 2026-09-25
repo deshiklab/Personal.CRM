@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  Crown, Check, X, KeyRound, Smartphone, Shield, Sparkles, RefreshCw,
+  Crown, Check, Lock, KeyRound, Smartphone, Shield, Sparkles, RefreshCw,
   Bell, Users, HardDrive, BarChart3, Network, Palette, History, Camera,
   ExternalLink, Copy, Loader2,
 } from 'lucide-react'
@@ -184,8 +184,8 @@ export default function Pro() {
                     <span className="block text-[11.5px] mt-0.5 leading-snug" style={{ color: 'var(--muted)' }}>{f.blurb}</span>
                   </span>
                   {pro
-                    ? <Check size={14} className="flex-none mt-1" style={{ color: 'var(--t-green)' }} />
-                    : <X size={14} className="flex-none mt-1" style={{ color: 'var(--faint)' }} />}
+                    ? <Check size={14} className="flex-none mt-1" style={{ color: 'var(--t-green)' }} aria-label="Included" />
+                    : <Lock size={13} className="flex-none mt-1" style={{ color: 'var(--faint)' }} aria-label="Pro only" />}
                 </li>
               )
             })}

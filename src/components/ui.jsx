@@ -27,32 +27,43 @@ export function SectionHead({ kicker, title, sub, right, help }) {
   const guide = help === false ? null : (help || SCREEN_GUIDE[pathname] || null)
   return (
     <div className="mb-5">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="min-w-0">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="min-w-0 flex-1">
           {kicker && <div className="text-[11px] font-bold tracking-[.12em] uppercase text-indigo-300 mb-1">{kicker}</div>}
-          <h2 className="text-[20px] font-bold tracking-tight flex items-center gap-2">
-            {title}
+          <h2 className="text-[20px] font-bold tracking-tight flex items-center gap-2 flex-wrap">
+            <span className="min-w-0">{title}</span>
             {guide && <GuideLink slug={guide} />}
           </h2>
         </div>
-        {right && <div className="flex items-center gap-2">{right}</div>}
+        {right && (
+          <div className="flex items-center gap-2 flex-none w-full sm:w-auto justify-start sm:justify-end order-last sm:order-none mt-1 sm:mt-0">
+            {right}
+          </div>
+        )}
       </div>
-      {sub && <p className="text-[13.5px] mt-1" style={{ color: 'var(--muted)' }}>{sub}</p>}
+      {sub && <p className="text-[13.5px] mt-1.5 leading-snug" style={{ color: 'var(--muted)' }}>{sub}</p>}
     </div>
   )
 }
 
 export function Stat({ icon: Icon, label, value, delta, tone = '#818cf8' }) {
   return (
-    <Card className="p-4 flex items-center gap-4">
+    <Card className="p-4 flex items-center gap-3 min-w-0">
       <div className="w-11 h-11 rounded-xl grid place-items-center flex-none" style={{ background: tone + '1c', color: toneVar(tone) }}>
         <Icon size={20} />
       </div>
-      <div className="min-w-0">
-        <div className="text-[22px] font-extrabold tracking-tight leading-6 truncate">{value}</div>
-        <div className="text-[11.5px] font-semibold uppercase tracking-[.07em] truncate" style={{ color: 'var(--faint)' }}>{label}</div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <div className="text-[22px] font-extrabold tracking-tight leading-none">{value}</div>
+          {delta && (
+            <div className="text-[11.5px] font-semibold leading-none" style={{ color: 'var(--muted)' }}>{delta}</div>
+          )}
+        </div>
+        <div className="text-[11.5px] font-semibold uppercase tracking-[.06em] mt-1.5 leading-snug"
+          style={{ color: 'var(--faint)' }} title={typeof label === 'string' ? label : undefined}>
+          {label}
+        </div>
       </div>
-      {delta && <div className="ml-auto text-[11.5px] font-semibold" style={{ color: 'var(--muted)' }}>{delta}</div>}
     </Card>
   )
 }

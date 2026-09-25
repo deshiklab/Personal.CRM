@@ -64,7 +64,7 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-[1200px] mx-auto">
-      <SectionHead kicker={t('dash.kicker')} title={<>{t('dash.greeting', { name: firstName })} <span className="grad-text">👋</span></>}
+      <SectionHead kicker={t('dash.kicker')} title={<>{t('dash.greeting', { name: firstName })} <span aria-hidden="true">👋</span></>}
         sub={t('dash.sub')}
         right={edit ? (
           <>
