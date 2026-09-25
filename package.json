@@ -21,7 +21,8 @@
     "capture:store": "node scripts/capture-store-shots.mjs",
     "ios:sync": "npm run build && npx cap sync ios",
     "ios:open": "npx cap open ios",
-    "cap:sync": "npm run build && npx cap sync"
+    "cap:sync": "npm run build && npx cap sync",
+    "launch:check": "node scripts/launch-check.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",

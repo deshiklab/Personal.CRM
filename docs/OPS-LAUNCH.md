@@ -1,6 +1,7 @@
 # Launch ops pack — Personal CRM 2.0
 
-**Repo product work (Phase 2 + 3) is complete.** What remains is **outside the repo**: Play Console, MoR, testers, and (when ready) App Store Connect.
+**Repo product work (Phase 2 + 3) is complete.**  
+**One-page sheet:** [`LAUNCH-DAY1.md`](LAUNCH-DAY1.md) · **Repo gate:** `npm run launch:check` What remains is **outside the repo**: Play Console, MoR, testers, and (when ready) App Store Connect.
 
 Live web: <https://deshiklab.github.io/Personal.CRM/>  
 Package: `com.bitscol.personalcrm` · versionName **2.0.0** · versionCode **4**  

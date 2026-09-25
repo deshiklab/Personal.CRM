@@ -84,6 +84,8 @@ ok('Notifications page loads', (await page.getByText('Notification Center').coun
 ok('Device reminders section present', (await page.getByText('Device reminders').count()) > 0)
 ok('Quiet hours controls present', (await page.getByText('Quiet hours').count()) > 0)
 ok('Lead times controls present', (await page.getByText('Lead times').count()) > 0)
+ok('docs LAUNCH-DAY1 present', fs.existsSync(path.join(__dirname, 'docs/LAUNCH-DAY1.md')))
+ok('launch-check script present', fs.existsSync(path.join(__dirname, 'scripts/launch-check.mjs')))
 ok('ops docs present',
   ['OPS-LAUNCH.md','TESTER-EMAILS.md','WEB-KEYS-MOR.md','PHASE3.md'].every(f => fs.existsSync(path.join(__dirname, 'docs', f))))
 ok('PNG store assets present',

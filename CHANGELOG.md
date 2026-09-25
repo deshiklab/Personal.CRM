@@ -3,6 +3,9 @@
 ## 2.0.0 — Phase 2 · Make it sellable (2026-09-25)
 
 ### Ops pack refresh
+- `npm run launch:check` — version/assets/docs/mint gate (no secrets)
+- `docs/LAUNCH-DAY1.md` one-page owner sheet
+
 - `docs/OPS-LAUNCH.md` owner day-1 sequence · Phase 3 complete status
 - Store listing release notes + Pro screen App Store/Play labels
 

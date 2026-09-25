@@ -45,6 +45,8 @@ Follow **`docs/OPS-LAUNCH.md`** owner day-1 sequence:
 | Doc | Use |
 |---|---|
 | `OPS-LAUNCH.md` | Master launch checklist |
+| `LAUNCH-DAY1.md` | One-page owner day-1 |
+| `npm run launch:check` | Repo readiness gate |
 | `CLOSED-TEST.md` / `TESTER-EMAILS.md` | Testers |
 | `PLAY-BILLING.md` | IAP |
 | `WEB-KEYS-MOR.md` | Web keys |
