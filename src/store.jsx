@@ -92,11 +92,28 @@ export function CrmProvider({ children }) {
    * Both live with the rest of the data so they travel in every backup. */
   const [kbArticles, setKbArticles] = useState(init?.kbArticles || [])
   const [helpPrefs, setHelpPrefs]   = useState(init?.helpPrefs || {
-    tips: true, tourDone: false, tourStep: 0, tourStarted: false, onboardDone: false, seenPro: false, contactDensity: 'comfortable', bookmarks: [], votes: {}, seenVersion: '',
+    tips: true, tourDone: false, tourStep: 0, tourStarted: false, onboardDone: false, seenPro: false, contactDensity: 'comfortable', bookmarks: [], votes: {}, seenVersion: '', demoChoiceDone: false, hasDemoData: true, welcomeSetup: null,
   })
   const [webhooks, setWebhooks]   = useState(init?.webhooks || {
     url: '', on: { lead: true, contact: false, task_done: true, touch: false }, log: [],
   })
+  /* Returning installs (any prior storage blob) must never re-prompt the
+   * post-tour demo wipe — only a true first launch (init === null) keeps
+   * hasDemoData until the user answers after the guided tour. */
+  useEffect(() => {
+    if (!init) return
+    setHelpPrefs(p => {
+      if (p.demoChoiceDone) return p
+      if (init.helpPrefs && Object.prototype.hasOwnProperty.call(init.helpPrefs, 'demoChoiceDone')) {
+        /* this build already recorded a decision (or mid-flight false) */
+        return p
+      }
+      /* migrate older blobs: treat as settled, not sample */
+      return { ...p, demoChoiceDone: true, hasDemoData: false }
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
 
   const [theme, setTheme]         = useState(() => storage.getItem('pcrm-theme') || 'dark')
 
@@ -596,9 +613,23 @@ export function CrmProvider({ children }) {
     if (d.widgetPrefs) setWidgetPrefs(d.widgetPrefs)
     if (d.mailboxes) setMailboxes(d.mailboxes); if (d.emails) setEmails(d.emails)
     if (Array.isArray(d.kbArticles)) setKbArticles(d.kbArticles)
-    if (d.helpPrefs) setHelpPrefs(p => ({ ...p, ...d.helpPrefs }))
     logAudit('user', 'Restored backup', parsed?.exportedAt || 'unknown date', `${d.contacts.length} contacts · ${d.tasks?.length || 0} tasks`, 'ok')
     logActivity(`Restored a backup (${d.contacts.length} contacts)`)
+    setHelpPrefs(p => ({
+      ...p,
+      ...(d.helpPrefs || {}),
+      demoChoiceDone: true,
+      hasDemoData: false,
+      tourDone: true,
+      tourStarted: true,
+      onboardDone: true,
+    }))
+    if (d.profile && typeof d.profile === 'object' && (d.profile.name || d.profile.skipped)) {
+      setProfile(d.profile)
+    } else {
+      /* leave the welcome gate so the restored CRM opens immediately */
+      setProfile(p => (p && (p.name || p.skipped)) ? p : { skipped: true, at: new Date().toISOString(), via: 'restore' })
+    }
     toast('♻️ Backup restored')
     return true
   }
@@ -888,10 +919,51 @@ export function CrmProvider({ children }) {
     emails: [], googleClientId: '', gist: { token: '', gistId: null },
     icsFeeds: [], driveState: { fileId: null, lastBackup: null, lastRestore: null, lastContactsSync: null },
     syncState: null, lock: null, profile: null, kbArticles: [],
-    helpPrefs: { tips: true, tourDone: false, tourStep: 0, tourStarted: false, onboardDone: false, seenPro: false, contactDensity: 'comfortable', bookmarks: [], votes: {}, seenVersion: '' },
+    helpPrefs: { tips: true, tourDone: false, tourStep: 0, tourStarted: false, onboardDone: false, seenPro: false, contactDensity: 'comfortable', bookmarks: [], votes: {}, seenVersion: '', demoChoiceDone: true, hasDemoData: false, welcomeSetup: null },
     __blank: true,
   })
+  /* Wipe sample/demo CRM rows but KEEP identity, lock, licence, sync tokens.
+   * Used after the guided tour when a brand-new user wants a clean slate. */
+  const clearDemoData = () => {
+    setContacts([])
+    setTasks([])
+    setEvents([])
+    setNotes([])
+    setTags([])
+    setGroups([])
+    setRules([])
+    setAudit([])
+    setActivity([])
+    setImports([])
+    setRelFreq({})
+    setSnoozes({})
+    setEmails([])
+    setNotifState({})
+    setKbArticles([])
+    /* keep profile, lock, google, gist, webhooks, ics, drive, sync deviceId */
+    setHelpPrefs(p => ({
+      ...p,
+      demoChoiceDone: true,
+      hasDemoData: false,
+      onboardDone: false,
+      tourDone: true,
+      tourStarted: true,
+      tourStep: 0,
+    }))
+    logAudit('user', 'Cleared demo data', 'Fresh start', 'Sample people removed — profile & lock kept')
+    logActivity('Started fresh — demo data cleared')
+    toast('✨ Blank slate — your profile and lock are still here')
+    return true
+  }
+
+  const keepDemoData = () => {
+    setHelpPrefs(p => ({ ...p, demoChoiceDone: true, hasDemoData: true }))
+    toast('👍 Exploring with sample data — wipe anytime in Settings')
+    return true
+  }
+
   const factoryReset = async pin => {
+
     if (pinLockedUntil()) return false
     if (lock?.hash && !(await verifyPin(pin))) { pinFail(); return false }
     /* no pinOk() here: the whole lock — counter included — goes with the wipe,
@@ -952,6 +1024,10 @@ export function CrmProvider({ children }) {
     if (Array.isArray(d.rules)) setRules(d.rules)
     if (d.relFreq) setRelFreq(d.relFreq)
     if (Array.isArray(d.emails)) setEmails(d.emails)
+    /* multi-device pull replaces sample data — never re-ask the demo wipe prompt */
+    if (Array.isArray(d.contacts)) {
+      setHelpPrefs(p => ({ ...p, demoChoiceDone: true, hasDemoData: false, tourDone: true, tourStarted: true }))
+    }
   }
   const deviceName = () => {
     try {
@@ -1423,7 +1499,7 @@ export function CrmProvider({ children }) {
     mailboxes, emails, connectMailbox, disconnectMailbox, syncMailbox, logEmailTouch, triageEmailAsLead, ignoreEmail,
     googleClientId, googleMode, saveGoogleClientId, connectGoogleLive, syncGoogleCalendar, syncGoogleContacts,
     driveState, driveBackupNow, driveRestoreNow, restoreAll, disconnectGoogle,
-    webhooks, saveWebhooks, testWebhook, icsFeeds, addIcsFeed, syncIcsFeed, removeIcsFeed, syncing, syncState, syncReport, syncNow, setSyncEnabled, gist, saveGistToken, syncProvider, lock, sessionUnlocked, setupPin, skipPinSetup, unlockWithPin, lockNow, changePin, removePin, verifyPin, factoryReset, buildBackup, exportEncryptedBackup, restoreBackupFile,
+    webhooks, saveWebhooks, testWebhook, icsFeeds, addIcsFeed, syncIcsFeed, removeIcsFeed, syncing, syncState, syncReport, syncNow, setSyncEnabled, gist, saveGistToken, syncProvider, lock, sessionUnlocked, setupPin, skipPinSetup, unlockWithPin, lockNow, changePin, removePin, verifyPin, factoryReset, clearDemoData, keepDemoData, buildBackup, exportEncryptedBackup, restoreBackupFile,
     commitImport, rollbackImport, resolveAuditConflict, updateFrequency, snoozeFollowUp, unsnooze, resetAll,
     notifState, notifPrefs, buildNotifications, dismissNotif, snoozeNotif, unsnoozeNotif, markNotifRead, markAllNotifsRead, toggleNotifPref,
     reminderPrefs, patchReminderPrefs, requestReminderPermission, sendTestReminder, resyncReminders,

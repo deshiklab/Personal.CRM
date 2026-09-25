@@ -2,6 +2,10 @@
 
 ## 2.0.0 — Phase 2 · Make it sellable (2026-09-25)
 
+### Welcome & demo choice
+- First-launch Welcome: restore backup · Google · GitHub Gist · start fresh
+- After guided tour: keep sample data or wipe to a blank CRM (profile/lock kept)
+
 ### Encrypted backup
 - AES-256-GCM export (PBKDF2 210k) — PIN or passphrase
 - Settings → Encrypted backup… / restore auto-detects `pcrm-enc-v1`

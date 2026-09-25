@@ -38,6 +38,7 @@ ok('bundle gates advanced analytics / graph export', /advanced_analytics|graph_e
 ok('bundle has getting-started checklist', /Getting started|onboardSteps|Who to call today|callToday/.test(bundle))
 ok('bundle has contact density + key blocklist', /contactDensity|KEY_BLOCKLIST|Compact|Comfort/.test(bundle))
 ok('bundle has encrypted backup', /pcrm-enc-v1|exportEncryptedBackup|Encrypted backup|secureBackup|AES-GCM/.test(bundle))
+ok('bundle has welcome setup paths', /Restore a backup|Multi-device sync via GitHub Gist|Connect with Google|clearDemoData|demoChoiceDone|Keep exploring/.test(bundle))
 
 await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 60000 })
 await page.waitForTimeout(800)

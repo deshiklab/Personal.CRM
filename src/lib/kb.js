@@ -81,6 +81,17 @@ Open **Follow-Ups**, pick the most overdue person, and send one message. Mark th
 
 On a phone the tour is the same, but the card sits at the bottom where your thumb is.
 
+## After the tour (new installs)
+
+If you started fresh with sample people, the app asks once:
+
+- **Continue with demo data** — keep exploring the fictional network, or
+- **Reset — wipe demo data** — empty CRM, ready for your real contacts.
+
+Your name, pincode and any Google/Gist connection stay either way. You can also wipe later under **Settings → Reset everything**.
+
+On first open you can instead **restore a backup**, **connect Google**, or set up **GitHub Gist** multi-device sync from the Welcome window — those paths skip the sample data.
+
 > [!NOTE] The tour remembers where it stopped, so closing the app mid-tour resumes where you left off.`,
     related: ['start.first-5-minutes', 'ref.shortcuts', 'start.layout'],
   },
