@@ -47,3 +47,10 @@ shot*.mjs
 .vscode/
 .idea/
 *.log
+
+# iOS (CocoaPods / derived — SPM uses node_modules paths)
+ios/App/Pods/
+ios/App/build/
+ios/App/output/
+ios/DerivedData/
+ios/App/App/public/

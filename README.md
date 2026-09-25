@@ -41,6 +41,7 @@ npm ci && npm run build
 npm run mint-keys -- --count 20 --csv keys.csv   # MoR stock (keep offline)
 npm run capture:store                            # 1080×1920 Play screenshots
 ./scripts/build-aab.sh                           # needs Android SDK + keystore env
+npm run ios:sync && npm run ios:open             # macOS + Xcode — see docs/IOS.md
 ```
 
 ---

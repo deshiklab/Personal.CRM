@@ -18,12 +18,16 @@
     "test:probes": "node scripts/run-probes.mjs",
     "test:probes:ci": "node scripts/run-probes.mjs --ci",
     "mint-keys": "node scripts/mint-keys.mjs",
-    "capture:store": "node scripts/capture-store-shots.mjs"
+    "capture:store": "node scripts/capture-store-shots.mjs",
+    "ios:sync": "npm run build && npx cap sync ios",
+    "ios:open": "npx cap open ios",
+    "cap:sync": "npm run build && npx cap sync"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
     "@capacitor/cli": "^8.5.2",
     "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2",
     "@capacitor/local-notifications": "^8.3.1",
     "@capacitor/preferences": "^8.0.1",
     "@capgo/capacitor-social-login": "^8.5.10",

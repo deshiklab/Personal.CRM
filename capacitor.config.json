@@ -1,5 +1,20 @@
 {
   "appId": "com.bitscol.personalcrm",
   "appName": "Personal CRM",
-  "webDir": "dist"
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": false
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "preferredContentMode": "mobile",
+    "scheme": "Personal CRM"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_icon_config_sample",
+      "iconColor": "#818cf8",
+      "sound": "default"
+    }
+  }
 }

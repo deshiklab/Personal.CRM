@@ -2,6 +2,11 @@
 
 ## 2.0.0 — Phase 2 · Make it sellable (2026-09-25)
 
+### iOS shell
+- Capacitor `ios/` project (bundle `com.bitscol.personalcrm`, iOS 15+)
+- StoreKit lifetime Pro via `@capgo/native-purchases` (same product id as Play)
+- `npm run ios:sync` / `ios:open` · `docs/IOS.md`
+
 ### Locale pack (bn / en)
 - Settings → Language: English / বাংলা (persisted in helpPrefs.locale)
 - Nav, topbar, dashboard, welcome, post-tour demo choice translated

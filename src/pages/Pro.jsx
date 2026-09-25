@@ -131,7 +131,7 @@ export default function Pro() {
             </div>
             <p className="text-[13px] mt-1 leading-relaxed" style={{ color: 'var(--muted)' }}>
               {pro
-                ? 'Your unlock is stored on this device. Restore it after a reinstall with the same Play account or by pasting your licence key below.'
+                ? 'Your unlock is stored on this device. Restore it after a reinstall with the same store account (Play / App Store) or by pasting your licence key below.'
                 : `Free is a full CRM for up to ${cap} contacts. Pro unlocks reminders, automatic backups, longer history, advanced analytics and more — features that help power users, not locks on your own data.`}
             </p>
             {!pro && (
@@ -202,14 +202,14 @@ export default function Pro() {
               <div className="font-bold text-[14px]">Google Play</div>
               {playOk
                 ? <Pill color="#34d399">Billing ready</Pill>
-                : <Pill color="#94a3b8">Android app</Pill>}
+                : <Pill color="#94a3b8">{playOk ? 'Store ready' : 'App Store / Play'}</Pill>}
             </div>
             <p className="text-[12.5px] leading-relaxed mb-3" style={{ color: 'var(--muted)' }}>
               Lifetime unlock as a one-time in-app product
               (<span className="font-mono text-[11px]"> {PRODUCT_ID_PLAY}</span>).
               {playOk
                 ? ' Google Play handles the payment; the unlock is stored on this device.'
-                : ' Open the Android build from Google Play to buy. On the web, use a licence key instead.'}
+                : ' Open the Android or iOS store build to buy. On the web, use a licence key instead.'}
             </p>
             {product?.priceString && (
               <div className="mb-3 text-[22px] font-extrabold tracking-tight">
@@ -220,10 +220,10 @@ export default function Pro() {
             <div className="flex flex-wrap gap-2">
               <button type="button" className="btn btn-primary"
                 disabled={!playOk || busyPlay}
-                title={playOk ? 'Buy lifetime Pro on Google Play' : 'Only available inside the Android app'}
+                title={playOk ? 'Buy lifetime Pro on this device\'s store' : 'Only available inside the Android or iOS app'}
                 onClick={buyPlay}>
                 {busyPlay ? <Loader2 size={14} className="animate-spin" /> : <Crown size={14} />}
-                {busyPlay ? 'Waiting on Play…' : (product?.priceString ? `Buy Pro · ${product.priceString}` : 'Buy on Play')}
+                {busyPlay ? 'Waiting on store…' : (product?.priceString ? `Buy Pro · ${product.priceString}` : (playOk ? 'Buy Pro' : 'Buy in store app'))}
               </button>
               <button type="button" className="btn btn-ghost" disabled={busyPlay} onClick={doRestore}>
                 <RefreshCw size={14} /> Restore purchases
@@ -231,9 +231,9 @@ export default function Pro() {
             </div>
             {!playOk && (
               <p className="text-[11.5px] mt-3 leading-snug" style={{ color: 'var(--faint)' }}>
-                Play Billing needs the signed Android app and a one-time product named{' '}
-                <span className="font-mono">{PRODUCT_ID_PLAY}</span> in Play Console
-                (Monetize → In-app products → Non-consumable).
+                Store billing needs the signed Android/iOS app and a one-time product named{' '}
+                <span className="font-mono">{PRODUCT_ID_PLAY}</span> in Play Console or App Store Connect
+                (non-consumable / managed product).
               </p>
             )}
           </Card>
@@ -255,7 +255,7 @@ export default function Pro() {
             ) : (
               <p className="text-[11.5px] mb-3 leading-snug" style={{ color: 'var(--faint)' }}>
                 Web checkout is fulfilled with a <span className="font-mono">PCRM1-</span> key from BITSCOL / our Merchant of Record.
-                Android users can buy on Google Play instead.
+                Android and iOS users can buy in the store app instead.
               </p>
             )}
             <Field label="Your key">
@@ -301,7 +301,7 @@ export default function Pro() {
           <li>· <b style={{ color: 'var(--text)' }}>One-time</b>, not a subscription. Pay once, keep Pro on this device.</li>
           <li>· <b style={{ color: 'var(--text)' }}>No account</b>. The unlock lives next to your data, verified offline.</li>
           <li>· <b style={{ color: 'var(--text)' }}>Your contacts stay yours</b> on Free and Pro. We never lock your export.</li>
-          <li>· Web keys will be sold through a Merchant of Record (Stripe is not available in Bangladesh). Play uses Google Play Billing.</li>
+          <li>· Web keys will be sold through a Merchant of Record (Stripe is not available in Bangladesh). Android uses Play Billing · iOS uses StoreKit.</li>
           <li>· Questions? <a href={`mailto:${BRAND.email}`} style={{ color: 'var(--t-sky)' }}>{BRAND.email}</a></li>
         </ul>
       </Card>

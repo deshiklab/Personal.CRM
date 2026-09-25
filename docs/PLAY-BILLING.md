@@ -34,3 +34,8 @@ Play Billing is unavailable. Users unlock with a **licence key** (`PCRM1-…`) s
 
 - No server-side token verification (local-first). Purchase token is stored on-device as proof for support.
 - `com.android.vending.BILLING` is declared in `AndroidManifest.xml`.
+
+## iOS / StoreKit
+
+Same product id on App Store Connect (non-consumable): `personal_crm_pro_lifetime`.  
+See `docs/IOS.md`. Billing code path is shared (`src/lib/billing.js`); licence `source` is `appstore` on iOS.

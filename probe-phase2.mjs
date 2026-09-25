@@ -40,6 +40,9 @@ ok('bundle has contact density + key blocklist', /contactDensity|KEY_BLOCKLIST|C
 ok('bundle has encrypted backup', /pcrm-enc-v1|exportEncryptedBackup|Encrypted backup|secureBackup|AES-GCM/.test(bundle))
 ok('bundle has welcome setup paths', /Restore a backup|Multi-device sync via GitHub Gist|Connect with Google|clearDemoData|demoChoiceDone|Keep exploring/.test(bundle))
 ok('bundle has locale pack bn/en', /helpPrefs\.locale|setLocale|locales\/bn|\\u09|বাংলা|nav\.dashboard|I18nProvider/.test(bundle) || /\\u09[89ab]/.test(bundle) || bundle.includes('বাংলা') || /setLocale/.test(bundle))
+ok('bundle has iOS/store billing path', /appstore|isNativeStore|StoreKit|nativePlatform|Buy in store|Buy Pro/.test(bundle))
+ok('docs IOS present', fs.existsSync(path.join(__dirname, 'docs/IOS.md')))
+ok('ios platform folder present', fs.existsSync(path.join(__dirname, 'ios/App/App.xcodeproj/project.pbxproj')))
 
 await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 60000 })
 await page.waitForTimeout(800)

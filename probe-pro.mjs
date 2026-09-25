@@ -19,7 +19,7 @@ const bundle = readFileSync(new URL('./dist/index.html', import.meta.url), 'utf8
 ok('bundle is v2.0.0', /2\.0\.0/.test(bundle))
 ok('bundle includes entitlements / Pro copy', /Unlock Personal CRM Pro|pcrm-license|PCRM1/.test(bundle))
 ok('bundle ships Play Billing client', /native-purchases|purchasePro|isBillingSupported|personal_crm_pro_lifetime/.test(bundle))
-ok('bundle has Buy on Play affordance', /Buy on Play|Buy Pro|Billing ready|Waiting on Play/.test(bundle))
+ok('bundle has store buy affordance', /Buy on Play|Buy Pro|Buy in store app|Billing ready|Waiting on Play|Waiting on store/.test(bundle))
 ok('bundle lists free contact cap', /75/.test(bundle) && /unlimited contacts/i.test(bundle))
 
 /* version on About */
@@ -40,10 +40,10 @@ ok('Pro lists free features', /Visiting-card scan|PIN lock|CSV/i.test(proBody))
 ok('Pro lists paid features', /Reminders|Unlimited contacts|Automatic rolling|auto-sync/i.test(proBody))
 ok('licence key field present', (await pg.locator('input[placeholder="PCRM1-…"]').count()) > 0)
 ok('Play restore button present', (await pg.locator('button:has-text("Restore purchases")').count()) > 0)
-ok('Play buy button present', (await pg.locator('button:has-text("Buy on Play"), button:has-text("Buy Pro")').count()) > 0)
+ok('store buy button present', (await pg.locator('button:has-text("Buy on Play"), button:has-text("Buy Pro"), button:has-text("Buy in store app")').count()) > 0)
 /* web: billing is unavailable — buy stays disabled, copy says Android app */
-ok('web build disables Play buy (no false promise)', await pg.evaluate(() => {
-  const b = [...document.querySelectorAll('button')].find(el => /Buy on Play|Buy Pro/.test(el.textContent||''))
+ok('web build disables store buy (no false promise)', await pg.evaluate(() => {
+  const b = [...document.querySelectorAll('button')].find(el => /Buy on Play|Buy Pro|Buy in store app/.test(el.textContent||''))
   return b ? b.disabled === true : false
 }))
 ok('Sidebar exposes Pro', await pg.evaluate(() => /Pro/.test(document.querySelector('aside')?.innerText || '')))

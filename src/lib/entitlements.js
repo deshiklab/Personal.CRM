@@ -83,7 +83,7 @@ export const PRO_FEATURE_LIST = Object.values(PRO_FEATURES)
 /* ── licence record shape ───────────────────────────────────────────────────
  * {
  *   tier: 'free' | 'pro',
- *   source: 'play' | 'key' | 'comp' | null,
+ *   source: 'play' | 'appstore' | 'key' | 'comp' | null,
  *   productId: string | null,
  *   licenseKey: string | null,   // web key, never a Play token
  *   unlockedAt: ISO string | null,
@@ -315,6 +315,7 @@ export function activateFromPlay(tx = {}, { deviceId } = {}) {
 export function tierLabel(lic = readLicense()) {
   if (lic.tier === 'pro') {
     if (lic.source === 'play') return 'Pro · Play'
+    if (lic.source === 'appstore') return 'Pro · App Store'
     if (lic.source === 'key') return 'Pro · licence key'
     if (lic.source === 'comp') return 'Pro · complimentary'
     return 'Pro'

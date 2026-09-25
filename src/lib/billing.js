@@ -1,17 +1,17 @@
 /* ═════════════════════════════════════════════════════════════════════════════
- * Google Play Billing — lifetime Pro unlock.
+ * Native store billing — lifetime Pro unlock.
  *
- * Uses @capgo/native-purchases (Play Billing on Android). Web/PWA has no Play
- * store, so every call here degrades cleanly: isAvailable() → false, and the
- * Pro screen keeps the licence-key path as the web unlock.
+ * Uses @capgo/native-purchases:
+ *   · Android → Google Play Billing
+ *   · iOS     → StoreKit 2
+ * Web/PWA has neither store, so every call degrades cleanly: isAvailable() →
+ * false, and the Pro screen keeps the licence-key path as the web unlock.
  *
- * Product: a non-consumable one-time INAPP product
- *   id = PRODUCT_ID_PLAY  (personal_crm_pro_lifetime)
+ * Product: non-consumable one-time INAPP / non-consumable IAP
+ *   id = PRODUCT_ID_PLAY  (personal_crm_pro_lifetime) — same id on both stores
  *
- * Offline-first stance: once a purchase is acknowledged we write a local
- * licence record (source:'play') and trust it. There is no server to re-check
- * tokens against — a determined attacker can patch the binary either way
- * (accepted in the commercial plan). Honest buyers restore via Play.
+ * Offline-first: once purchased we write a local licence (source:'play' |
+ * 'appstore') and trust it. Honest buyers restore via the store account.
  * ═════════════════════════════════════════════════════════════════════════════ */
 
 import { Capacitor } from '@capacitor/core'
@@ -23,16 +23,21 @@ let NativePurchases = null
 let PURCHASE_TYPE = null
 let loadPromise = null
 
-const isNativeAndroid = () => {
+const nativePlatform = () => {
   try {
-    return Capacitor?.isNativePlatform?.() && Capacitor.getPlatform?.() === 'android'
-  } catch { return false }
+    if (!Capacitor?.isNativePlatform?.()) return null
+    const p = Capacitor.getPlatform?.()
+    return (p === 'android' || p === 'ios') ? p : null
+  } catch { return null }
 }
+const isNativeAndroid = () => nativePlatform() === 'android'
+const isNativeIos = () => nativePlatform() === 'ios'
+const isNativeStore = () => !!nativePlatform()
 
 async function loadPlugin() {
   if (loadPromise) return loadPromise
   loadPromise = (async () => {
-    if (!isNativeAndroid()) return null
+    if (!isNativeStore()) return null
     try {
       const mod = await import('@capgo/native-purchases')
       NativePurchases = mod.NativePurchases
@@ -46,9 +51,11 @@ async function loadPlugin() {
   return loadPromise
 }
 
-/** True only on a real Android build with Play Billing reachable. */
+const licenseSource = () => (isNativeIos() ? 'appstore' : 'play')
+
+/** True on Android/iOS when the store billing API is reachable. */
 export async function isBillingAvailable() {
-  if (!isNativeAndroid()) return false
+  if (!isNativeStore()) return false
   const mod = await loadPlugin()
   if (!mod) return false
   try {
@@ -90,18 +97,20 @@ export async function getProProduct() {
 
 const transactionToLicense = (tx, { deviceId } = {}) => writeLicense({
   tier: 'pro',
-  source: 'play',
+  source: licenseSource(),
   productId: tx?.productIdentifier || PRODUCT_ID_PLAY,
   licenseKey: null,
   unlockedAt: tx?.purchaseDate || new Date().toISOString(),
   deviceId: deviceId || null,
   proof: tx?.transactionId || tx?.purchaseToken || null,
   play: {
+    /* Android shape; iOS fills the same fields for support */
     transactionId: tx?.transactionId || null,
     purchaseToken: tx?.purchaseToken || null,
     purchaseState: tx?.purchaseState ?? null,
     acknowledged: tx?.isAcknowledged ?? true,
   },
+  store: isNativeIos() ? 'appstore' : 'play',
 })
 
 const isOwnedTx = tx => {
@@ -122,7 +131,7 @@ export async function purchasePro({ deviceId } = {}) {
   if (!ok) {
     return {
       ok: false,
-      reason: 'Play Billing is only available inside the Android app from Google Play.',
+      reason: 'Store billing is only available inside the Android or iOS app.',
       code: 'unavailable',
     }
   }
@@ -163,7 +172,7 @@ export async function restorePurchases({ deviceId } = {}) {
     }
     return {
       ok: false,
-      reason: 'Nothing to restore here. On Android, open the Play build and tap Restore. On the web, paste your licence key.',
+      reason: 'Nothing to restore here. On Android/iOS open the store build and tap Restore. On the web, paste your licence key.',
       code: 'unavailable',
     }
   }
@@ -178,7 +187,7 @@ export async function restorePurchases({ deviceId } = {}) {
     if (!match) {
       return {
         ok: false,
-        reason: 'No Pro purchase found on this Google account.',
+        reason: isNativeIos() ? 'No Pro purchase found on this Apple ID.' : 'No Pro purchase found on this Google account.',
         code: 'not_found',
       }
     }
@@ -200,7 +209,7 @@ export async function restorePurchases({ deviceId } = {}) {
  */
 export async function syncPlayEntitlement({ deviceId } = {}) {
   const current = readLicense()
-  if (isPro(current) && current.source !== 'play') return current
+  if (isPro(current) && current.source !== 'play' && current.source !== 'appstore') return current
   const ok = await isBillingAvailable()
   if (!ok) return current
   try {
@@ -216,11 +225,7 @@ export async function syncPlayEntitlement({ deviceId } = {}) {
 }
 
 export function billingPlatformLabel() {
-  if (isNativeAndroid()) return 'android'
-  try {
-    if (Capacitor?.isNativePlatform?.()) return Capacitor.getPlatform?.() || 'native'
-  } catch {}
-  return 'web'
+  return nativePlatform() || 'web'
 }
 
 export { PRODUCT_ID_PLAY, blankLicense }
