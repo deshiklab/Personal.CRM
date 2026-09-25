@@ -175,13 +175,13 @@ export default function QuickCapture() {
       {/* ── Floating Action Button ── */}
       <button onClick={() => { setOpen(true); setTab('lead') }}
         data-tip="quickcapture.fab" data-tour="fab"
-        className="safe-bottom fixed z-[60] flex items-center justify-center gap-2 font-bold transition-transform hover:scale-105 active:scale-95 right-4 bottom-4 w-14 h-14 rounded-full md:right-6 md:bottom-6 md:w-auto md:h-auto md:rounded-2xl md:px-5 md:py-3.5"
+        className="safe-bottom fixed z-[60] inline-flex items-center justify-center gap-2 font-bold leading-none transition-transform hover:scale-105 active:scale-95 right-4 bottom-4 w-14 h-14 rounded-full md:right-6 md:bottom-6 md:w-auto md:h-11 md:rounded-2xl md:px-4"
         style={{ background: 'linear-gradient(120deg,var(--i1),var(--i2))', color: '#0a0c11', boxShadow: '0 10px 30px rgba(129,140,248,.4)', fontSize: 13.5 }}
         title="Quick Capture (name + number → lead)">
-        <Zap size={20} />
-        <span className="hidden md:inline">Quick Capture</span>
+        <Zap size={18} className="flex-none" strokeWidth={2.4} aria-hidden="true" />
+        <span className="hidden md:inline leading-none translate-y-px">Quick Capture</span>
         {session.length > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-extrabold"
+          <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-extrabold leading-none"
             style={{ background: '#f43f5e', color: '#fff', boxShadow: '0 2px 8px rgba(244,63,94,.5)' }}>{session.length}</span>
         )}
       </button>
@@ -198,9 +198,9 @@ export default function QuickCapture() {
 
             <div className="flex items-start justify-between mb-4">
               <div>
-                <div className="flex items-center gap-2">
-                  <Zap size={16} style={{ color: 'var(--t-sky)' }} />
-                  <h2 className="text-base font-extrabold">Quick Capture</h2>
+                <div className="flex items-center gap-2 leading-none">
+                  <Zap size={16} className="flex-none" style={{ color: 'var(--t-sky)' }} aria-hidden="true" />
+                  <h2 className="text-base font-extrabold leading-none m-0">Quick Capture</h2>
                 </div>
                 <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>One tap — name + number, saved as a lead. Zero friction.</p>
               </div>

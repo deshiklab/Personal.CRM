@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { BookOpen } from 'lucide-react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import Topbar from './components/Topbar'
@@ -130,31 +129,6 @@ function AppShell({ navOpen, setNavOpen, pathname, helpPrefs }) {
       <TooltipHost enabled={helpPrefs?.tips !== false} />
       <ShortcutsOverlay />
       <Tour autoStart={pathname === '/'} />
-      <HelpFab />
     </div>
-  )
-}
-
-
-/* Floating help button — one tap to the manual, no matter where you are. */
-function HelpFab() {
-  const navigate = useNavigate()
-  return (
-    <button
-      onClick={() => navigate('/knowledge')}
-      data-tip-with-title="Knowledge base"
-      data-tip-title="Knowledge base"
-      data-tip-body="The manual, the glossary and your own articles — searchable offline."
-      data-tip-learn="notes.kb"
-      className="fixed z-[55] w-9 h-9 rounded-full grid place-items-center safe-bottom hidden md:grid"
-      aria-label="Open knowledge base"
-      style={{
-        left: 14, bottom: 14,
-        background: 'var(--panel)', border: '1px solid var(--border2)',
-        color: 'var(--muted)', cursor: 'pointer', boxShadow: '0 8px 24px rgba(0,0,0,.4)',
-      }}
-    >
-      <BookOpen size={15} />
-    </button>
   )
 }
