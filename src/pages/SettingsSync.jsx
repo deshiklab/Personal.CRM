@@ -27,6 +27,7 @@ export default function SettingsSync() {
         sub="Connections, sync rules with per-rule conflict strategy, and a full audit trail." />
       <IdentityCard />
       <LanguageCard />
+      <ThemeCard />
       <SafetyNetCard />
       <GistSyncCard />
       <GoogleHub />
@@ -217,11 +218,19 @@ function RulesTable() {
 
 /* ── Audit log ── */
 function AuditLog() {
-  const { audit } = useCrm()
+  const { audit, auditVisible, can, FREE_LIMITS } = useCrm()
   const [filter, setFilter] = useState('all')
-  const list = audit.filter(a => filter === 'all' || a.actor === filter).slice(0, 30)
+  const src = auditVisible || audit
+  const list = src.filter(a => filter === 'all' || a.actor === filter).slice(0, 30)
+  const freeHist = !can?.('unlimited_history')
   return (
     <Card className="p-5 mt-4">
+      {freeHist && (
+        <p className="text-[11.5px] mb-2" style={{ color: 'var(--faint)' }}>
+          Free keeps {FREE_LIMITS?.historyDays || 90} days of audit ·{' '}
+          <a href="#/pro" style={{ color: 'var(--t-indigo)' }}>Pro · unlimited history</a>
+        </p>
+      )}
       <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
         <h3 className="font-bold text-[14.5px]">Audit log</h3>
         <div className="flex gap-1.5">
@@ -519,6 +528,7 @@ import IdentityCard from './settings/IdentityCard'
 import SafetyNetCard from './settings/SafetyNetCard'
 import SupportCard from './settings/SupportCard'
 import LanguageCard from './settings/LanguageCard'
+import ThemeCard from './settings/ThemeCard'
 
 
 /* Hoisted to module scope: a component declared inside another one is a new

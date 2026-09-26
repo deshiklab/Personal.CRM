@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Crown, Check, Lock, KeyRound, Smartphone, Shield, Sparkles, RefreshCw,
   Bell, Users, HardDrive, BarChart3, Network, Palette, History, Camera,
@@ -12,6 +13,17 @@ import {
   PRO_FEATURE_LIST, FREE_LIMITS, PRODUCT_ID_PLAY, tierLabel,
   issueLicenseKey,
 } from '../lib/entitlements'
+
+const FEATURE_LINKS = {
+  reminders: '/notifications',
+  unlimited_contacts: '/contacts',
+  auto_snapshots: '/settings',
+  drive_autosync: '/settings',
+  advanced_analytics: '/analytics',
+  graph_export: '/graph',
+  themes: '/settings',
+  unlimited_history: '/history',
+}
 
 const ICONS = {
   reminders: Bell,
@@ -118,6 +130,31 @@ export default function Pro() {
         right={<Pill color={pro ? '#34d399' : '#818cf8'}>{tierLabel(license)}</Pill>}
       />
 
+
+      {/* active Pro feature shortcuts */}
+      {pro && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5" data-testid="pro-feature-jumps">
+          {PRO_FEATURE_LIST.map(f => {
+            const Icon = ICONS[f.id] || Sparkles
+            const to = FEATURE_LINKS[f.id] || '/pro'
+            return (
+              <Link key={f.id} to={to}
+                className="card p-3 flex items-center gap-2.5 hover:opacity-95 transition-opacity"
+                style={{ textDecoration: 'none', color: 'inherit' }}>
+                <span className="w-8 h-8 rounded-lg grid place-items-center flex-none"
+                  style={{ background: 'rgba(52,211,153,.14)', color: 'var(--t-green)' }}>
+                  <Icon size={14} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[12px] font-bold truncate leading-tight">{f.name}</span>
+                  <span className="block text-[10.5px]" style={{ color: 'var(--faint)' }}>{t('pro.included')} · {t('pro.featureJump')}</span>
+                </span>
+              </Link>
+            )
+          })}
+        </div>
+      )}
+
       {/* hero */}
       <Card className="p-5 sm:p-6 mb-5 relative overflow-hidden">
         <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full opacity-30"
@@ -175,19 +212,26 @@ export default function Pro() {
           <ul className="space-y-2.5 text-[13px]">
             {PRO_FEATURE_LIST.map(f => {
               const Icon = ICONS[f.id] || Sparkles
+              const to = FEATURE_LINKS[f.id]
               return (
                 <li key={f.id} className="flex items-start gap-2.5">
                   <span className="w-7 h-7 rounded-lg grid place-items-center flex-none"
                     style={{ background: 'var(--chipbg)', color: 'var(--t-indigo)' }}>
                     <Icon size={14} />
                   </span>
-                  <span className="min-w-0">
+                  <span className="min-w-0 flex-1">
                     <span className="block font-semibold leading-tight">{f.name}</span>
                     <span className="block text-[11.5px] mt-0.5 leading-snug" style={{ color: 'var(--muted)' }}>{f.blurb}</span>
+                    {to && (
+                      <Link to={to} className="inline-flex items-center gap-1 text-[11px] font-semibold mt-1 underline decoration-dotted underline-offset-2"
+                        style={{ color: 'var(--t-indigo)' }}>
+                        {t('pro.tryFeature')}
+                      </Link>
+                    )}
                   </span>
                   {pro
-                    ? <Check size={14} className="flex-none mt-1" style={{ color: 'var(--t-green)' }} aria-label="Included" />
-                    : <Lock size={13} className="flex-none mt-1" style={{ color: 'var(--faint)' }} aria-label="Pro only" />}
+                    ? <Check size={14} className="flex-none mt-1" style={{ color: 'var(--t-green)' }} aria-label={t('pro.included')} />
+                    : <Lock size={13} className="flex-none mt-1" style={{ color: 'var(--faint)' }} aria-label={t('pro.locked')} />}
                 </li>
               )
             })}

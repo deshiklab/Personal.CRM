@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Network, Search, ArrowRight, Users, X, Download } from 'lucide-react'
+import { ProBadge } from '../components/ProGate'
 import { useCrm } from '../store'
 import { contactGroupIds } from '../store'
 import { SectionHead, Card, Avatar, Pill, Empty } from '../components/ui'
@@ -271,6 +272,11 @@ return (
           onClick={() => exportGraph('png')}>
           <Download size={13} /> PNG{!can?.('graph_export') ? ' · Pro' : ''}
         </button>
+        {!can?.('graph_export') && (
+          <a href="#/pro" className="btn btn-ghost btn-sm inline-flex items-center gap-1.5" title="Unlock graph export">
+            <ProBadge /> Unlock export
+          </a>
+        )}
       </div>
 
       <div className="flex items-center gap-1.5 mb-4 flex-wrap">

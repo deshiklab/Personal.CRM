@@ -270,12 +270,19 @@ function TaskHeatmap() {
 }
 
 function ActivityFeed() {
-  const { activity } = useCrm()
+  const { activity, activityVisible, can, FREE_LIMITS } = useCrm()
+  const list = activityVisible || activity
+  const freeHist = !can?.('unlimited_history')
   return (
     <Card className="p-5">
       <Head title="Recent activity" />
+      {freeHist && (
+        <div className="text-[11px] mb-2" style={{ color: 'var(--faint)' }}>
+          Showing last {FREE_LIMITS?.historyDays || 90} days · <a href="#/pro" style={{ color: 'var(--t-indigo)' }}>Pro keeps full history</a>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
-        {activity.slice(0, 8).map(a => (
+        {list.slice(0, 8).map(a => (
           <div key={a.id} className="flex items-center gap-3 py-2 border-b" style={{ borderColor: 'var(--hairline)' }}>
             <Clock size={13} className="flex-none" style={{ color: 'var(--faint)' }} />
             <span className="text-[13px] truncate flex-1">{a.text}</span>

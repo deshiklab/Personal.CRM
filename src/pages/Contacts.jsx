@@ -119,7 +119,18 @@ export default function Contacts() {
         </div>} />
 
       <div className="flex flex-wrap items-center gap-2 mb-4">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+        {!isPro() && Number.isFinite(FREE_LIMITS?.contacts) && contacts.length >= Math.max(1, FREE_LIMITS.contacts - 10) && (
+        <div className="card p-3 mb-3 flex items-center gap-3 flex-wrap" data-testid="contact-cap-banner"
+          style={{ borderColor: contacts.length >= FREE_LIMITS.contacts ? 'rgba(251,113,133,.45)' : 'rgba(251,191,36,.4)' }}>
+          <span className="text-[12.5px] flex-1" style={{ color: 'var(--muted)' }}>
+            {contacts.length >= FREE_LIMITS.contacts
+              ? `Free plan is full (${FREE_LIMITS.contacts}/${FREE_LIMITS.contacts}). Unlock Pro for unlimited contacts, or archive someone first.`
+              : `Free plan ${contacts.length}/${FREE_LIMITS.contacts} contacts — Pro removes the cap.`}
+          </span>
+          <a href="#/pro" className="btn btn-primary btn-sm">Unlock Pro</a>
+        </div>
+      )}
+      <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--faint)' }} />
           <input className="input" style={{ paddingLeft: 38 }} placeholder={t('contacts.search')} data-tip="contacts.search" value={q} onChange={e => setQ(e.target.value)} />
         </div>

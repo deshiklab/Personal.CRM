@@ -129,12 +129,19 @@ export function CrmProvider({ children }) {
 
   const THEMES_FREE = ['dark', 'light']
   const THEMES_PRO = ['dark', 'light', 'ocean']
+  const themeList = () => (ent.can('themes', license) ? THEMES_PRO : THEMES_FREE)
   const toggleTheme = () => {
-    const list = ent.can('themes', license) ? THEMES_PRO : THEMES_FREE
+    const list = themeList()
     setTheme(t => {
       const i = list.indexOf(t)
       return list[(i < 0 ? 0 : i + 1) % list.length]
     })
+  }
+  const setThemeExplicit = (id) => {
+    const list = themeList()
+    if (!list.includes(id)) return false
+    setTheme(id)
+    return true
   }
   /* if licence drops, snap ocean back to dark */
   useEffect(() => {
@@ -166,10 +173,12 @@ export function CrmProvider({ children }) {
   }
 
   /* ── audit & activity ── */
+  const historyCap = () => (ent.can('unlimited_history', license) ? 2000 : 200)
+  const auditCap = () => (ent.can('unlimited_history', license) ? 2000 : 300)
   const logAudit = (actor, action, entity, detail, status = 'ok') =>
-    setAudit(a => [{ id: uid(), ts: new Date().toISOString(), actor, action, entity, detail, status }, ...a].slice(0, 300))
+    setAudit(a => [{ id: uid(), ts: new Date().toISOString(), actor, action, entity, detail, status }, ...a].slice(0, auditCap()))
   const logActivity = (text, contactId = null) =>
-    setActivity(a => [{ id: uid(), ts: new Date().toISOString(), text, contactId }, ...a].slice(0, 200))
+    setActivity(a => [{ id: uid(), ts: new Date().toISOString(), text, contactId }, ...a].slice(0, historyCap()))
 
   /* ── lookups ── */
   const contactById = useMemo(() => Object.fromEntries(contacts.map(c => [c.id, c])), [contacts])
@@ -1377,6 +1386,25 @@ export function CrmProvider({ children }) {
     return { state: 'ok', since, every }
   }
 
+  /** Free keeps FREE_LIMITS.historyDays of activity/audit; Pro keeps all. */
+  const historyCutoffIso = () => {
+    if (ent.can('unlimited_history', license)) return null
+    const d = new Date()
+    d.setDate(d.getDate() - (ent.FREE_LIMITS.historyDays || 90))
+    return d.toISOString()
+  }
+  const activityVisible = useMemo(() => {
+    const cut = historyCutoffIso()
+    if (!cut) return activity
+    return activity.filter(a => !a.ts || a.ts >= cut)
+  }, [activity, license])
+  const auditVisible = useMemo(() => {
+    const cut = historyCutoffIso()
+    if (!cut) return audit
+    return audit.filter(a => !a.ts || a.ts >= cut)
+  }, [audit, license])
+
+
   useEffect(() => {
     try { publishWidgetStats({ contacts, followUpStatus }) } catch {}
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1505,7 +1533,7 @@ export function CrmProvider({ children }) {
   }, [contacts, tasks, events, audit, notifState, notifPrefs, license, reminderPrefs.enabled]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const value = {
-    contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, gcal, toasts,
+    contacts, tasks, events, notes, tags, groups, rules, audit, activity, activityVisible, auditVisible, historyCutoffIso, imports, relFreq, snoozes, gcal, toasts,
     contactById, groupById, tagById, toast, followUpStatus, logActivity, logAudit,
     addContact, updateContact, toggleStar, markContacted, deleteContact, bulkDeleteContacts, bulkSetGroups, contactGroupIds, addNote, updateNote, deleteNote,
     addTask, moveTask, updateTask, deleteTask, duplicateTask, createFollowUpTask,
@@ -1522,7 +1550,7 @@ export function CrmProvider({ children }) {
     notifState, notifPrefs, buildNotifications, dismissNotif, snoozeNotif, unsnoozeNotif, markNotifRead, markAllNotifsRead, toggleNotifPref,
     reminderPrefs, patchReminderPrefs, requestReminderPermission, sendTestReminder, resyncReminders,
     widgetPrefs, toggleWidget, moveWidget, resetWidgets, DEFAULT_WIDGET_ORDER,
-    theme, toggleTheme,
+    theme, toggleTheme, setThemeExplicit,
     kbArticles, upsertKbArticle, deleteKbArticle,
     snapshots, takeSnapshotNow, restoreSnapshotById, deleteSnapshotById, downloadSnapshot, refreshSnapshots,
     pinStatus, PIN_FREE_ATTEMPTS,

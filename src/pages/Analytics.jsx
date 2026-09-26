@@ -77,7 +77,7 @@ function HBars({ items, onClick }) {
 
 /* ══════════════════════════════════════════════════════════ */
 export default function Analytics() {
-  const { contacts, tasks, activity, audit, tags, groups, events, imports, followUpStatus, can, isPro } = useCrm()
+  const { contacts, tasks, activity, activityVisible, audit, auditVisible, tags, groups, events, imports, followUpStatus, can, isPro, FREE_LIMITS, historyCutoffIso } = useCrm()
   const nav = useNavigate()
   const advanced = can?.('advanced_analytics')
   const [win, setWin] = useState(() => (typeof can === 'function' && can('advanced_analytics') ? 12 : 3))
@@ -85,6 +85,8 @@ export default function Analytics() {
   useEffect(() => { if (!advanced && win !== 3) setWin(3) }, [advanced, win])
 
 
+  const actSrc = activityVisible || activity
+  const auditSrc = auditVisible || audit
   const d = useMemo(() => {
     const buckets = monthBuckets(win)
     const bucketKeys = new Set(buckets.map(b => b.key))
@@ -95,7 +97,7 @@ export default function Analytics() {
     const addedTotal = addedPerMonth.reduce((s, b) => s + b.n, 0)
 
     /* touchpoints (activity) per month */
-    const actPerMonth = buckets.map(b => ({ ...b, n: activity.filter(a => ym(a.ts) === b.key).length }))
+    const actPerMonth = buckets.map(b => ({ ...b, n: actSrc.filter(a => ym(a.ts) === b.key).length }))
     const actTotal = actPerMonth.reduce((s, b) => s + b.n, 0)
 
     /* task completion */
@@ -103,13 +105,13 @@ export default function Analytics() {
     const rate = tasks.length ? Math.round(done.length / tasks.length * 100) : 0
     const donePerMonth = buckets.map(b => ({
       ...b,
-      n: activity.filter(a => ym(a.ts) === b.key && /^Task completed:/.test(a.text)).length
-        + audit.filter(a => ym(a.ts) === b.key && /complete|done/i.test(a.action || '')).length,
+      n: actSrc.filter(a => ym(a.ts) === b.key && /^Task completed:/.test(a.text)).length
+        + auditSrc.filter(a => ym(a.ts) === b.key && /complete|done/i.test(a.action || '')).length,
     }))
 
     /* average task turnaround: pair audit "Created task" with activity "Task completed: <title>" */
-    const created = audit.filter(a => a.action === 'Created task').map(a => ({ t: a.entity || '', ts: a.ts }))
-    const completed = activity.filter(a => /^Task completed:/.test(a.text)).map(a => ({ t: a.text.replace(/^Task completed:\s*/, ''), ts: a.ts }))
+    const created = auditSrc.filter(a => a.action === 'Created task').map(a => ({ t: a.entity || '', ts: a.ts }))
+    const completed = actSrc.filter(a => /^Task completed:/.test(a.text)).map(a => ({ t: a.text.replace(/^Task completed:\s*/, ''), ts: a.ts }))
     const gaps = []
     completed.forEach(c => {
       const src = created.find(x => x.t && c.t.trim().toLowerCase().includes(x.t.trim().toLowerCase().slice(0, 18)))
@@ -120,7 +122,7 @@ export default function Analytics() {
     else {
       /* fallback: mean gap between contact-linked touchpoints */
       const perContact = {}
-      activity.filter(a => a.contactId).forEach(a => (perContact[a.contactId] = perContact[a.contactId] || []).push(a.ts))
+      actSrc.filter(a => a.contactId).forEach(a => (perContact[a.contactId] = perContact[a.contactId] || []).push(a.ts))
       const allGaps = Object.values(perContact).flatMap(list => {
         const s = list.slice().sort()
         return s.slice(1).map((t, i) => daysBetweenISO(s[i], t))
@@ -130,7 +132,7 @@ export default function Analytics() {
 
     /* most-contacted people */
     const touchCount = {}
-    activity.forEach(a => {
+    actSrc.forEach(a => {
       if (a.contactId) touchCount[a.contactId] = (touchCount[a.contactId] || 0) + 1
       const m = a.text.match(/Logged contact with (.+)$/)
       if (m) { const c = contacts.find(x => x.name === m[1]); if (c) touchCount[c.id] = (touchCount[c.id] || 0) + 1 }
@@ -148,8 +150,8 @@ export default function Analytics() {
 
     /* day of week */
     const dow = [0, 0, 0, 0, 0, 0, 0]
-    activity.forEach(a => dow[new Date(a.ts).getDay()]++)
-    audit.forEach(a => dow[new Date(a.ts).getDay()]++)
+    actSrc.forEach(a => dow[new Date(a.ts).getDay()]++)
+    auditSrc.forEach(a => dow[new Date(a.ts).getDay()]++)
     const dowLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
     const bestDow = dow.indexOf(Math.max(...dow))
 
@@ -167,7 +169,7 @@ export default function Analytics() {
 
     /* busiest single day */
     const byDay = {}
-    activity.forEach(a => { const k = a.ts.slice(0, 10); byDay[k] = (byDay[k] || 0) + 1 })
+    actSrc.forEach(a => { const k = a.ts.slice(0, 10); byDay[k] = (byDay[k] || 0) + 1 })
     const [busyDay, busyN] = Object.entries(byDay).sort((a, b) => b[1] - a[1])[0] || [null, 0]
 
     /* cold VIPs + birthdays */
@@ -191,7 +193,7 @@ export default function Analytics() {
     ].filter(Boolean).slice(0, 4)
 
     return { addedPerMonth, addedTotal, actPerMonth, actTotal, done, rate, donePerMonth, turnaround, mostContacted, tagUse, groupDist, dow, dowLabels, overdueN, dueSoonN, onTrackPct, growth, thisPer, prevPer, insights, doneCount: done.length, eventsInWin: events.filter(e => inWindow(e.date)).length, importsTotal: imports.reduce((s, i) => s + (i.added || 0), 0) }
-  }, [contacts, tasks, activity, audit, tags, groups, events, imports, win]) // eslint-disable-line
+  }, [contacts, tasks, actSrc, auditSrc, tags, groups, events, imports, win]) // eslint-disable-line
 
   return (
     <div className="flex flex-col gap-5">
@@ -226,6 +228,17 @@ export default function Analytics() {
             )}
           </div>
         } />
+
+      {!advanced && (
+        <div className="card p-3 mb-1 flex items-center gap-3 flex-wrap" data-testid="history-free-banner"
+          style={{ borderColor: 'rgba(129,140,248,.35)' }}>
+          <span className="text-[12.5px] flex-1" style={{ color: 'var(--muted)' }}>
+            Free analytics uses the last {FREE_LIMITS?.historyDays || 90} days of activity · 3-month window.
+            Pro unlocks 6M / 12M windows and full history.
+          </span>
+          <a href="#/pro" className="btn btn-ghost btn-sm">Unlock Pro</a>
+        </div>
+      )}
 
       {/* hero stats */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
