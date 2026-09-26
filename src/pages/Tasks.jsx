@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { useCrm } from '../store'
 import { SectionHead, Avatar, DueBadge, Modal, Field, TagPill, PRIORITY_COLORS, CsvButton, toneVar } from '../components/ui'
+import TemplatePicker from '../components/TemplatePicker'
 import { cn, tsRel } from '../lib'
 
 const COLUMNS = [
@@ -347,6 +348,14 @@ function AddTaskModal({ open, onClose }) {
   return (
     <Modal open={open} onClose={onClose} title="New task">
       <div className="flex flex-col gap-4">
+        <div className="flex justify-end">
+          <TemplatePicker kind="task"
+            vars={{ name: contacts.find(c => c.id === f.contactId)?.name?.split(' ')[0] || 'them' }}
+            onApply={({ title, body }) => {
+              if (title) set('title', title)
+              if (body) set('desc', body)
+            }} />
+        </div>
         <Field label="Title *"><input className="input" value={f.title} onChange={e => set('title', e.target.value)} placeholder="What needs doing?" /></Field>
         <Field label="Description"><textarea className="input" rows={2} value={f.desc} onChange={e => set('desc', e.target.value)} placeholder="Optional context…" /></Field>
         <div className="grid grid-cols-2 gap-4">

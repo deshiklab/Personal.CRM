@@ -4,6 +4,9 @@ import { Search, UserPlus, Star, Phone, Mail, Cake, Users, Clock, CheckCircle2, 
 import { toVCF, downloadVCF } from '../lib/vcard'
 import { useCrm } from '../store'
 import { SectionHead, Avatar, TagPill, Pill, Modal, Drawer, Field, Empty, EVENT_COLORS, CsvButton } from '../components/ui'
+import { useT } from '../lib/i18n'
+import { buildContactTimeline } from '../lib/timeline'
+import TemplatePicker from '../components/TemplatePicker'
 import { relDay, fmtHuman, tsRel } from '../lib'
 import { contactGroupIds } from '../store'
 import PinConfirm from '../components/PinConfirm'
@@ -31,6 +34,7 @@ export const socHref = (p, v) => {
 export const socLabel = v => v.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')
 
 export default function Contacts() {
+  const { t } = useT()
   const crm = useCrm()
   const { contacts, groups, tags, followUpStatus, groupById, isPro, FREE_LIMITS, helpPrefs, patchHelpPrefs } = crm
   const [params, setParams] = useSearchParams()
@@ -88,8 +92,8 @@ export default function Contacts() {
 
   return (
     <div className="max-w-[1200px] mx-auto">
-      <SectionHead kicker="Directory" title="Contacts"
-        sub={`${contacts.length} people in your network · ${list.length} shown${!isPro() && Number.isFinite(FREE_LIMITS?.contacts) ? ` · Free plan ${contacts.length}/${FREE_LIMITS.contacts}` : ''}`}
+      <SectionHead kicker={t('contacts.kicker')} title={t('contacts.title')}
+        sub={t('contacts.sub', { n: contacts.length, shown: list.length }) + (!isPro() && Number.isFinite(FREE_LIMITS?.contacts) ? ` · ${t('contacts.freePlan', { used: contacts.length, cap: FREE_LIMITS.contacts })}` : '')}
         right={<div className="flex items-center gap-2">
           <CsvButton filename="contacts.csv" rows={crm.contacts} headers={[
             { label: 'Name', get: r => r.name }, { label: 'Role', get: r => r.role },
@@ -117,7 +121,7 @@ export default function Contacts() {
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--faint)' }} />
-          <input className="input" style={{ paddingLeft: 38 }} placeholder="Search name, role, company…" data-tip="contacts.search" value={q} onChange={e => setQ(e.target.value)} />
+          <input className="input" style={{ paddingLeft: 38 }} placeholder={t('contacts.search')} data-tip="contacts.search" value={q} onChange={e => setQ(e.target.value)} />
         </div>
         <select className="input" style={{ width: 'auto' }} value={groupF} onChange={e => setGroupF(e.target.value)}>
           <option value="">All groups</option>
@@ -356,7 +360,12 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete, onScanCa
   const rel = crm.relFreq[c.rel]
   const myNotes = crm.notes.filter(n => n.contactIds.includes(c.id))
   const myEvents = crm.events.filter(e => e.contactId === c.id).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5)
-  const myActs = crm.activity.filter(a => a.contactId === c.id).slice(0, 5)
+  const { t } = useT()
+  const [tlShow, setTlShow] = useState(12)
+  const timeline = buildContactTimeline(c, {
+    notes: crm.notes, tasks: crm.tasks, events: crm.events, activity: crm.activity,
+  })
+  useEffect(() => { setTlShow(12) }, [c?.id])
 
   const toggleTag = tid => {
     const has = c.tags.includes(tid)
@@ -394,7 +403,7 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete, onScanCa
 
       {/* Photo + visiting card */}
       <div className="card p-3 mt-4">
-        <div className="text-[10.5px] font-bold uppercase tracking-[.1em] mb-2" style={{ color: 'var(--faint)' }}>Photo & visiting card</div>
+        <div className="text-[10.5px] font-bold uppercase tracking-[.1em] mb-2" style={{ color: 'var(--faint)' }}>{t('contacts.photoCard')}</div>
         <div className="flex flex-wrap items-stretch gap-2">
           <div className="flex items-center gap-2 min-w-0 flex-1 rounded-xl p-2"
             style={{ background: 'var(--cardbg2)', border: '1px solid var(--border)' }}>
@@ -456,28 +465,28 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete, onScanCa
         }
         return (
           <div className="flex gap-2 mt-2.5" style={{ flexWrap: 'wrap' }}>
-            <span className="label w-full" style={{ marginBottom: -2 }}>Reach out directly</span>
+            <span className="label w-full" style={{ marginBottom: -2 }}>{t('contacts.reachOut')}</span>
             <a className="btn btn-ghost flex-1 justify-center" style={{ pointerEvents: digits ? 'auto' : 'none', opacity: digits ? 1 : 0.4 }}
                href={digits ? `tel:+${digits}` : '#'} title="Call through your phone dialer">
-              <Phone size={14} /> Call
+              <Phone size={14} /> {t('contacts.call')}
             </a>
             <a className="btn btn-ghost flex-1 justify-center" style={{ pointerEvents: digits ? 'auto' : 'none', opacity: digits ? 1 : 0.4 }}
                href={digits ? `https://wa.me/${digits}` : '#'} target="_blank" rel="noreferrer" title="Open WhatsApp chat (no API needed)">
-              <MessageCircle size={14} /> WhatsApp
+              <MessageCircle size={14} /> {t('contacts.whatsapp')}
             </a>
             <a className="btn btn-ghost flex-1 justify-center" style={{ pointerEvents: c.email ? 'auto' : 'none', opacity: c.email ? 1 : 0.4 }}
                href={c.email ? `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(c.email)}` : '#'} target="_blank" rel="noreferrer" title="Compose in Gmail">
-              <Mail size={14} /> Email
+              <Mail size={14} /> {t('contacts.email')}
             </a>
             <button className="btn btn-ghost flex-1 justify-center" onClick={shareCard} title="Share the full contact card (.vcf) — works with phone share sheet">
-              <Share2 size={14} /> Share card
+              <Share2 size={14} /> {t('contacts.shareCard')}
             </button>
           </div>
         )
       })()}
 
       <div className="flex gap-2 mt-5">
-        <button className="btn btn-primary flex-1" onClick={() => crm.markContacted(c.id)}><CheckCircle2 size={15} /> Log contact</button>
+        <button className="btn btn-primary flex-1" onClick={() => crm.markContacted(c.id)}><CheckCircle2 size={15} /> {t('contacts.logContact')}</button>
         <button className="btn btn-ghost" onClick={() => crm.createFollowUpTask(c.id)}>＋ Task</button>
         <button className="btn btn-ghost" onClick={() => crm.toggleStar(c.id)}>
           <Star size={15} style={{ color: c.starred ? '#fbbf24' : 'var(--muted)' }} fill={c.starred ? '#fbbf24' : 'none'} />
@@ -486,11 +495,11 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete, onScanCa
 
       <div className="flex gap-2 mt-2">
         <button className="btn btn-ghost flex-1 justify-center" onClick={() => onEdit?.(c.id)} title="Edit every field of this contact">
-          <Pencil size={14} /> Edit details
+          <Pencil size={14} /> {t('contacts.editDetails')}
         </button>
         <button className="btn btn-ghost flex-1 justify-center" onClick={() => onDelete?.([c.id])} title="Delete this contact (pincode required)"
           style={{ color: 'var(--t-rose)', borderColor: '#fb718544' }}>
-          <Trash2 size={14} /> Delete contact
+          <Trash2 size={14} /> {t('contacts.deleteContact')}
         </button>
       </div>
 
@@ -566,7 +575,7 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete, onScanCa
       </div>
 
       <div className="mt-5">
-        <div className="label">Interests & topics</div>
+        <div className="label">{t('contacts.interests')}</div>
         <div className="flex gap-1.5 flex-wrap items-center">
           {(c.interests || []).map((it, i) => (
             <span key={i} className="chip" style={{ color: 'var(--t-sky)', borderColor: '#38bdf844', background: '#38bdf812' }}>
@@ -639,11 +648,13 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete, onScanCa
       )}
 
       <div className="mt-5">
-        <div className="label">Notes</div>
+        <div className="label">{t('contacts.notes')}</div>
         <div className="card p-3">
           <input className="input mb-2" placeholder="Note title…" value={noteTitle} onChange={e => setNoteTitle(e.target.value)} />
           <textarea className="input" rows={2} placeholder="Write something worth remembering…" value={noteBody} onChange={e => setNoteBody(e.target.value)} />
-          <div className="flex justify-end mt-2">
+          <div className="flex justify-between items-center gap-2 mt-2 flex-wrap">
+            <TemplatePicker kind="note" vars={{ name: c.name?.split(' ')[0] || c.name || '' }}
+              onApply={({ title, body }) => { if (title) setNoteTitle(title); if (body) setNoteBody(body) }} />
             <button className="btn btn-primary btn-sm" disabled={!noteTitle.trim()}
               onClick={() => { crm.addNote({ title: noteTitle.trim(), body: noteBody.trim(), contactIds: [c.id] }); setNoteTitle(''); setNoteBody(''); crm.toast('Note saved') }}>
               <StickyNote size={13} /> Save note
@@ -661,18 +672,54 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete, onScanCa
         </div>
       </div>
 
-      {myActs.length > 0 && (
-        <div className="mt-5">
-          <div className="label">Timeline</div>
-          {myActs.map(a => (
-            <div key={a.id} className="flex items-center gap-3 py-2 border-b last:border-0" style={{ borderColor: 'var(--hairline)' }}>
-              <span className="dot" style={{ background: 'var(--i1)' }} />
-              <span className="text-[12.5px] flex-1">{a.text}</span>
-              <span className="text-[10.5px] flex-none" style={{ color: 'var(--faint)' }}>{tsRel(a.ts)}</span>
-            </div>
-          ))}
+      <div className="mt-5">
+        <div className="label flex items-center justify-between gap-2">
+          <span>{t('contacts.timeline')}</span>
+          {timeline.length > 0 && (
+            <span className="text-[10.5px] font-medium normal-case tracking-normal" style={{ color: 'var(--faint)' }}>
+              {timeline.length}
+            </span>
+          )}
         </div>
-      )}
+        {timeline.length === 0 ? (
+          <div className="card p-3 text-[12.5px]" style={{ color: 'var(--muted)' }}>
+            {t('contacts.timelineEmpty')}
+          </div>
+        ) : (
+          <div className="relative pl-3">
+            <div className="absolute left-[7px] top-2 bottom-2 w-px" style={{ background: 'var(--hairline)' }} />
+            {timeline.slice(0, tlShow).map(item => {
+              const kindKey = {
+                note: 'contacts.timelineNote',
+                task: 'contacts.timelineTask',
+                event: 'contacts.timelineEvent',
+                touch: 'contacts.timelineTouch',
+              }[item.kind] || 'contacts.timelineTouch'
+              return (
+                <div key={item.id} className="relative flex gap-3 py-2.5">
+                  <span className="relative z-[1] mt-1.5 w-2.5 h-2.5 rounded-full flex-none ring-2"
+                    style={{ background: item.tone, ringColor: 'var(--cardbg)', boxShadow: `0 0 0 2px var(--cardbg)` }} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded"
+                        style={{ background: (item.tone || '#94a3b8') + '22', color: item.tone }}>{t(kindKey)}</span>
+                      <span className="text-[10.5px] flex-none" style={{ color: 'var(--faint)' }}>{item.at ? tsRel(item.at) : ''}</span>
+                    </div>
+                    <div className="text-[13px] font-medium mt-0.5 leading-snug">{item.title}</div>
+                    {item.body ? <div className="text-[12px] mt-0.5 leading-snug" style={{ color: 'var(--muted)' }}>{item.body}</div> : null}
+                  </div>
+                </div>
+              )
+            })}
+            {timeline.length > tlShow && (
+              <button type="button" className="btn btn-ghost btn-sm mt-1 ml-5"
+                onClick={() => setTlShow(n => n + 12)}>
+                {t('contacts.timelineMore')} · {timeline.length - tlShow}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

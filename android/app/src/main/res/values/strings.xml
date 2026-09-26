@@ -4,4 +4,8 @@
     <string name="title_activity_main">Personal CRM</string>
     <string name="package_name">com.bitscol.personalcrm</string>
     <string name="custom_url_scheme">com.bitscol.personalcrm</string>
+    <string name="widget_overdue_name">Overdue &amp; next</string>
+    <string name="widget_overdue_desc">Shows overdue follow-ups and the next person to contact.</string>
+    <string name="widget_overdue_placeholder">Open app to refresh</string>
+    <string name="widget_next_placeholder">Next up appears after you open Personal CRM</string>
 </resources>

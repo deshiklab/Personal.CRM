@@ -8,6 +8,9 @@ import { useCrm } from '../store'
 import { daysAheadISO } from '../lib'
 import { toneVar } from './ui'
 import * as storage from '../lib/storage'
+import { consumeSharePayload, peekSharePayload } from '../lib/shareIntent'
+import { useT } from '../lib/i18n'
+import TemplatePicker from './TemplatePicker'
 
 /* Dev-only helpers (the demo transcript simulator) never ship in a build */
 const DEV = import.meta.env.DEV || (() => { try { return storage.getItem('pcrm-dev') === '1' } catch { return false } })()
@@ -51,9 +54,14 @@ const KIND_META = {
 
 export default function QuickCapture() {
   const { contacts, addContact, addTask, addNote, commitImport, toast, logActivity } = useCrm()
+  const { t } = useT()
   const nav = useNavigate()
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState('lead')
+  const [shareText, setShareText] = useState('')
+  const [noteTitle, setNoteTitle] = useState('')
+  const [noteBody, setNoteBody] = useState('')
+  const [taskTitle, setTaskTitle] = useState('')
   const [session, setSession] = useState([])       // this session's captures
 
   /* lead form */
@@ -77,6 +85,25 @@ export default function QuickCapture() {
 
   const push = (kind, label, sub) => setSession(s => [{ kind, label, sub, t: Date.now() }, ...s].slice(0, 8))
   const ago = t => { const s = Math.round((Date.now() - t) / 1000); return s < 5 ? 'just now' : s < 60 ? `${s}s ago` : `${Math.round(s / 60)}m ago` }
+
+
+  /* Android / web share-sheet → open QC on share tab */
+  useEffect(() => {
+    const take = () => {
+      const p = peekSharePayload()
+      if (!p) return
+      const text = [p.title, p.text, p.url].filter(Boolean).join('\n').trim()
+      if (!text) return
+      setShareText(text)
+      setNoteBody(text)
+      setTab('share')
+      setOpen(true)
+    }
+    take()
+    const onShare = () => take()
+    window.addEventListener('pcrm-share', onShare)
+    return () => window.removeEventListener('pcrm-share', onShare)
+  }, [])
 
   useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') setOpen(false) }
@@ -211,8 +238,10 @@ export default function QuickCapture() {
 
             <div className="flex items-center gap-2 mb-5">
               <Tab id="lead" icon={UserPlus}>Lead</Tab>
+              <Tab id="note" icon={StickyNote}>Note</Tab>
               <Tab id="voice" icon={Mic}>Voice</Tab>
               <Tab id="bulk" icon={ClipboardPaste}>Bulk paste</Tab>
+              {shareText ? <Tab id="share" icon={ClipboardPaste}>{t('share.fromShare')}</Tab> : null}
             </div>
 
             {/* ── LEAD ── */}
@@ -335,6 +364,107 @@ export default function QuickCapture() {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+
+            {/* ── NOTE / TASK ── */}
+            {tab === 'note' && (
+              <div>
+                <div className="flex justify-end mb-2">
+                  <TemplatePicker kind={null} vars={{ name: '' }}
+                    onApply={({ title, body, kind }) => {
+                      if (kind === 'task') {
+                        setTaskTitle(title || body || '')
+                        setNoteTitle(''); setNoteBody('')
+                      } else {
+                        if (title) setNoteTitle(title)
+                        if (body) setNoteBody(body)
+                      }
+                    }} />
+                </div>
+                <label className="label">Note title</label>
+                <input className="input mb-2" style={{ padding: '11px 13px', fontSize: 15 }}
+                  placeholder="Title…" value={noteTitle} onChange={e => setNoteTitle(e.target.value)} />
+                <label className="label">Body</label>
+                <textarea className="input" rows={4} style={{ padding: '11px 13px', fontSize: 14 }}
+                  placeholder="Something worth remembering…" value={noteBody} onChange={e => setNoteBody(e.target.value)} />
+                <label className="label mt-3">Or quick task</label>
+                <input className="input" style={{ padding: '11px 13px', fontSize: 15 }}
+                  placeholder="Task title…" value={taskTitle} onChange={e => setTaskTitle(e.target.value)} />
+                <div className="flex gap-2 mt-4 flex-wrap">
+                  <button className="btn btn-primary flex-1" disabled={!noteTitle.trim() && !noteBody.trim()}
+                    onClick={() => {
+                      const n = addNote({ title: noteTitle.trim() || 'Quick note', body: noteBody.trim(), contactIds: [] })
+                      logActivity(`Quick note: "${n.title}"`)
+                      toast('Note saved')
+                      push('note', n.title, 'local')
+                      setNoteTitle(''); setNoteBody('')
+                    }}>
+                    <StickyNote size={14} /> Save note
+                  </button>
+                  <button className="btn btn-ghost flex-1" disabled={!taskTitle.trim()}
+                    onClick={() => {
+                      addTask({ title: taskTitle.trim(), column: 'todo', priority: 'med', due: null, contactId: null })
+                      toast('Task created')
+                      push('task', taskTitle.trim(), 'todo')
+                      setTaskTitle('')
+                    }}>
+                    <CheckSquare size={14} /> Save task
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── SHARE IN ── */}
+            {tab === 'share' && (
+              <div>
+                <p className="text-[12.5px] mb-2" style={{ color: 'var(--muted)' }}>{t('share.received')}</p>
+                <textarea className="input" rows={5} style={{ padding: '11px 13px', fontSize: 14 }}
+                  value={shareText} onChange={e => setShareText(e.target.value)} />
+                <div className="flex gap-2 mt-4 flex-wrap">
+                  <button className="btn btn-primary flex-1"
+                    onClick={() => {
+                      const body = shareText.trim()
+                      if (!body) return
+                      const n = addNote({ title: 'Shared text', body, contactIds: [] })
+                      consumeSharePayload()
+                      logActivity(`Shared text captured`)
+                      toast(t('share.received'))
+                      push('note', n.title, 'share')
+                      setShareText('')
+                      setTab('note')
+                    }}>
+                    <StickyNote size={14} /> Save as note
+                  </button>
+                  <button className="btn btn-ghost flex-1"
+                    onClick={() => {
+                      const line = shareText.trim().split('\n')[0].slice(0, 120)
+                      if (!line) return
+                      addTask({ title: line, column: 'todo', priority: 'med', due: null, contactId: null, desc: shareText.trim() })
+                      consumeSharePayload()
+                      toast('Task created from share')
+                      push('task', line, 'share')
+                      setShareText('')
+                    }}>
+                    <CheckSquare size={14} /> Save as task
+                  </button>
+                  <button className="btn btn-ghost"
+                    onClick={() => {
+                      /* try parse as lead: first line name, phone in text */
+                      const raw = shareText.trim()
+                      const phoneM = raw.match(/\+?[\d][\d\s\-()]{6,}\d/)
+                      const nameLine = raw.split(/[\n,]/)[0].replace(/[\d+\-()\s]{6,}/g,'').trim() || 'Shared contact'
+                      const c = addContact({ name: nameLine.slice(0, 80), phone: phoneM ? phoneM[0].replace(/[^\d+]/g,'') : '', groupId: 'g_leads', rel: 'lead' })
+                      consumeSharePayload()
+                      logActivity(`Quick-captured lead ${c.name}`, c.id)
+                      toast(`Lead saved: ${c.name}`)
+                      push('contact', c.name, 'share')
+                      setShareText('')
+                    }}>
+                    <UserPlus size={14} /> Save as lead
+                  </button>
+                </div>
               </div>
             )}
 

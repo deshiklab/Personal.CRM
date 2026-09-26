@@ -7,6 +7,7 @@ import {
 import { SectionHead, Card, Pill, Field } from '../components/ui'
 import { useCrm } from '../store'
 import { BRAND } from '../brand'
+import { useT } from '../lib/i18n'
 import {
   PRO_FEATURE_LIST, FREE_LIMITS, PRODUCT_ID_PLAY, tierLabel,
   issueLicenseKey,
@@ -24,6 +25,7 @@ const ICONS = {
 }
 
 export default function Pro() {
+  const { t } = useT()
   const {
     license, isPro, unlockWithKey, unlockComp, restorePurchases,
     purchaseProLifetime, billingAvailable, getProProduct,
@@ -108,11 +110,11 @@ export default function Pro() {
   return (
     <div className="max-w-[920px] mx-auto">
       <SectionHead
-        kicker="Phase 2"
-        title={pro ? 'You are on Pro' : 'Unlock Personal CRM Pro'}
+        kicker={t('pro.kicker')}
+        title={pro ? t('pro.onProTitle') : t('pro.unlockTitle')}
         sub={pro
           ? `Lifetime unlock · ${tierLabel(license)} · one-time, no subscription`
-          : 'One-time purchase. Everything stays on this device. No account, no subscription.'}
+          : t('pro.unlockSub')}
         right={<Pill color={pro ? '#34d399' : '#818cf8'}>{tierLabel(license)}</Pill>}
       />
 
@@ -150,7 +152,7 @@ export default function Pro() {
       {/* comparison */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
         <Card className="p-5">
-          <div className="text-[11px] font-bold uppercase tracking-[.1em] mb-2" style={{ color: 'var(--faint)' }}>Free forever</div>
+          <div className="text-[11px] font-bold uppercase tracking-[.1em] mb-2" style={{ color: 'var(--faint)' }}>{t('pro.freeForever')}</div>
           <ul className="space-y-2 text-[13px]">
             {[
               'Contacts, tasks, notes, calendar, birthdays',
@@ -169,7 +171,7 @@ export default function Pro() {
           </ul>
         </Card>
         <Card className="p-5" style={{ borderColor: 'rgba(129,140,248,.45)' }}>
-          <div className="text-[11px] font-bold uppercase tracking-[.1em] mb-2" style={{ color: 'var(--t-indigo)' }}>Pro · one-time</div>
+          <div className="text-[11px] font-bold uppercase tracking-[.1em] mb-2" style={{ color: 'var(--t-indigo)' }}>{t('pro.proOneTime')}</div>
           <ul className="space-y-2.5 text-[13px]">
             {PRO_FEATURE_LIST.map(f => {
               const Icon = ICONS[f.id] || Sparkles
@@ -267,7 +269,7 @@ export default function Pro() {
             {err && <div className="text-[12px] font-semibold mt-2" style={{ color: 'var(--t-red)' }}>{err}</div>}
             <button type="button" className="btn btn-primary mt-3" disabled={busy || !key.trim()} onClick={redeem}>
               {busy ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />}
-              {busy ? 'Checking…' : 'Unlock with key'}
+              {busy ? 'Checking…' : t('pro.unlockKey')}
             </button>
           </Card>
         </div>

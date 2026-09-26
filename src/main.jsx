@@ -5,10 +5,12 @@ import App from './App'
 import { CrmProvider } from './store'
 import ErrorBoundary from './components/ErrorBoundary'
 import { hydrate, getBackend } from './lib/storage'
+import { bootShareIntent } from './lib/shareIntent'
 import './index.css'
 
 async function boot() {
   const { backend } = await hydrate()
+  try { await bootShareIntent() } catch {}
   /* tiny marker so support can see which store the build is using */
   try { document.documentElement.dataset.store = backend } catch {}
 

@@ -9,6 +9,7 @@ import { notifyOwner, notifyConfigured } from './lib/notify'
 import * as snap from './lib/snapshots'
 import * as secrets from './lib/secrets'
 import * as storage from './lib/storage'
+import { publishWidgetStats } from './lib/widgetStats'
 import * as ent from './lib/entitlements'
 import * as billing from './lib/billing'
 import * as secureBackup from './lib/secureBackup'
@@ -152,6 +153,7 @@ export function CrmProvider({ children }) {
       }))
     } catch {}
   }, [contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock, profile, kbArticles, helpPrefs])
+
 
   /* the gist token is mirrored into its own key — never into the data blob */
   useEffect(() => { secrets.setGistToken(gist.token) }, [gist.token])
@@ -1374,6 +1376,12 @@ export function CrmProvider({ children }) {
     if (overdueBy >= -3) return { state: 'due-soon', dueIn: -overdueBy, since, every }
     return { state: 'ok', since, every }
   }
+
+  useEffect(() => {
+    try { publishWidgetStats({ contacts, followUpStatus }) } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contacts, snoozes, relFreq, tasks])
+
 
   const resetAll = async () => {
     try {

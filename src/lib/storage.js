@@ -43,6 +43,9 @@ export const OWNED_KEYS = [
   'pcrm-last-error',
   'pcrm-dev',
   'pcrm-license',
+  'pcrm-templates',
+  'pcrm-pending-share',
+  'pcrm-widget-stats',
 ]
 
 /**
