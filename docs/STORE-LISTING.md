@@ -93,10 +93,9 @@ Already in `android/app/src/main/res/mipmap-*` and `public/icons/`. Play needs 5
 
 ```
 Personal CRM 2.0.0
-• Pro lifetime unlock via Play Billing / StoreKit (one-time)
-• Local device reminders for tasks, follow-ups, birthdays
-• Encrypted backup (PIN/passphrase) · Welcome restore / Gist / Google
-• English + বাংলা · contact density · offline key revoke list
-• Faster contacts list · a11y skip link & focus rings
-• Visiting-card scan, offline-first core
+• Pro lifetime unlock — Play / App Store one-time, or web licence key (PCRM1-…)
+• Device reminders · unlimited contacts · auto backups · longer analytics
+• Contact relationship timeline · note/task/message templates
+• English + বাংলা · Android share-to-capture · home overdue widget shell
+• Encrypted backup · PIN lock · visiting-card scan · 100% on-device
 ```
