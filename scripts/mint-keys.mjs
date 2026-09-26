@@ -50,13 +50,14 @@ async function hmacSign(message) {
   return b64url(new Uint8Array(sig)).slice(0, 22)
 }
 
-async function issueLicenseKey({ email = '', days = null } = {}) {
+async function issueLicenseKey({ email = '', days = null, iat = null } = {}) {
+  const now = iat != null ? iat : Date.now()
   const payload = {
     v: 1,
     pid: PRODUCT_ID_WEB,
     email: String(email || '').toLowerCase() || undefined,
-    iat: Date.now(),
-    exp: days ? Date.now() + days * 864e5 : undefined,
+    iat: now,
+    exp: days ? now + days * 864e5 : undefined,
   }
   const payloadB64 = b64url(JSON.stringify(payload))
   const sig = await hmacSign(payloadB64)
@@ -65,7 +66,7 @@ async function issueLicenseKey({ email = '', days = null } = {}) {
 
 const rows = []
 for (let i = 0; i < count; i++) {
-  const r = await issueLicenseKey({ email: email || undefined, days })
+  const r = await issueLicenseKey({ email: email || undefined, days, iat: Date.now() + i })
   rows.push({
     n: i + 1,
     key: r.key,

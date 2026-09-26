@@ -2,6 +2,8 @@
 
 **Repo is done.** Run this on a machine with your Play / keystore / email.
 
+Optional local pack (gitignored): after clone, run `node scripts/mint-keys.mjs --count 50 --csv ops-local/pcrm-keys-pool.csv --fingerprints` and keep keys only under `ops-local/` (see `.gitignore`). Paste-ready listing lives in `docs/STORE-LISTING.md`.
+
 Live web: https://deshiklab.github.io/Personal.CRM/  
 Package: `com.bitscol.personalcrm` · **2.0.0** (versionCode **4**)  
 IAP id (Play + App Store): `personal_crm_pro_lifetime`

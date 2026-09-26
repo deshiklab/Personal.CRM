@@ -54,3 +54,9 @@ ios/App/build/
 ios/App/output/
 ios/DerivedData/
 ios/App/App/public/
+
+# Owner-only launch pack (keys, passwords notes) — never commit
+ops-local/
+**/pcrm-keys*.csv
+**/pcrm-keys*.txt
+**/*-keys-pool.csv
