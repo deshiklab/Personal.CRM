@@ -1,3 +1,4 @@
+import { normalizeArticle, normalizeCollection } from './lib/wiki'
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import * as seed from './data/seed'
 import { uid, todayISO, daysAheadISO, diffDays, daysUntil } from './lib'
@@ -41,6 +42,9 @@ export function CrmProvider({ children }) {
   const [devices, setDevices]     = useState(init?.devices   || [])
   const [reminders, setReminders] = useState(init?.reminders || [])
   const [reminderPrefs, setReminderPrefs] = useState(init?.reminderPrefs || { sound: 'bell', volume: 0.7, vibrate: true, enabled: true, leadDefault: 10 })
+  const [kbArticles, setKbArticles]       = useState(() => (init?.kbArticles || seed.KB_ARTICLES).map(normalizeArticle))
+  const [kbCollections, setKbCollections] = useState(() => (init?.kbCollections || seed.KB_COLLECTIONS).map(normalizeCollection))
+  const [kbViews, setKbViews]             = useState(init?.kbViews || {})
   const [tags, setTags]           = useState(init?.tags      || seed.TAGS)
   const [groups, setGroups]       = useState(init?.groups    || seed.GROUPS)
   const [rules, setRules]         = useState(init?.rules     || seed.SYNC_RULES)
@@ -92,11 +96,11 @@ export function CrmProvider({ children }) {
   useEffect(() => {
     try {
       localStorage.setItem(KEY, JSON.stringify({
-        contacts, tasks, events, notes, noteLabels, files, devices, reminders, reminderPrefs, tags, groups, rules, audit,
+        contacts, tasks, events, notes, noteLabels, files, devices, reminders, reminderPrefs, kbArticles, kbCollections, kbViews, tags, groups, rules, audit,
         activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock,
       }))
     } catch {}
-  }, [contacts, tasks, events, notes, noteLabels, files, devices, reminders, reminderPrefs, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock])
+  }, [contacts, tasks, events, notes, noteLabels, files, devices, reminders, reminderPrefs, kbArticles, kbCollections, kbViews, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock])
 
   /* ── toasts ── */
   const toast = (msg, tone = 'ok') => {
@@ -340,6 +344,39 @@ export function CrmProvider({ children }) {
   }
   const updateReminderPrefs = patch => setReminderPrefs(p => ({ ...p, ...patch }))
 
+  /* ── knowledge base ── */
+  const addKbArticle = data => {
+    const a = normalizeArticle({ ...data, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() })
+    setKbArticles(xs => [a, ...xs])
+    logAudit('user', 'Created article', a.title, a.collectionId ? 'In a collection' : 'No collection')
+    return a
+  }
+  const updateKbArticle = (id, patch) =>
+    setKbArticles(xs => xs.map(x => x.id === id ? normalizeArticle({ ...x, ...patch, updatedAt: new Date().toISOString() }) : x))
+  const deleteKbArticle = id => {
+    const a = kbArticles.find(x => x.id === id)
+    setKbArticles(xs => xs.filter(x => x.id !== id))
+    setKbViews(v => { const n = { ...v }; delete n[id]; return n })
+    if (a) logAudit('user', 'Deleted article', a.title)
+  }
+  const touchKbView = id => setKbViews(v => ({ ...v, [id]: new Date().toISOString() }))
+  const addKbCollection = data => {
+    const c = normalizeCollection(data)
+    setKbCollections(xs => [...xs, c])
+    logAudit('user', 'Created collection', c.name)
+    return c
+  }
+  const updateKbCollection = (id, patch) => setKbCollections(xs => xs.map(x => x.id === id ? { ...x, ...patch } : x))
+  const deleteKbCollection = id => {
+    const doomed = kbCollections.find(x => x.id === id)
+    const parent = doomed?.parentId || null
+    setKbCollections(xs => xs.filter(x => x.id !== id).map(x => x.parentId === id ? { ...x, parentId: parent } : x))
+    setKbArticles(xs => xs.map(a => a.collectionId === id ? { ...a, collectionId: parent } : a))
+    if (doomed) logAudit('user', 'Deleted collection', doomed.name, 'children moved up')
+  }
+  const kbArticleById = Object.fromEntries(kbArticles.map(a => [a.id, a]))
+  const kbCollectionById = Object.fromEntries(kbCollections.map(c => [c.id, c]))
+
   /* ── tasks ── */
   const addTask = data => {
     const t = { id: uid(), column: 'todo', priority: 'med', due: null, contactId: null, tags: [], ...data }
@@ -582,7 +619,7 @@ export function CrmProvider({ children }) {
 
   const buildBackup = () => JSON.stringify({
     app: 'personal-crm', version: 2, exportedAt: new Date().toISOString(),
-    data: { contacts, tasks, events, notes, noteLabels, files, devices, reminders, reminderPrefs, tags, groups, rules, relFreq, audit, activity, imports, snoozes, notifState, notifPrefs, widgetPrefs, mailboxes, emails },
+    data: { contacts, tasks, events, notes, noteLabels, files, devices, reminders, reminderPrefs, kbArticles, kbCollections, kbViews, tags, groups, rules, relFreq, audit, activity, imports, snoozes, notifState, notifPrefs, widgetPrefs, mailboxes, emails },
   }, null, 2)
 
   const driveBackupNow = async () => {
@@ -617,6 +654,9 @@ export function CrmProvider({ children }) {
     if (Array.isArray(d.devices)) setDevices(d.devices)
     if (Array.isArray(d.reminders)) setReminders(d.reminders)
     if (d.reminderPrefs) setReminderPrefs(p => ({ ...p, ...d.reminderPrefs }))
+    if (Array.isArray(d.kbArticles)) setKbArticles(d.kbArticles.map(normalizeArticle))
+    if (Array.isArray(d.kbCollections)) setKbCollections(d.kbCollections.map(normalizeCollection))
+    if (d.kbViews) setKbViews(d.kbViews)
     setTags(d.tags || []); setGroups(d.groups || []); setRules(d.rules || [])
     if (d.relFreq) setRelFreq(d.relFreq); if (d.audit) setAudit(d.audit); if (d.activity) setActivity(d.activity)
     if (d.imports) setImports(d.imports); if (d.snoozes) setSnoozes(d.snoozes)
@@ -702,7 +742,7 @@ export function CrmProvider({ children }) {
 
   /* factory reset to a BLANK crm — PIN-confirmed; wipes everything incl. pincode */
   const blankState = () => ({
-    contacts: [], tasks: [], events: [], notes: [], noteLabels: [], files: [], devices: [], reminders: [], tags: [], groups: [], rules: [], audit: [],
+    contacts: [], tasks: [], events: [], notes: [], noteLabels: [], files: [], devices: [], reminders: [], kbArticles: [], kbCollections: [], kbViews: {}, tags: [], groups: [], rules: [], audit: [],
     activity: [], imports: [], relFreq: {}, snoozes: {}, carddav: null,
     gcal: { connected: false, email: null, lastSync: null },
     notifState: {}, notifPrefs, widgetPrefs,
@@ -738,7 +778,7 @@ export function CrmProvider({ children }) {
 
   /* ── multi-device sync: single personal-crm-sync.json in the user's Drive ── */
   const snapshotCore = () => ({
-    contacts, tasks, events, notes, noteLabels, files, devices, reminders, reminderPrefs, tags, groups, rules, relFreq, emails,
+    contacts, tasks, events, notes, noteLabels, files, devices, reminders, reminderPrefs, kbArticles, kbCollections, tags, groups, rules, relFreq, emails,
   })
   const applySyncSnapshot = d => {
     if (Array.isArray(d.contacts)) setContacts(d.contacts.map(normalizeContact))
@@ -750,6 +790,8 @@ export function CrmProvider({ children }) {
     if (Array.isArray(d.devices)) setDevices(d.devices)
     if (Array.isArray(d.reminders)) setReminders(d.reminders)
     if (d.reminderPrefs) setReminderPrefs(p => ({ ...p, ...d.reminderPrefs }))
+    if (Array.isArray(d.kbArticles)) setKbArticles(d.kbArticles.map(normalizeArticle))
+    if (Array.isArray(d.kbCollections)) setKbCollections(d.kbCollections.map(normalizeCollection))
     if (Array.isArray(d.tags)) setTags(d.tags)
     if (Array.isArray(d.groups)) setGroups(d.groups)
     if (Array.isArray(d.rules)) setRules(d.rules)
@@ -1199,6 +1241,7 @@ export function CrmProvider({ children }) {
     addNoteLabel, updateNoteLabel, deleteNoteLabel,
     addFileMeta, updateFileMeta, deleteFile, touchDevice, filesOfDevice,
     reminders, reminderPrefs, addReminder, updateReminder, deleteReminder, fireReminder, snoozeReminder, completeReminder,
+    kbArticles, kbCollections, kbViews, kbArticleById, kbCollectionById, addKbArticle, updateKbArticle, deleteKbArticle, touchKbView, addKbCollection, updateKbCollection, deleteKbCollection,
     remindersFor, cancelRemindersFor, updateReminderPrefs,
     addTask, moveTask, updateTask, deleteTask, duplicateTask, createFollowUpTask,
     addEvent, moveEvent, deleteEvent,

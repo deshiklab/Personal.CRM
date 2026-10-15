@@ -23,6 +23,8 @@ import IntegrationsPage from './pages/IntegrationsPage'
 import FollowUps from './pages/FollowUps'
 import Notifications from './pages/Notifications'
 import FilesPage from './pages/FilesPage'
+import KnowledgeBase from './pages/KnowledgeBase'
+import ArticleEditor from './pages/ArticleEditor'
 import ReminderHost from './components/ReminderHost'
 
 export default function App() {
@@ -42,6 +44,8 @@ export default function App() {
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/notes" element={<Notes />} />
+            <Route path="/kb" element={<KnowledgeBase />} />
+            <Route path="/kb/:id" element={<ArticleEditor />} />
             <Route path="/files" element={<FilesPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/birthdays" element={<Birthdays />} />

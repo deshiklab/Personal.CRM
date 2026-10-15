@@ -189,3 +189,34 @@ export const IMPORTS = [
 export const CARDDAV = null
 export const GCAL = { connected: false, email: null, lastSync: null }
 
+
+/* ── Knowledge Base (WS-6) ───────────────────────────────── */
+export const KB_COLLECTIONS = [
+  { id: 'kc1', name: 'Projects', parentId: null, icon: '🎯', color: '#34d399', order: 0 },
+  { id: 'kc2', name: 'Reading Notes', parentId: null, icon: '📖', color: '#a78bfa', order: 1 },
+  { id: 'kc3', name: 'People', parentId: null, icon: '👥', color: '#f472b6', order: 2 },
+  { id: 'kc4', name: 'Project Atlas', parentId: 'kc1', icon: '🗺️', color: '#38bdf8', order: 0 },
+]
+export const KB_ARTICLES = [
+  {
+    id: 'ka1', title: 'Personal CRM Handbook',
+    summary: 'How I run this CRM — the operating manual.',
+    body: `# Personal CRM Handbook\n\nThe single source of truth for how I stay in touch with people and track what matters.\n\n## Rhythm\n- daily: clear the inbox, plan the day\n- weekly: stay-in-touch sweep, review [[Project Atlas]]\n- monthly: backup, prune, reflect\n\n## Related\n- [[Project Atlas]] — the build project for this app\n- [[Deep Work notes]] — focus system I try to follow\n`,
+    collectionId: 'kc1', tags: ['crm', 'workflow'], contactIds: [],
+    favorite: true, createdAt: '2026-09-01T09:00:00.000Z', updatedAt: '2026-10-10T09:00:00.000Z',
+  },
+  {
+    id: 'ka2', title: 'Project Atlas',
+    summary: 'Personal CRM v2 build — scope, milestones, open questions.',
+    body: `# Project Atlas\n\nRebuild the personal CRM into a phone-first tool.\n\n## Scope\n- notes that rival Google Keep\n- phone contacts in and out\n- files + nearby transfer\n- real reminders\n\n## People\n- Tanvir helps with the Android build (see contact drawer)\n\n## See also\n- [[Personal CRM Handbook]]\n`,
+    collectionId: 'kc4', tags: ['project', 'build'], contactIds: ['c3'],
+    favorite: false, createdAt: '2026-09-15T09:00:00.000Z', updatedAt: '2026-10-12T09:00:00.000Z',
+  },
+  {
+    id: 'ka3', title: 'Deep Work notes',
+    summary: 'Key ideas from Cal Newport — rules for focused success.',
+    body: `# Deep Work notes\n\n## Key ideas\n1. deep work is a skill, not a habit\n2. schedule every minute of the day\n3. embrace boredom\n\n## Apply\n- [ ] two deep blocks per week\n- [ ] phone in another room\n\n## Links\n- back into [[Personal CRM Handbook]] rhythm\n- discussed with [[Ayesha Siddiqua]] in book club\n`,
+    collectionId: 'kc2', tags: ['books', 'focus'], contactIds: ['c2'],
+    favorite: false, createdAt: '2026-09-20T09:00:00.000Z', updatedAt: '2026-10-01T09:00:00.000Z',
+  },
+]

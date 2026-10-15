@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Users, CheckSquare, StickyNote, Calendar, UsersRound, Tag, Plus, CornerDownLeft, History, Zap } from 'lucide-react'
+import { BookOpen, Search, Users, CheckSquare, StickyNote, Calendar, UsersRound, Tag, Plus, CornerDownLeft, History, Zap } from 'lucide-react'
 import { useCrm } from '../store'
 import { contactGroupIds } from '../store'
 import { Avatar, Panel } from './ui'
@@ -13,6 +13,7 @@ const TYPES = [
   { id: 'events', label: 'Events', icon: Calendar, color: '#a78bfa' },
   { id: 'groups', label: 'Groups', icon: UsersRound, color: '#34d399' },
   { id: 'tags', label: 'Tags', icon: Tag, color: '#f472b6' },
+  { id: 'kb', label: 'Articles', icon: BookOpen, color: '#2dd4bf' },
 ]
 const TMAP = Object.fromEntries(TYPES.map(t => [t.id, t]))
 
@@ -21,11 +22,12 @@ const ACTIONS = [
   { type: 'action', id: 'a2', title: 'New task', subtitle: 'Drop it on the kanban', to: '/tasks?new=1' },
   { type: 'action', id: 'a3', title: 'New note', subtitle: 'Markdown, with contact links', to: '/notes?new=1' },
   { type: 'action', id: 'a4', title: 'New event', subtitle: 'Schedule on the calendar', to: '/calendar?new=1' },
+  { type: 'action', id: 'a5', title: 'New article', subtitle: 'Write in the Knowledge Base', to: '/kb?new=1' },
 ]
 
 export default function GlobalSearch() {
   const crm = useCrm()
-  const { contacts, tasks, notes, events, groups, tags, contactById, groupById, tagById } = crm
+  const { contacts, tasks, notes, events, groups, tags, kbArticles, contactById, groupById, tagById, kbCollectionById } = crm
   const navigate = useNavigate()
   const inputRef = useRef(null)
   const [open, setOpen] = useState(false)
@@ -85,8 +87,14 @@ export default function GlobalSearch() {
       type: 'tags', id: t.id, title: t.name, subtitle: 'Tag',
       keywords: t.icon, to: `/tags?tag=${t.id}`,
     }))
+    kbArticles.forEach(a => items.push({
+      type: 'kb', id: a.id, title: a.title,
+      subtitle: `Article · ${kbCollectionById[a.collectionId]?.name || 'no collection'}`,
+      keywords: `${a.summary || ''} ${(a.tags || []).join(' ')} ${a.body || ''}`.slice(0, 400),
+      to: `/kb/${a.id}`,
+    }))
     return items
-  }, [contacts, tasks, notes, events, groups, tags, contactById, groupById, tagById])
+  }, [contacts, tasks, notes, events, groups, tags, kbArticles, contactById, groupById, tagById, kbCollectionById])
 
   /* scoring + filtering */
   const results = useMemo(() => {
@@ -177,7 +185,7 @@ export default function GlobalSearch() {
         <div className="flex items-center gap-3 px-4 py-3.5 border-b" style={{ borderColor: 'var(--border)' }}>
           <Search size={16} style={{ color: 'var(--i1)' }} className="flex-none" />
           <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)} onKeyDown={onKeyDown}
-            placeholder="Search contacts, tasks, notes, events, groups, tags…"
+            placeholder="Search contacts, tasks, notes, articles, events, groups, tags…"
             className="flex-1 bg-transparent outline-none text-[14.5px] placeholder:text-[#6b7382]" />
           <kbd className="chip" style={{ fontSize: 10, padding: '1px 7px' }}>esc</kbd>
         </div>

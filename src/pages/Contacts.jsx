@@ -9,6 +9,7 @@ import { relDay, fmtHuman, tsRel } from '../lib'
 import { contactGroupIds } from '../store'
 import PinConfirm from '../components/PinConfirm'
 import RemindMeRow from '../components/RemindMeRow'
+import { articlesForContact } from '../lib/wiki'
 
 const ST_TONE = { overdue: '#fb7185', 'due-soon': '#fbbf24', ok: '#34d399', snoozed: '#94a3b8' }
 const ST_LABEL = { overdue: 'Overdue', 'due-soon': 'Due soon', ok: 'In touch', snoozed: 'Snoozed' }
@@ -363,6 +364,33 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete }) {
       <div className="mt-4">
         <RemindMeRow refType="contact" refId={c.id} title={`Remind: ${c.name}`} subtitle={c.phone || c.email || ''} />
       </div>
+
+      {(() => {
+        const arts = articlesForContact(crm.kbArticles, c)
+        return (
+          <div className="mt-4" data-testid="contact-kb-strip">
+            <div className="label">Knowledge</div>
+            {arts.length === 0 ? (
+              <div className="text-[11px]" style={{ color: 'var(--faint)' }}>
+                No articles yet — link one from the contact's edit page or mention <code>[[{c.name}]]</code> in an article.
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1">
+                {arts.map(a => (
+                  <a key={a.id} href={`#/kb/${a.id}`} data-testid={`contact-kb-${a.id}`}
+                    className="flex items-center gap-2 rounded-xl px-2.5 py-2 hover:bg-white/[.05]">
+                    <span className="w-6 h-6 rounded-lg grid place-items-center flex-none text-[11px]" style={{ background: 'rgba(45,212,191,.12)', color: '#2dd4bf' }}>KB</span>
+                    <div className="min-w-0">
+                      <div className="text-[12px] font-semibold truncate">{a.title}</div>
+                      {a.summary && <div className="text-[10.5px] truncate" style={{ color: 'var(--faint)' }}>{a.summary}</div>}
+                    </div>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
       <div className="card p-4 mt-5 flex flex-col gap-2.5 text-[13px]">
         {c.phone && <div className="flex items-center gap-3"><Phone size={14} style={{ color: 'var(--i2)' }} /> {c.phone}</div>}
