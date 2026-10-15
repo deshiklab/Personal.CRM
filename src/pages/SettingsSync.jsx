@@ -519,6 +519,14 @@ function GistSyncCard() {
 }
 
 /* ── App lock (pincode) + local download/restore + PIN-confirmed blank reset ── */
+/* Module scope on purpose — an inline component would remount (and unfocus)
+ * the pin input on every keystroke. */
+const PinRow = ({ v, set, ph, innerRef }) => (
+  <input ref={innerRef} className="input" type="password" inputMode="numeric" maxLength={6} autoComplete="off"
+    style={{ letterSpacing: 6, fontFamily: 'monospace' }} placeholder={ph || '••••'}
+    value={v} onChange={e => set(e.target.value.replace(/\D/g, ''))} />
+)
+
 function AppLockCard() {
   const { lock, setupPin, changePin, removePin, factoryReset, buildBackup, restoreAll, toast, lockNow } = useCrm()
   const [modal, setModal] = useState('')      // 'set' | 'change' | 'remove' | 'wipe'
@@ -571,12 +579,6 @@ function AppLockCard() {
     setBusy(false)
     if (!okPin) toast('Pincode is wrong', 'warn')
   }
-
-  const PinRow = ({ v, set, ph }) => (
-    <input className="input" type="password" inputMode="numeric" maxLength={6} autoComplete="off"
-      style={{ letterSpacing: 6, fontFamily: 'monospace' }} placeholder={ph || '••••'}
-      value={v} onChange={e => set(e.target.value.replace(/\D/g, ''))} />
-  )
 
   return (
     <Card className="p-5 mt-4">

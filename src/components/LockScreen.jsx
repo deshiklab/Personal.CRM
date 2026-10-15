@@ -4,8 +4,27 @@ import { useCrm } from '../store'
 
 /* Full-screen gate shown before the app:
  *   mode 'setup'  — first launch: offer a pin (option + skip link)
- *   mode 'unlock' — subsequent loads: require the pin for this session
- */
+ *   mode 'unlock' — subsequent loads: require the pin for this session */
+
+/* Defined at MODULE scope on purpose: an inline component would get a new
+ * identity on every keystroke, React would remount the input, and focus
+ * would drop after each digit. */
+const PinField = ({ value, set, label, innerRef, onEnter, onInput }) => (
+  <label className="block">
+    <span className="text-[11.5px] font-semibold uppercase tracking-wide" style={{ color: 'var(--faint)' }}>{label}</span>
+    <input
+      ref={innerRef}
+      className="input mt-1.5 text-center"
+      style={{ fontSize: 22, letterSpacing: 10, fontFamily: 'monospace', padding: '12px 14px' }}
+      type="password" inputMode="numeric" autoComplete="off" maxLength={6}
+      placeholder="••••"
+      value={value}
+      onChange={e => { set(e.target.value.replace(/\D/g, '')); onInput?.() }}
+      onKeyDown={e => { if (e.key === 'Enter') onEnter?.() }}
+    />
+  </label>
+)
+
 export default function LockScreen({ mode }) {
   const { setupPin, skipPinSetup, unlockWithPin, factoryReset } = useCrm()
   const [pin, setPin] = useState('')
@@ -15,22 +34,6 @@ export default function LockScreen({ mode }) {
   const [attempts, setAttempts] = useState(0)
   const ref = useRef(null)
   useEffect(() => { ref.current?.focus() }, [mode])
-
-  const PinField = ({ value, set, label, innerRef, onEnter }) => (
-    <label className="block">
-      <span className="text-[11.5px] font-semibold uppercase tracking-wide" style={{ color: 'var(--faint)' }}>{label}</span>
-      <input
-        ref={innerRef}
-        className="input mt-1.5 text-center"
-        style={{ fontSize: 22, letterSpacing: 10, fontFamily: 'monospace', padding: '12px 14px' }}
-        type="password" inputMode="numeric" autoComplete="off" maxLength={6}
-        placeholder="••••"
-        value={value}
-        onChange={e => { set(e.target.value.replace(/\D/g, '')); setErr('') }}
-        onKeyDown={e => { if (e.key === 'Enter') onEnter?.() }}
-      />
-    </label>
-  )
 
   const doSetup = async () => {
     if (pin.length < 4) return setErr('At least 4 digits')
@@ -75,11 +78,11 @@ export default function LockScreen({ mode }) {
         <div className="flex flex-col gap-3">
           {mode === 'setup' ? (
             <>
-              <PinField value={pin} set={setPin} label="Choose pincode" innerRef={ref} />
-              <PinField value={pin2} set={setPin2} label="Repeat pincode" onEnter={doSetup} />
+              <PinField value={pin} set={setPin} label="Choose pincode" innerRef={ref} onInput={() => setErr('')} />
+              <PinField value={pin2} set={setPin2} label="Repeat pincode" onEnter={doSetup} onInput={() => setErr('')} />
             </>
           ) : (
-            <PinField value={pin} set={setPin} label="Pincode" innerRef={ref} onEnter={doUnlock} />
+            <PinField value={pin} set={setPin} label="Pincode" innerRef={ref} onEnter={doUnlock} onInput={() => setErr('')} />
           )}
 
           {!!err && (
