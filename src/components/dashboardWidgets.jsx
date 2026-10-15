@@ -1,9 +1,10 @@
 import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Users, CheckSquare, CalendarClock, HeartHandshake, ArrowRight, RefreshCw, Activity, Clock, Cake, Tag, Timer, Flame, TrendingUp, BarChart3 } from 'lucide-react'
+import { Users, CheckSquare, CalendarClock, HeartHandshake, ArrowRight, RefreshCw, Activity, Clock, Cake, Tag, Timer, Flame, TrendingUp, BarChart3 , HardDrive, BellRing, BookOpen } from 'lucide-react'
 import { useCrm } from '../store'
 import { Card, Stat, Avatar, Pill, Sparkline, MiniBars, Empty, EVENT_COLORS } from './ui'
 import { todayISO, daysUntil, parseISO, MONTHS_S, tsRel, isoDate, addDays } from '../lib'
+import { fmtSize, fileLocationInfo } from '../lib/filestore'
 
 export const WIDGET_META = {
   stats:            { title: 'Key stats',          icon: Users,          span: 3 },
@@ -17,6 +18,9 @@ export const WIDGET_META = {
   overdueCountdown: { title: 'Overdue countdown',  icon: Timer,          span: 1 },
   taskHeatmap:      { title: 'Task heatmap',       icon: Flame,          span: 2 },
   activityFeed:     { title: 'Recent activity',    icon: Activity,       span: 2 },
+  storageUsage:     { title: 'Storage usage',      icon: HardDrive,      span: 1 },
+  upcomingReminders:{ title: 'Upcoming reminders', icon: BellRing,       span: 1 },
+  kbRecents:        { title: 'KB recents',         icon: BookOpen,       span: 1 },
 }
 
 const Head = ({ title, to, linkLabel = 'Open' }) => (
@@ -285,9 +289,93 @@ function ActivityFeed() {
   )
 }
 
+/* X8 — storage usage: how much lives where, right from the cockpit */
+function StorageUsage() {
+  const { files, devices, syncState } = useCrm()
+  const total = files.reduce((s, f) => s + (f.size || 0), 0)
+  const perDevice = devices.map(d => ({
+    name: d.name, me: d.id === syncState?.deviceId,
+    n: files.filter(f => f.deviceId === d.id).length,
+    size: files.filter(f => f.deviceId === d.id).reduce((s, f) => s + (f.size || 0), 0),
+  })).sort((a, b) => b.size - a.size)
+  const max = Math.max(1, ...perDevice.map(d => d.size))
+  return (
+    <Card className="p-5">
+      <Head title="Storage usage" to="/files" linkLabel="Files" />
+      <div className="flex items-baseline gap-2">
+        <div className="text-[26px] font-extrabold tracking-tight">{fmtSize(total)}</div>
+        <div className="text-[12px]" style={{ color: 'var(--muted)' }}>{files.length} file{files.length === 1 ? '' : 's'} · {fileLocationInfo().label.toLowerCase()}</div>
+      </div>
+      {perDevice.length === 0 && <Empty icon={HardDrive} title="No files yet" />}
+      <div className="flex flex-col gap-2 mt-3">
+        {perDevice.map((d, i) => (
+          <div key={i}>
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="font-semibold truncate">{d.me ? '★ ' : ''}{d.name}</span>
+              <span style={{ color: 'var(--faint)' }}>{d.n} · {fmtSize(d.size)}</span>
+            </div>
+            <div className="h-[5px] rounded-full mt-1 overflow-hidden" style={{ background: 'rgba(255,255,255,.06)' }}>
+              <div className="h-full rounded-full" style={{ width: `${Math.max(3, (d.size / max) * 100)}%`, background: d.me ? '#818cf8' : '#2dd4bf' }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  )
+}
+
+/* X8 — next reminders in line (the bells that are coming) */
+function UpcomingReminders() {
+  const { reminders } = useCrm()
+  const now = Date.now()
+  const up = [...reminders]
+    .filter(r => (r.status || 'scheduled') === 'scheduled' && r.at && new Date(r.at).getTime() > now - 60000)
+    .sort((a, b) => (a.at || '').localeCompare(b.at || ''))
+    .slice(0, 5)
+  return (
+    <Card className="p-5">
+      <Head title="Upcoming reminders" to="/notifications" linkLabel="All" />
+      {up.length === 0 && <Empty icon={BellRing} title="Nothing scheduled" />}
+      {up.map(r => (
+        <div key={r.id} className="flex items-center gap-3 py-2.5 border-b last:border-0" style={{ borderColor: 'rgba(255,255,255,.05)' }}>
+          <span className="dot" style={{ background: r.repeat && r.repeat !== 'none' ? '#2dd4bf' : '#f59e0b' }} />
+          <span className="text-[13px] font-medium truncate flex-1">{r.title}</span>
+          <span className="text-[11px] font-mono flex-none" style={{ color: 'var(--muted)' }}>{tsRel(r.at)}</span>
+        </div>
+      ))}
+    </Card>
+  )
+}
+
+/* X8 — recently-touched knowledge-base articles */
+function KbRecents() {
+  const { kbArticles, kbCollectionById } = useCrm()
+  const recents = [...kbArticles]
+    .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))
+    .slice(0, 5)
+  return (
+    <Card className="p-5">
+      <Head title="KB recents" to="/kb" linkLabel="Knowledge Base" />
+      {recents.length === 0 && <Empty icon={BookOpen} title="No articles yet" />}
+      {recents.map(a => (
+        <Link key={a.id} to={`/kb/${a.id}`} className="flex items-center gap-3 py-2.5 border-b last:border-0 hover:opacity-80" style={{ borderColor: 'rgba(255,255,255,.05)' }}>
+          <BookOpen size={14} style={{ color: '#a78bfa', flex: 'none' }} />
+          <div className="min-w-0 flex-1">
+            <div className="text-[13px] font-medium truncate">{a.title}</div>
+            <div className="text-[10.5px] truncate" style={{ color: 'var(--faint)' }}>
+              {a.collectionId ? kbCollectionById[a.collectionId]?.name || 'Collection' : 'Unfiled'} · edited {tsRel(a.updatedAt)}
+            </div>
+          </div>
+        </Link>
+      ))}
+    </Card>
+  )
+}
+
 export const WIDGET_COMPONENTS = {
   stats: StatsRow, growth: Growth, taskCols: TaskCols, upcoming: Upcoming,
   stayInTouch: StayInTouch, syncHealth: SyncHealth, birthdays: Birthdays,
   topTags: TopTags, overdueCountdown: OverdueCountdown, taskHeatmap: TaskHeatmap,
-  activityFeed: ActivityFeed,
+  activityFeed: ActivityFeed, storageUsage: StorageUsage,
+  upcomingReminders: UpcomingReminders, kbRecents: KbRecents,
 }

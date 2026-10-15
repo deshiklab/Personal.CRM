@@ -9,7 +9,7 @@ import * as gs from './lib/gistsync'
 import { normalizeNote, isTrashExpired, advanceReminder, TRASH_RETENTION_DAYS } from './lib/notes'
 import { matchExisting } from './lib/contacts'
 import { deleteBlob } from './lib/filestore'
-import { makeReminder, afterFire, snoozePatch } from './lib/reminders'
+import { makeReminder, afterFire, snoozePatch, nextTaskDue } from './lib/reminders'
 import { scheduleNative, cancelNative, notifyNow } from './lib/native-notify'
 
 const KEY = 'pcrm-v1'
@@ -27,7 +27,7 @@ const normalizeContact = c => {
   return { ...c, groupIds: ids, groupId: ids[0] || null }
 }
 
-const DEFAULT_WIDGET_ORDER = ['stats','growth','taskCols','upcoming','stayInTouch','syncHealth','birthdays','topTags','overdueCountdown','taskHeatmap','activityFeed']
+const DEFAULT_WIDGET_ORDER = ['stats','growth','taskCols','upcoming','stayInTouch','syncHealth','birthdays','topTags','overdueCountdown','taskHeatmap','activityFeed','storageUsage','upcomingReminders','kbRecents']
 const Ctx = createContext(null)
 export const useCrm = () => useContext(Ctx)
 
@@ -382,14 +382,29 @@ export function CrmProvider({ children }) {
 
   /* ── tasks ── */
   const addTask = data => {
-    const t = { id: uid(), column: 'todo', priority: 'med', due: null, contactId: null, tags: [], ...data }
+    const t = { id: uid(), column: 'todo', priority: 'med', due: null, contactId: null, tags: [], repeat: 'none', ...data }
     setTasks(ts => [...ts, t])
     logAudit('user', 'Created task', t.title, `Column: ${t.column}${t.due ? ` · due ${t.due}` : ''}`)
     return t
   }
+  /* X1 — completing a repeating task spawns its next occurrence */
+  const spawnRecurringNext = t => {
+    const due = nextTaskDue(t.due, t.repeat)
+    const next = addTask({
+      title: t.title, desc: t.desc, priority: t.priority, contactId: t.contactId,
+      tags: t.tags || [], repeat: t.repeat, due,
+      subtasks: (t.subtasks || []).map((s2, i) => ({ ...s2, id: uid() + i, done: false })),
+    })
+    logAudit('user', 'Recurring task advanced', t.title, due ? `next due ${due}` : 'no due date')
+    toast(`↻ Recurring — next "${t.title}"${due ? ` scheduled for ${due}` : ''} created`)
+    return next
+  }
   const moveTask = (id, column) => {    const t = tasks.find(x => x.id === id)
     setTasks(ts => ts.map(x => x.id === id ? { ...x, column } : x))
-    if (t && t.column !== column) logAudit('user', 'Moved task', t.title, `${t.column} → ${column}`)
+    if (t && t.column !== column) {
+      logAudit('user', 'Moved task', t.title, `${t.column} → ${column}`)
+      if (column === 'done' && t.column !== 'done' && t.repeat && t.repeat !== 'none') spawnRecurringNext(t)
+    }
   }
   const updateTask = (id, patch) => {
     const t = tasks.find(x => x.id === id)
@@ -397,6 +412,7 @@ export function CrmProvider({ children }) {
     if (t && patch.column === 'done' && t.column !== 'done') {
       cancelRemindersFor('task', id)   // done tasks don't ring
       logActivity(`Task completed: ${t.title}`); fireWebhook('task_done', { title: t.title, contactId: t.contactId, due: t.due })
+      if (t.repeat && t.repeat !== 'none') spawnRecurringNext(t)
     }
   }
   const deleteTask = id => {

@@ -40,6 +40,30 @@ export function nextOccurrence(at, repeat) {
   return fmtLocalDT(d)
 }
 
+/* X1 — recurring tasks: daily / weekday / weekly / monthly from a YYYY-MM-DD due */
+export const TASK_REPEATS = { none: 'No repeat', daily: 'Daily', weekday: 'Weekdays', weekly: 'Weekly', monthly: 'Monthly' }
+
+const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+export function nextTaskDue(due, repeat, fromISO = null) {
+  if (!repeat || repeat === 'none') return null
+  let d
+  const m = /^([0-9]{4})-([0-9]{2})-([0-9]{2})/.exec(due || '')
+  if (m) d = new Date(+m[1], +m[2] - 1, +m[3])           // local midnight — no UTC drift
+  else d = parseDT(fromISO) || new Date()
+  const day = d.getDate()
+  if (repeat === 'daily') d.setDate(d.getDate() + 1)
+  else if (repeat === 'weekday') {
+    do { d.setDate(d.getDate() + 1) } while (d.getDay() === 0 || d.getDay() === 6)  // Fri → Mon
+  }
+  else if (repeat === 'weekly') d.setDate(d.getDate() + 7)
+  else if (repeat === 'monthly') {                        // Jan 31 → Feb 28 (clamped)
+    d.setDate(1); d.setMonth(d.getMonth() + 1)
+    d.setDate(Math.min(day, daysInMonth(d.getFullYear(), d.getMonth())))
+  } else return null
+  return ymd(d)
+}
+
 /* reminder factory — fills sound/vibrate from prefs */
 export function makeReminder(data, prefs = {}) {
   return {

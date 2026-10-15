@@ -220,8 +220,9 @@ describe('attach points + bell + schedule panel', () => {
     await mountApp('#/')
     await skipLock()
     fireEvent.click(screen.getByTitle('Upcoming reminders'))
-    expect(screen.getByText('Bell item one')).toBeTruthy()
-    expect(screen.getByText('Bell item two')).toBeTruthy()
+    // the dashboard's Upcoming-reminders widget echoes the same titles
+    expect(screen.getAllByText('Bell item one').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Bell item two').length).toBeGreaterThan(0)
     // done from the dropdown
     fireEvent.click(screen.getAllByTitle('Mark done')[0])
     await waitFor(() => expect(screen.queryByText('Bell item one')).toBeNull())

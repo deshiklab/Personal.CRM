@@ -238,8 +238,9 @@ describe('search integration', () => {
     window.dispatchEvent(new Event('crm:search'))
     const input = await screen.findByPlaceholderText(/search contacts, tasks, notes, articles/i)
     fireEvent.change(input, { target: { value: 'Deep Work' } })
-    await waitFor(() => expect(screen.getByText('Deep Work notes')).toBeTruthy())
-    fireEvent.click(screen.getByText('Deep Work notes'))
+    // the dashboard's KB-recents widget lists the same title — both entries navigate to the article
+    await waitFor(() => expect(screen.getAllByText('Deep Work notes').length).toBeGreaterThan(0))
+    fireEvent.click(screen.getAllByText('Deep Work notes')[0])
     await waitFor(() => expect(screen.getByTestId('kb-article')).toBeTruthy())
     expect(screen.getByTestId('article-body').textContent).toContain('Key ideas')
   })

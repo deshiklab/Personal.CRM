@@ -62,7 +62,7 @@ export default function Dashboard() {
         </div>
       )}
       {edit && widgetPrefs.hidden.length === 0 && (
-        <div className="text-center text-[12px] mt-6" style={{ color: 'var(--faint)' }}>All 10 widgets are visible — hide some to declutter.</div>
+        <div className="text-center text-[12px] mt-6" style={{ color: 'var(--faint)' }}>All {DEFAULT_WIDGET_ORDER.length} widgets are visible — hide some to declutter.</div>
       )}
     </div>
   )

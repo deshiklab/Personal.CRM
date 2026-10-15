@@ -3,9 +3,10 @@ import { useSearchParams } from 'react-router-dom'
 import {
   PlusSquare, GripVertical, Search, CheckCircle2, Circle, Trash2, Copy,
   AlignLeft, ListChecks, CalendarDays, UserRound, X, ChevronRight
-} from 'lucide-react'
+, RotateCcw } from 'lucide-react'
 import { useCrm } from '../store'
 import { SectionHead, Avatar, DueBadge, Modal, Field, TagPill, PRIORITY_COLORS, CsvButton } from '../components/ui'
+import { TASK_REPEATS } from '../lib/reminders'
 import RemindMeRow from '../components/RemindMeRow'
 import { useIsMobile, ToolbarRow } from '../components/Mobile'
 import { cn, tsRel } from '../lib'
@@ -74,7 +75,7 @@ export default function Tasks() {
         right={<div className="flex items-center gap-2">
           <CsvButton filename="tasks.csv" rows={tasks} headers={[
             { label: 'Title', get: r => r.title }, { label: 'Column', get: r => r.column },
-            { label: 'Priority', get: r => r.priority }, { label: 'Due', get: r => r.due || '' },
+            { label: 'Priority', get: r => r.priority }, { label: 'Due', get: r => r.due || '' }, { label: 'Repeat', get: r => r.repeat || 'none' },
             { label: 'Contact', get: r => contactById[r.contactId]?.name || '' },
             { label: 'Tags', get: r => (r.tags || []).map(t => tagById[t]?.name).filter(Boolean).join('; ') },
             { label: 'Description', get: r => r.desc || '' },
@@ -191,6 +192,11 @@ function TaskCard({ t, dragId, setDragId, onOpen }) {
               <span className="dot" style={{ background: PRIORITY_COLORS[t.priority] }} />{t.priority}
             </span>
             <DueBadge date={t.due} />
+            {(t.repeat && t.repeat !== 'none') && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold" style={{ color: '#2dd4bf' }} title={`Repeats ${TASK_REPEATS[t.repeat]}`}>
+                <RotateCcw size={10} /> {TASK_REPEATS[t.repeat]}
+              </span>
+            )}
             {t.tags.map(tid => tagById[tid] && <TagPill key={tid} tag={tagById[tid]} small />)}
             {subs.length > 0 && (
               <span className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold" style={{ color: pct === 100 ? '#34d399' : 'var(--muted)' }}>
@@ -258,6 +264,12 @@ function TaskDetailModal({ t, onClose }) {
         </Field>
         <Field label="Due date">
           <input className="input" type="date" value={t.due || ''} onChange={e => updateTask(t.id, { due: e.target.value || null })} />
+        </Field>
+        <Field label="Repeat">
+          <select className="input" value={t.repeat || 'none'} data-testid="repeat-select"
+            onChange={e => updateTask(t.id, { repeat: e.target.value })}>
+            {Object.entries(TASK_REPEATS).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+          </select>
         </Field>
         <RemindMeRow refType="task" refId={t.id} title={`Task: ${t.title}`} date={t.due} time="09:00" subtitle={contact ? `for ${contact.name}` : ''} />
         <Field label="Linked contact">
