@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { RefreshCw, Plus, Trash2, ShieldCheck, Globe, Calendar, Play, RotateCcw, CheckCircle2, X, KeyRound, Users, HardDrive, CloudDownload, Upload, CloudUpload, Loader2, Lock, ShieldAlert, Copy, ClipboardCheck, ListChecks, ChevronDown, ExternalLink, AlarmClock, Volume2, BellRing } from 'lucide-react'
+import { RefreshCw, Plus, Trash2, ShieldCheck, Globe, Calendar, Play, RotateCcw, CheckCircle2, X, KeyRound, Users, HardDrive, CloudDownload, Upload, CloudUpload, Loader2, Lock, ShieldAlert, Copy, ClipboardCheck, ListChecks, ChevronDown, ExternalLink, AlarmClock, Volume2, BellRing, Folder } from 'lucide-react'
 import { useCrm } from '../store'
 import { SectionHead, Card, Modal, Field, Toggle, Pill, Empty } from '../components/ui'
 import { tsRel } from '../lib'
 import { playSound } from '../lib/sound'
 import { SOUND_NAMES } from '../lib/reminders'
 import { notifyPermissionState, requestNotifyPermission } from '../lib/native-notify'
+import { FILE_LOCATIONS, fileLocationInfo, storageBackend, migrateBlobs } from '../lib/filestore'
 
 const SOURCES = ['Google Contacts', 'Google Calendar', 'CardDAV (iCloud)', 'vCard file (.vcf)', 'Outlook (CSV)']
 const DIRECTIONS = ['Import', 'Export', 'Two-way']
@@ -33,6 +34,7 @@ export default function SettingsSync() {
       <RulesTable />
       <AuditLog />
       <AppLockCard />
+      <FileStorageCard />
       <ReminderPrefsCard />
       <DangerZone />
     </div>
@@ -514,6 +516,82 @@ function GistSyncCard() {
         Revoke it any time at github.com/settings/tokens. Use the SAME token on every device you want to sync.
         ⚠️ Pick ONE sync backend on all devices — Gist here, or Drive in the Google hub below.</span>
       </p>
+    </Card>
+  )
+}
+
+/* ── File storage location: where the Files module keeps its blobs ── */
+function FileStorageCard() {
+  const { filesPrefs, updateFilesPrefs, files, toast } = useCrm()
+  const [busy, setBusy] = useState(false)
+  const cur = filesPrefs?.location || 'data'
+  const isWeb = storageBackend() !== 'filesystem'
+
+  const pick = async key => {
+    if (key === cur || busy) return
+    setBusy(true)
+    try {
+      updateFilesPrefs({ location: key })
+      const ids = (files || []).map(f => f.id)
+      if (ids.length && storageBackend() === 'filesystem') {
+        toast(`📦 Moving ${ids.length} file(s) to ${fileLocationInfo(key).label}…`)
+        const res = await migrateBlobs(ids)
+        if (res.failed) toast(`Moved ${res.moved} — ${res.failed} stayed behind (still readable from the old location)`, 'warn')
+        else toast(`📦 ${res.moved} file(s) now in ${fileLocationInfo(key).label}`)
+      } else {
+        toast(`📦 File storage location set to ${fileLocationInfo(key).label}`)
+      }
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card className="p-5 mt-4">
+      <div className="flex items-center gap-3 flex-wrap mb-1">
+        <div className="w-10 h-10 rounded-xl grid place-items-center" style={{ background: '#818cf81c', color: '#818cf8' }}>
+          <Folder size={18} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-bold text-[15px]">File storage location</div>
+          <div className="text-[11.5px]" style={{ color: 'var(--faint)' }}>
+            {isWeb
+              ? 'This browser keeps file contents in its own storage (IndexedDB). The location you pick here is used by the Android app on this device.'
+              : 'Where the file contents of the Files module are written on this device.'}
+          </div>
+        </div>
+        <Pill color="#818cf8">{isWeb ? 'BROWSER STORAGE' : 'ON-DEVICE'}</Pill>
+      </div>
+
+      <div className="flex flex-col gap-2 mt-3">
+        {FILE_LOCATIONS.map(l => {
+          const active = l.key === cur
+          return (
+            <button key={l.key} data-testid={`loc-${l.key}`} disabled={busy}
+              onClick={() => pick(l.key)}
+              className="text-left rounded-xl p-3 transition-colors w-full"
+              style={{
+                border: `1.5px solid ${active ? '#818cf8' : 'var(--border)'}`,
+                background: active ? '#818cf814' : 'transparent',
+              }}>
+              <div className="flex items-center gap-2">
+                {active
+                  ? <CheckCircle2 size={15} style={{ color: '#818cf8', flex: 'none' }} />
+                  : <span className="inline-block w-[15px] h-[15px] rounded-full flex-none" style={{ border: '1.5px solid var(--border)' }} />}
+                <div className="text-[12.5px] font-semibold">{l.label}</div>
+                {busy && active && <Loader2 size={12} className="animate-spin ml-auto" />}
+              </div>
+              <div className="text-[11px] mt-1 leading-snug" style={{ color: 'var(--faint)', paddingLeft: 23 }}>
+                <code className="text-[10px]">{l.where}</code> · {l.note}
+              </div>
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="text-[11px] mt-3" style={{ color: 'var(--faint)' }}>
+        Changing the location moves existing files where possible; anything left behind stays readable — reads always fall back to the older locations.
+      </div>
     </Card>
   )
 }

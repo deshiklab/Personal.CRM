@@ -34,6 +34,40 @@ export const storageBackend = () => {
   return typeof indexedDB !== 'undefined' ? 'indexeddb' : 'memory'
 }
 
+/* ── file storage location (user-selectable) ──
+ * On Android the blobs can live in one of three roots; on the web they are
+ * always browser-local (IndexedDB). The choice is read from the store's
+ * `filesPrefs.location` at call time — no boot wiring, never stale. */
+export const FILE_LOCATIONS = [
+  { key: 'data', nativeDir: 'Data', label: 'App private storage',
+    where: 'Android/data/com.bitscol.personalcrm/…/files',
+    note: 'Private to the app. Removed when the app is uninstalled.' },
+  { key: 'documents', nativeDir: 'Documents', label: 'Documents folder',
+    where: 'Documents/PersonalCRM/files',
+    note: 'Visible in the Files app, easy to copy or back up, survives uninstall.' },
+  { key: 'external', nativeDir: 'External', label: 'External app storage',
+    where: 'Android/media/com.bitscol.personalcrm/…/files',
+    note: 'Shared-storage side of the app — visible to file managers and gallery apps.' },
+]
+
+export function fileLocationKey() {
+  try {
+    const raw = localStorage.getItem('pcrm-v1')
+    if (raw) {
+      const k = JSON.parse(raw)?.filesPrefs?.location
+      if (k && FILE_LOCATIONS.some(l => l.key === k)) return k
+    }
+  } catch { /* fall through */ }
+  return 'data'
+}
+
+export const fileLocationInfo = (key = fileLocationKey()) =>
+  FILE_LOCATIONS.find(l => l.key === key) || FILE_LOCATIONS[0]
+
+/* property name into the plugin's `Directory` enum (kept lazy — web builds
+ * never touch the native module) */
+export const nativeDirEnum = (key = fileLocationKey()) => fileLocationInfo(key).nativeDir
+
 /* ── native bridge ── */
 const fsNative = async () => {
   const mod = await import('@capacitor/filesystem')
@@ -44,10 +78,12 @@ export async function saveBlob(id, data) {
   const bytes = data instanceof Uint8Array ? data : new Uint8Array(await data.arrayBuffer?.() ?? data)
   if (isNative()) {
     const { Filesystem, Directory, Encoding } = await fsNative()
+    const directory = Directory[nativeDirEnum()]
+    try { await Filesystem.mkdir({ path: 'files', directory, recursive: true }) } catch { /* exists */ }
     await Filesystem.writeFile({
       path: `files/${id}`,
       data: b64FromBytes(bytes),
-      directory: Directory.Data,
+      directory,
       encoding: Encoding.Base64,
     })
     return id
@@ -64,11 +100,15 @@ export async function saveBlob(id, data) {
 
 export async function readBlob(id) {
   if (isNative()) {
-    try {
-      const { Filesystem, Directory, Encoding } = await fsNative()
-      const res = await Filesystem.readFile({ path: `files/${id}`, directory: Directory.Data, encoding: Encoding.Base64 })
-      return bytesFromB64(res.data)
-    } catch { return null }
+    const { Filesystem, Directory, Encoding } = await fsNative()
+    const order = [fileLocationKey(), ...FILE_LOCATIONS.map(l => l.key).filter(k => k !== fileLocationKey())]
+    for (const key of order) {
+      try {
+        const res = await Filesystem.readFile({ path: `files/${id}`, directory: Directory[nativeDirEnum(key)], encoding: Encoding.Base64 })
+        return bytesFromB64(res.data)
+      } catch { /* try the next root */ }
+    }
+    return null
   }
   const db = await openDb()
   if (!db) return memory.get(id) || null
@@ -82,10 +122,10 @@ export async function readBlob(id) {
 
 export async function deleteBlob(id) {
   if (isNative()) {
-    try {
-      const { Filesystem, Directory } = await fsNative()
-      await Filesystem.deleteFile({ path: `files/${id}`, directory: Directory.Data })
-    } catch { /* already gone */ }
+    const { Filesystem, Directory } = await fsNative()
+    for (const l of FILE_LOCATIONS) {
+      try { await Filesystem.deleteFile({ path: `files/${id}`, directory: Directory[l.nativeDir] }) } catch { /* already gone */ }
+    }
     return
   }
   memory.delete(id)
@@ -103,6 +143,35 @@ export async function readBlobAsBlob(meta) {
   const bytes = await readBlob(meta.id)
   if (!bytes) return null
   return new Blob([bytes], { type: meta.mime || 'application/octet-stream' })
+}
+
+/* Move existing blobs into the currently-selected location.
+ * Read uses the fallback chain (finds each blob wherever it lives), then
+ * writes to the target root and cleans the others. Web/IndexedDB: no-op. */
+export async function migrateBlobs(ids, onProgress) {
+  const target = fileLocationKey()
+  if (storageBackend() !== 'filesystem') return { moved: ids.length, failed: 0 }
+  const { Filesystem, Directory, Encoding } = await fsNative()
+  const targetDir = Directory[nativeDirEnum(target)]
+  try { await Filesystem.mkdir({ path: 'files', directory: targetDir, recursive: true }) } catch { /* exists */ }
+  let moved = 0, failed = 0
+  for (const [i, id] of ids.entries()) {
+    try {
+      const bytes = await readBlob(id)          // fallback chain — finds old location
+      if (!bytes) { failed++; continue }
+      await Filesystem.writeFile({
+        path: `files/${id}`, data: b64FromBytes(bytes),
+        directory: targetDir, encoding: Encoding.Base64,
+      })
+      for (const l of FILE_LOCATIONS) {
+        if (l.key === target) continue
+        try { await Filesystem.deleteFile({ path: `files/${id}`, directory: Directory[l.nativeDir] }) } catch { /* fine */ }
+      }
+      moved++
+    } catch { failed++ }
+    onProgress?.(i + 1, ids.length)
+  }
+  return { moved, failed }
 }
 
 /* ── base64 helpers (chunked — safe for big buffers) ── */

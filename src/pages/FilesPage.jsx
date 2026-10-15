@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 import { useCrm } from '../store'
 import { SectionHead, Card, Empty, Pill, Modal, CsvButton } from '../components/ui'
-import { saveBlob, readBlobAsBlob, fmtSize, storageBackend } from '../lib/filestore'
+import { saveBlob, readBlobAsBlob, fmtSize, storageBackend, fileLocationInfo, fileLocationKey } from '../lib/filestore'
 import { sha256Hex } from '../lib/hash'
 import { shareFile, fetchRemoteFile } from '../lib/share'
 import NearbyTransfer from '../components/NearbyTransfer'
@@ -146,6 +146,7 @@ export default function FilesPage() {
           ['Total size', fmtSize(totalSize)],
           ['On this device', onThis.length],
           ['Storage backend', storageBackend()],
+        ['Storage location', `${fileLocationInfo().label} · ${fileLocationInfo().where}`],
         ].map(([label, value]) => (
           <Card key={label} className="p-4">
             <div className="text-[17px] font-extrabold tracking-tight">{value}</div>
