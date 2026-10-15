@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import {
-  FolderOpen, Upload, Link2, Radio, Send, Download, Share2, Star, Trash2, Search,
+  FolderOpen, Upload, Link2, Radio, Send, Download, Share2, Star, Trash2, Search, Tag, X, Plus, Folder,
   FileText, Image as ImageIcon, Film, Music, Archive, File as FileIcon, Smartphone, Pencil, CheckSquare, Square,
 } from 'lucide-react'
 import { useCrm } from '../store'
@@ -31,10 +31,15 @@ export default function FilesPage() {
   const [urlBusy, setUrlBusy] = useState(false)
   const [rename, setRename] = useState(null)      // file being renamed
   const [renameVal, setRenameVal] = useState('')
+  const [tagF, setTagF] = useState(null)          // active tag filter
+  const [tagEdit, setTagEdit] = useState(null)    // file whose tags/category are edited
+  const [tagVal, setTagVal] = useState('')
+  const [newCat, setNewCat] = useState('')
   const [busyFiles, setBusyFiles] = useState(0)
   const fileInput = useRef(null)
 
   const folders = useMemo(() => [...new Set(files.map(f => f.folder || 'Inbox'))], [files])
+  const allTags = useMemo(() => [...new Set(files.flatMap(f => f.tags || []))].sort(), [files])
   const thisDeviceId = crm.syncState?.deviceId
 
   const list = useMemo(() => {
@@ -42,12 +47,13 @@ export default function FilesPage() {
     if (folderF) xs = xs.filter(f => (f.folder || 'Inbox') === folderF)
     if (deviceF) xs = xs.filter(f => f.deviceId === deviceF)
     if (starredOnly) xs = xs.filter(f => f.starred)
+    if (tagF) xs = xs.filter(f => (f.tags || []).includes(tagF))
     if (q) {
       const t = q.toLowerCase()
-      xs = xs.filter(f => (f.name + ' ' + (f.folder || '') + ' ' + (f.deviceName || '')).toLowerCase().includes(t))
+      xs = xs.filter(f => (f.name + ' ' + (f.folder || '') + ' ' + (f.deviceName || '') + ' ' + (f.tags || []).join(' ')).toLowerCase().includes(t))
     }
     return xs.sort((a, b) => (b.starred === true) - (a.starred === true) || (b.storedAt || '').localeCompare(a.storedAt || ''))
-  }, [files, q, folderF, deviceF, starredOnly])
+  }, [files, q, folderF, deviceF, starredOnly, tagF])
 
   const totalSize = files.reduce((s, f) => s + (f.size || 0), 0)
   const onThis = files.filter(f => f.deviceId === thisDeviceId)
@@ -129,6 +135,7 @@ export default function FilesPage() {
           <CsvButton filename="files-index.csv" rows={files} headers={[
             { label: 'Name', get: r => r.name }, { label: 'Size', get: r => r.size },
             { label: 'MIME', get: r => r.mime }, { label: 'Folder', get: r => r.folder },
+            { label: 'Tags', get: r => (r.tags || []).join('; ') },
             { label: 'Device', get: r => r.deviceName }, { label: 'SHA-256', get: r => r.sha256 },
             { label: 'Origin', get: r => r.origin }, { label: 'Stored', get: r => r.storedAt },
           ]} />
@@ -170,6 +177,15 @@ export default function FilesPage() {
             <FolderOpen size={10} /> {f}
           </button>
         ))}
+        {allTags.length > 0 && <>
+          <div className="w-px h-5 mx-1" style={{ background: 'var(--border)' }} />
+          <button className={cn('chip chip-btn', !tagF && 'on')} onClick={() => setTagF(null)}>All tags</button>
+          {allTags.map(t => (
+            <button key={t} data-testid={`tagf-${t}`} className={cn('chip chip-btn', tagF === t && 'on')} onClick={() => setTagF(tagF === t ? null : t)}>
+              <Tag size={10} /> {t}
+            </button>
+          ))}
+        </>}
         <div className="w-px h-5 mx-1" style={{ background: 'var(--border)' }} />
         <button className={cn('chip chip-btn', deviceF === null && 'on')} onClick={() => setDeviceF(null)}>All devices</button>
         {devices.map(d => (
@@ -213,6 +229,9 @@ export default function FilesPage() {
                     <span className={here ? 'text-emerald-400/90' : ''}>{here ? 'this device' : (f.deviceName || 'other device')}</span>
                     <span>·</span><span>{tsRel(f.storedAt)}</span>
                     {f.origin === 'transfer' && <Pill color="#34d399">nearby</Pill>}
+                    {(f.tags || []).map(t => (
+                      <button key={t} className="chip chip-btn !py-0 !text-[9.5px]" onClick={() => setTagF(t)}>#{t}</button>
+                    ))}
                     {f.sha256 && <span className="font-mono opacity-60">{f.sha256.slice(0, 8)}</span>}
                   </div>
                 </div>
@@ -222,6 +241,7 @@ export default function FilesPage() {
                   <button className="icon-btn !w-7 !h-7" title={f.starred ? 'Unstar' : 'Star'} onClick={() => crm.updateFileMeta(f.id, { starred: !f.starred })}>
                     <Star size={12} style={f.starred ? { color: '#fbbf24' } : undefined} fill={f.starred ? '#fbbf24' : 'none'} />
                   </button>
+                  <button className="icon-btn !w-7 !h-7" title="Tags & category" data-testid={`tagedit-${f.id}`} onClick={() => { setTagEdit(f); setTagVal(''); setNewCat('') }}><Tag size={12} /></button>
                   <button className="icon-btn !w-7 !h-7" title="Rename" onClick={() => { setRename(f); setRenameVal(f.name) }}><Pencil size={12} /></button>
                   <button className="icon-btn !w-7 !h-7" title="Delete" onClick={() => del(f)}><Trash2 size={12} /></button>
                 </div>
@@ -269,6 +289,86 @@ export default function FilesPage() {
             <Link2 size={13} /> {urlBusy ? 'Fetching…' : 'Fetch & save'}
           </button>
         </div>
+      </Modal>
+
+      {/* tags & category */}
+      <Modal open={!!tagEdit} onClose={() => setTagEdit(null)} title="Tags & category">
+        {tagEdit && (
+          <div className="flex flex-col gap-4">
+            <div>
+              <div className="label">Category</div>
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {['Inbox', ...folders.filter(f => f !== 'Inbox')].map(c => (
+                  <button key={c} data-testid={`cat-${c}`}
+                    className={cn('chip chip-btn', (tagEdit.folder || 'Inbox') === c && 'on')}
+                    onClick={() => { crm.updateFileMeta(tagEdit.id, { folder: c }); setTagEdit({ ...tagEdit, folder: c }) }}>
+                    <Folder size={10} /> {c}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input className="input flex-1" placeholder="New category…" value={newCat}
+                  onChange={e => setNewCat(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && newCat.trim()) {
+                      const c = newCat.trim().slice(0, 40)
+                      crm.updateFileMeta(tagEdit.id, { folder: c }); setTagEdit({ ...tagEdit, folder: c }); setNewCat('')
+                    }
+                  }} />
+                <button className="btn btn-ghost btn-sm" data-testid="cat-add" disabled={!newCat.trim()}
+                  onClick={() => {
+                    const c = newCat.trim().slice(0, 40)
+                    crm.updateFileMeta(tagEdit.id, { folder: c }); setTagEdit({ ...tagEdit, folder: c }); setNewCat('')
+                  }}><Plus size={13} /> Add</button>
+              </div>
+            </div>
+            <div>
+              <div className="label">Tags</div>
+              <div className="flex flex-wrap gap-1.5 mb-2 min-h-[26px]">
+                {(tagEdit.tags || []).length === 0 && <span className="text-[11px]" style={{ color: 'var(--faint)' }}>No tags yet</span>}
+                {(tagEdit.tags || []).map(t => (
+                  <span key={t} className="chip chip-btn on inline-flex items-center gap-1">
+                    #{t}
+                    <button title={`Remove ${t}`} onClick={() => {
+                      const tags = (tagEdit.tags || []).filter(x => x !== t)
+                      crm.updateFileMeta(tagEdit.id, { tags }); setTagEdit({ ...tagEdit, tags })
+                    }}><X size={10} /></button>
+                  </span>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input className="input flex-1" placeholder="Add a tag…" value={tagVal} data-testid="tag-input"
+                  onChange={e => setTagVal(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && tagVal.trim()) {
+                      const t = tagVal.trim().toLowerCase().replace(/^#/, '').slice(0, 24)
+                      const tags = [...new Set([...(tagEdit.tags || []), t])]
+                      crm.updateFileMeta(tagEdit.id, { tags }); setTagEdit({ ...tagEdit, tags }); setTagVal('')
+                    }
+                  }} />
+                <button className="btn btn-ghost btn-sm" data-testid="tag-add" disabled={!tagVal.trim()}
+                  onClick={() => {
+                    const t = tagVal.trim().toLowerCase().replace(/^#/, '').slice(0, 24)
+                    const tags = [...new Set([...(tagEdit.tags || []), t])]
+                    crm.updateFileMeta(tagEdit.id, { tags }); setTagEdit({ ...tagEdit, tags }); setTagVal('')
+                  }}><Plus size={13} /> Add</button>
+              </div>
+              {allTags.filter(t => !(tagEdit.tags || []).includes(t)).length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {allTags.filter(t => !(tagEdit.tags || []).includes(t)).map(t => (
+                    <button key={t} className="chip chip-btn" onClick={() => {
+                      const tags = [...new Set([...(tagEdit.tags || []), t])]
+                      crm.updateFileMeta(tagEdit.id, { tags }); setTagEdit({ ...tagEdit, tags })
+                    }}>+ {t}</button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="text-[11px]" style={{ color: 'var(--faint)' }}>
+              Categories and tags live in the synced index — every device sees the same organization.
+            </div>
+          </div>
+        )}
       </Modal>
 
       <Modal open={!!rename} onClose={() => setRename(null)} title="Rename file">

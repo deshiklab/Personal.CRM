@@ -34,8 +34,10 @@ export default function SettingsSync() {
       <RulesTable />
       <AuditLog />
       <AppLockCard />
-      <FileStorageCard />
       <ReminderPrefsCard />
+      <SectionHead kicker="Power user" title="Pro / Advanced"
+        sub="Deep controls for people who like to choose where and how things are stored." />
+      <FileStorageCard />
       <DangerZone />
     </div>
   )
