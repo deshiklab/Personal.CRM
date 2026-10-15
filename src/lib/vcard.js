@@ -12,7 +12,14 @@ export const toVCF = c => {
     c.company && `ORG:${escV(c.company)}`,
     c.role && `TITLE:${escV(c.role)}`,
     c.birthday && `BDAY:${c.birthday}`,
-    (c.interests || []).length && `NOTE:Interests: ${escV(c.interests.join(', '))}`,
+    c.address && `ADR;TYPE=HOME:;;${escV(c.address)};;;;`,
+    c.url && `URL:${escV(c.url)}`,
+    (() => {
+      const bits = []
+      if (c.note) bits.push(String(c.note))
+      if ((c.interests || []).length) bits.push(`Interests: ${c.interests.join(', ')}`)
+      return bits.length ? `NOTE:${escV(bits.join(' · '))}` : null
+    })(),
     c.introducedBy && `X-INTRODUCED-BY:${escV(c.introducedBy)}`,
     'END:VCARD',
   ].filter(Boolean)
@@ -49,6 +56,9 @@ export const parseVCF = text => {
       else if (key === 'EMAIL' && !cur.email) cur.email = val
       else if (key === 'ORG' && !cur.org) cur.org = val.split(';')[0]
       else if (key === 'BDAY' && !cur.bday) cur.bday = val
+      else if (key === 'ADR' && !cur.address) cur.address = val.split(';').filter(Boolean).slice(-3).join(', ')
+      else if (key === 'URL' && !cur.url) cur.url = val
+      else if (key === 'NOTE' && !cur.note) cur.note = val
     }
   })
   return rows

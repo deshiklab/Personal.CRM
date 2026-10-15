@@ -1,21 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { QrCode, Camera, Upload, Share2, Copy, ScanLine, X } from 'lucide-react'
-import QRCode from 'qrcode'
+import { QrCode, Camera, Upload, Share2, Copy, ScanLine, X, Download, Sliders } from 'lucide-react'
 import jsQR from 'jsqr'
 import { useNavigate } from 'react-router-dom'
 import { useCrm } from '../store'
 import { Modal } from './ui'
+import QrDesigner from './QrDesigner'
 import { toVCF, downloadVCF } from '../lib/vcard'
 import { copyText } from '../lib/share'
+import { renderStyledQr, styledQrDataUrl, qrStyleOf } from '../lib/qrstyle'
 
 /* X2 — QR business-card mode.
  *  My card: live vCard-QR of your identity (edit fields → QR updates).
  *  Scan:    camera (jsQR) or QR-image upload → straight into the
  *           WS-2 import pipeline with the decoded vCard prefilled. */
 export default function MyQrCard({ open, onClose }) {
-  const { myCard, updateMyCard, toast } = useCrm()
+  const { myCard, updateMyCard, toast, qrStyle } = useCrm()
   const [tab, setTab] = useState('card')
-  const [qr, setQr] = useState(null)
+  const [designOpen, setDesignOpen] = useState(false)
+  const [qrMode, setQrMode] = useState(null)   // 'styled' | 'plain' | null
+  const qrBoxRef = useRef(null)
   const nav = useNavigate()
   const card = myCard || {}
   const set = (k, v) => updateMyCard({ [k]: v })
@@ -25,17 +28,21 @@ export default function MyQrCard({ open, onClose }) {
     phone: card.phone || '',
     email: card.email || '',
     company: card.org || '',
-    role: '',
-    birthday: null,
+    role: card.role || '',
+    birthday: card.birthday || null,
+    address: card.address || '',
+    url: card.url || '',
+    note: card.note || '',
     interests: [],
     introducedBy: null,
-  }), [card.name, card.phone, card.email, card.org])
+  }), [card.name, card.phone, card.email, card.org, card.role, card.birthday, card.address, card.url, card.note])
 
   useEffect(() => {
-    if (!open || tab !== 'card') return
-    QRCode.toDataURL(vcf, { margin: 1, width: 280, color: { dark: '#0a0c11', light: '#ffffff' } })
-      .then(setQr).catch(() => setQr(null))
-  }, [open, tab, vcf])
+    if (!open || tab !== 'card' || !qrBoxRef.current) return
+    let dead = false
+    renderStyledQr(qrBoxRef.current, vcf, qrStyle).then(mode => { if (!dead) setQrMode(mode) })
+    return () => { dead = true }
+  }, [open, tab, vcf, qrStyle, designOpen])
 
   const onDecoded = text => {
     if (/BEGIN:VCARD/i.test(text)) {
@@ -62,13 +69,29 @@ export default function MyQrCard({ open, onClose }) {
       {tab === 'card' ? (
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex flex-col items-center gap-2 flex-none">
-            {qr
-              ? <img src={qr} alt="My vCard QR" data-testid="my-qr" width={220} height={220} className="rounded-2xl" style={{ background: '#fff', padding: 8 }} />
-              : <div className="w-[220px] h-[220px] rounded-2xl grid place-items-center text-[11px] text-center px-6"
-                  style={{ background: 'rgba(255,255,255,.05)', color: 'var(--faint)' }}>
-                  QR rendering needs a canvas-capable browser — the fields and .vcf share still work.
-                </div>}
-            <div className="flex gap-1.5">
+            <div ref={qrBoxRef} data-testid="my-qr" className="rounded-2xl overflow-hidden"
+              style={{ background: qrStyleOf(qrStyle).bg, minHeight: 260, minWidth: 260, display: 'grid', placeItems: 'center' }} />
+            {qrMode === null && (
+              <div className="w-[220px] text-[11px] text-center px-4" style={{ color: 'var(--faint)' }}>
+                QR rendering needs a canvas-capable browser — the fields and .vcf share still work.
+              </div>
+            )}
+            <div className="flex gap-1.5 flex-wrap justify-center">
+              <button className="btn btn-ghost btn-sm" data-testid="qr-design-toggle"
+                onClick={() => setDesignOpen(o => !o)}>
+                <Sliders size={13} /> {designOpen ? 'Hide design' : 'Design'}
+              </button>
+              <button className="btn btn-ghost btn-sm" data-testid="qr-download"
+                onClick={async () => {
+                  const url = await styledQrDataUrl(vcf, qrStyle)
+                  if (!url) return toast('QR rendering unavailable here', 'warn')
+                  const a = document.createElement('a')
+                  a.href = url; a.download = `${(card.name || 'my-card').replace(/\s+/g, '-')}-qr.png`
+                  document.body.appendChild(a); a.click(); a.remove()
+                  toast('🖼️ QR downloaded as PNG')
+                }}>
+                <Download size={13} /> PNG
+              </button>
               <button className="btn btn-ghost btn-sm" data-testid="share-my-card" onClick={async () => {
                 const file = new File([vcf], `${(card.name || 'my-card').replace(/\s+/g, '-')}.vcf`, { type: 'text/vcard' })
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -89,15 +112,30 @@ export default function MyQrCard({ open, onClose }) {
               ['name', 'Full name', 'e.g. Rahim Uddin'],
               ['phone', 'Phone', '+8801…'],
               ['email', 'Email', 'you@example.com'],
-              ['org', 'Company / role', 'e.g. BiTsCol'],
+              ['org', 'Company', 'e.g. BiTsCol'],
+              ['role', 'Role / title', 'e.g. Product Engineer'],
               ['url', 'Website', 'https://…'],
+              ['address', 'Address', 'e.g. Dhanmondi, Dhaka'],
+              ['birthday', 'Birthday', ''],
             ].map(([k, label, ph]) => (
               <label key={k} className="block">
                 <span className="label">{label}</span>
                 <input className="input mt-1" data-testid={`mycard-${k}`} value={card[k] || ''} placeholder={ph}
-                  onChange={e => set(k, e.target.value.slice(0, 80))} />
+                  type={k === 'birthday' ? 'date' : 'text'}
+                  onChange={e => set(k, e.target.value.slice(0, 120))} />
               </label>
             ))}
+            <label className="block">
+              <span className="label">Note (lands in the contact's notes field)</span>
+              <textarea className="input mt-1" rows={2} data-testid="mycard-note" value={card.note || ''}
+                placeholder="e.g. Founder — loves single-origin coffee"
+                onChange={e => set('note', e.target.value.slice(0, 200))} />
+            </label>
+            {designOpen && (
+              <div className="card p-4 mt-1">
+                <QrDesigner />
+              </div>
+            )}
             <div className="text-[11px] leading-snug" style={{ color: 'var(--faint)' }}>
               This QR encodes a standard vCard — any phone camera reads it and saves you as a contact. Nothing leaves this device.
             </div>

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Search, UserPlus, Star, Phone, Mail, Cake, Users, Clock, CheckCircle2, StickyNote, X, Heart, Gift, Globe, MessageCircle, Link2, Share2, Pencil, Trash2, Download, UsersRound, Smartphone, ContactRound, Activity, CalendarDays, Bell, ListChecks, QrCode } from 'lucide-react'
+import { Search, UserPlus, Star, Phone, Mail, Cake, Users, Clock, CheckCircle2, StickyNote, X, Heart, Gift, Globe, MessageCircle, Link2, Share2, Pencil, Trash2, Download, UsersRound, Smartphone, ContactRound, Activity, CalendarDays, Bell, ListChecks, QrCode, QrCode as QrIcon } from 'lucide-react'
 import { toVCF, downloadVCF } from '../lib/vcard'
 import MyQrCard from '../components/MyQrCard'
+import ContactQr from '../components/ContactQr'
 import { canWritePhoneContacts, saveContactToPhone, saveContactsToPhone } from '../lib/contacts-native'
 import { useCrm } from '../store'
 import { SectionHead, Avatar, TagPill, Pill, Modal, Drawer, Field, Empty, EVENT_COLORS, CsvButton } from '../components/ui'
@@ -315,6 +316,7 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete }) {
   const [interestDraft, setInterestDraft] = useState('')
   const [socPlatform, setSocPlatform] = useState('linkedin')
   const [socDraft, setSocDraft] = useState('')
+  const [qrOpen, setQrOpen] = useState(false)   // per-contact QR card
   const st = crm.followUpStatus(c)
   const cgs = contactGroupIds(c)
   const rel = crm.relFreq[c.rel]
@@ -357,6 +359,7 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete }) {
 
   return (
     <div>
+      <ContactQr contact={c} open={qrOpen} onClose={() => setQrOpen(false)} />
       <div className="flex items-start gap-4">
         <Avatar name={c.name} size={56} />
         <div className="min-w-0 flex-1">
@@ -396,6 +399,9 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete }) {
                href={c.email ? `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(c.email)}` : '#'} target="_blank" rel="noreferrer" title="Compose in Gmail">
               <Mail size={14} /> Email
             </a>
+            <button className="btn btn-ghost flex-1 justify-center" data-testid={`contact-qr-btn-${c.id}`} onClick={() => setQrOpen(true)} title="Show this contact as a QR code (scan to save)">
+              <QrIcon size={14} /> QR
+            </button>
             <button className="btn btn-ghost flex-1 justify-center" onClick={shareCard} title="Share the full contact card (.vcf) — works with phone share sheet">
               <Share2 size={14} /> Share card
             </button>
