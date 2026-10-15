@@ -98,3 +98,29 @@ describe('Settings app-lock pin inputs keep focus per digit', () => {
     expect(fields[1].value).toBe('9876')
   })
 })
+
+describe('Setup wizard pin step keeps focus per digit', () => {
+  it('wiz-pin / wiz-pin2 never lose focus or remount while typing', async () => {
+    window.localStorage.clear()   // truly fresh → welcome wizard
+    window.location.hash = '#/'
+    render(
+      <HashRouter>
+        <CrmProvider>
+          <App />
+        </CrmProvider>
+      </HashRouter>
+    )
+    fireEvent.click(await screen.findByTestId('wiz-path-new'))
+    fireEvent.change(await screen.findByTestId('wiz-name'), { target: { value: 'Focus Tester' } })
+    fireEvent.click(screen.getByTestId('wiz-profile-next'))
+    const first = await screen.findByTestId('wiz-pin')
+    const second = screen.getByTestId('wiz-pin2')
+    typeDigits(first, '1234')
+    typeDigits(second, '1234')
+    // same DOM nodes — a remount would hand back fresh elements
+    expect(screen.getByTestId('wiz-pin')).toBe(first)
+    expect(screen.getByTestId('wiz-pin2')).toBe(second)
+    expect(first.value).toBe('1234')
+    expect(second.value).toBe('1234')
+  })
+})

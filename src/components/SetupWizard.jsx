@@ -12,6 +12,34 @@ import { cn } from '../lib'
 /* First-run setup wizard — welcome path picker (start fresh / restore /
  * Google / Gist) then the small steps every new device needs: profile +
  * language, pincode, reminder permission, finish (keep or wipe samples). */
+
+/* ── shared chrome — module level so typing never remounts the tree ── */
+const Shell = ({ children, wide }) => (
+  <div className="h-screen w-full grid place-items-center p-4 overflow-y-auto" style={{ background: 'linear-gradient(160deg, var(--bg), var(--cardbg2))' }}>
+    <div className={cn('card p-7 fadein w-full', wide ? 'max-w-[560px]' : 'max-w-[440px]')} style={{ borderRadius: 20 }}>
+      {children}
+    </div>
+  </div>
+)
+const Hero = ({ icon: Icon = Zap, title, sub }) => (
+  <div className="flex flex-col items-center text-center mb-5">
+    <div className="w-14 h-14 rounded-2xl grid place-items-center mb-3"
+      style={{ background: 'linear-gradient(140deg,#6366f1,#2dd4bf)', color: '#0b0e17' }}>
+      <Icon size={26} />
+    </div>
+    <h1 className="text-[18px] font-extrabold">{title}</h1>
+    {sub && <p className="text-[12.5px] mt-1.5 leading-snug" style={{ color: 'var(--muted)' }}>{sub}</p>}
+  </div>
+)
+const WIZ_STEPS = ['profile', 'restore', 'google', 'gist', 'pin', 'notify', 'done']
+const StepDots = ({ at }) => (
+  <div className="flex items-center justify-center gap-1.5 mt-5">
+    {WIZ_STEPS.map(s2 => (
+      <span key={s2} className="rounded-full" style={{ width: s2 === at ? 16 : 6, height: 6, background: s2 === at ? '#818cf8' : 'rgba(255,255,255,.14)', transition: 'all .2s' }} />
+    ))}
+  </div>
+)
+
 export default function SetupWizard() {
   useLang()
   const crm = useCrm()
@@ -83,31 +111,7 @@ export default function SetupWizard() {
     setStep('notify')
   }
 
-  /* ── shared chrome ── */
-  const Shell = ({ children, wide }) => (
-    <div className="h-screen w-full grid place-items-center p-4 overflow-y-auto" style={{ background: 'linear-gradient(160deg, var(--bg), var(--cardbg2))' }}>
-      <div className={cn('card p-7 fadein w-full', wide ? 'max-w-[560px]' : 'max-w-[440px]')} style={{ borderRadius: 20 }}>
-        {children}
-      </div>
-    </div>
-  )
-  const Hero = ({ icon: Icon = Zap, title, sub }) => (
-    <div className="flex flex-col items-center text-center mb-5">
-      <div className="w-14 h-14 rounded-2xl grid place-items-center mb-3"
-        style={{ background: 'linear-gradient(140deg,#6366f1,#2dd4bf)', color: '#0b0e17' }}>
-        <Icon size={26} />
-      </div>
-      <h1 className="text-[18px] font-extrabold">{title}</h1>
-      {sub && <p className="text-[12.5px] mt-1.5 leading-snug" style={{ color: 'var(--muted)' }}>{sub}</p>}
-    </div>
-  )
-  const StepDots = ({ at }) => (
-    <div className="flex items-center justify-center gap-1.5 mt-5">
-      {['profile', 'restore', 'google', 'gist', 'pin', 'notify', 'done'].map((s2, i) => (
-        <span key={s2} className="rounded-full" style={{ width: s2 === at ? 16 : 6, height: 6, background: s2 === at ? '#818cf8' : 'rgba(255,255,255,.14)', transition: 'all .2s' }} />
-      ))}
-    </div>
-  )
+  /* ── shared chrome now lives at module scope (see above) ── */
 
   if (step === 'welcome') {
     return (

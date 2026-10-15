@@ -286,6 +286,25 @@ function DangerZone() {
 }
 
 
+/* module level — inline components remount on every keystroke (focus loss) */
+const Service = ({ icon: Icon, color, title, status, children }) => (
+  <div className="card p-4 flex flex-col gap-3" style={{ borderRadius: 16 }}>
+    <div className="flex items-center gap-2.5">
+      <div className="w-9 h-9 rounded-xl grid place-items-center flex-none" style={{ background: color + '1c', color }}><Icon size={17} /></div>
+      <div className="min-w-0">
+        <div className="font-bold text-[13.5px] truncate">{title}</div>
+        <div className="text-[11px] truncate" style={{ color: 'var(--faint)' }}>{status}</div>
+      </div>
+    </div>
+    <div className="flex flex-wrap gap-1.5 mt-auto">{children}</div>
+  </div>
+)
+const Btn = ({ k, className = 'btn btn-ghost btn-sm', onClick, children, disabled, busy }) => (
+  <button className={className} disabled={disabled || !!busy} onClick={onClick}>
+    {busy === k ? <Loader2 size={13} className="animate-spin" /> : children}
+  </button>
+)
+
 /* ── Google Workspace hub (live OAuth with your own Client ID) ── */
 function GoogleHub() {
   const {
@@ -297,24 +316,6 @@ function GoogleHub() {
   const fileRef = { current: null }
   const live = googleMode === 'live'
   const run = (key, fn) => async () => { setBusy(key); try { await fn() } finally { setBusy('') } }
-
-  const Service = ({ icon: Icon, color, title, status, children }) => (
-    <div className="card p-4 flex flex-col gap-3" style={{ borderRadius: 16 }}>
-      <div className="flex items-center gap-2.5">
-        <div className="w-9 h-9 rounded-xl grid place-items-center flex-none" style={{ background: color + '1c', color }}><Icon size={17} /></div>
-        <div className="min-w-0">
-          <div className="font-bold text-[13.5px] truncate">{title}</div>
-          <div className="text-[11px] truncate" style={{ color: 'var(--faint)' }}>{status}</div>
-        </div>
-      </div>
-      <div className="flex flex-wrap gap-1.5 mt-auto">{children}</div>
-    </div>
-  )
-  const Btn = ({ k, className = 'btn btn-ghost btn-sm', onClick, children, disabled }) => (
-    <button className={className} disabled={disabled || !!busy} onClick={onClick}>
-      {busy === k ? <Loader2 size={13} className="animate-spin" /> : children}
-    </button>
-  )
 
   return (
     <Card className="p-5 mb-4" id="google-hub">
@@ -352,21 +353,21 @@ function GoogleHub() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         <Service icon={Calendar} color="#38bdf8" title="Google Calendar"
           status={gcal.connected ? `connected (${gcal.mode || 'live'}) · ${gcal.lastSync ? 'synced ' + tsRel(gcal.lastSync) : 'never synced'}` : 'import events ±30/60 days'}>
-          {live && <Btn k="cal" className="btn btn-primary btn-sm" onClick={run('cal', connectGoogleLive)}>Connect</Btn>}
-          <Btn k="calsync" className="btn btn-primary btn-sm" onClick={run('calsync', syncGoogleCalendar)}><RefreshCw size={13} /> Sync events</Btn>
-          {gcal.connected && <Btn k="caldisc" onClick={run('caldisc', disconnectGoogle)}><X size={13} /> Disconnect</Btn>}
+          {live && <Btn busy={busy} k="cal" className="btn btn-primary btn-sm" onClick={run('cal', connectGoogleLive)}>Connect</Btn>}
+          <Btn busy={busy} k="calsync" className="btn btn-primary btn-sm" onClick={run('calsync', syncGoogleCalendar)}><RefreshCw size={13} /> Sync events</Btn>
+          {gcal.connected && <Btn busy={busy} k="caldisc" onClick={run('caldisc', disconnectGoogle)}><X size={13} /> Disconnect</Btn>}
         </Service>
 
         <Service icon={Users} color="#a78bfa" title="Google Contacts (People)"
           status={driveState.lastContactsSync ? `last sync ${tsRel(driveState.lastContactsSync)}` : 'import dedupes & diffs via the pipeline'}>
-          <Btn k="people" className="btn btn-primary btn-sm" onClick={run('people', syncGoogleContacts)}><RefreshCw size={13} /> Sync contacts</Btn>
+          <Btn busy={busy} k="people" className="btn btn-primary btn-sm" onClick={run('people', syncGoogleContacts)}><RefreshCw size={13} /> Sync contacts</Btn>
         </Service>
 
         <Service icon={HardDrive} color="#34d399" title="Drive backup"
           status={driveState.lastBackup ? `backed up ${tsRel(driveState.lastBackup)}` : 'personal-crm-backup.json · drive.file scope only'}>
-          <Btn k="backup" className="btn btn-primary btn-sm" onClick={run('backup', driveBackupNow)}><Upload size={13} /> Back up now</Btn>
+          <Btn busy={busy} k="backup" className="btn btn-primary btn-sm" onClick={run('backup', driveBackupNow)}><Upload size={13} /> Back up now</Btn>
           {live
-            ? <Btn k="restore" onClick={run('restore', driveRestoreNow)}><CloudDownload size={13} /> Restore from Drive</Btn>
+            ? <Btn busy={busy} k="restore" onClick={run('restore', driveRestoreNow)}><CloudDownload size={13} /> Restore from Drive</Btn>
             : <>
                 <label className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }}>
                   <CloudDownload size={13} /> Restore from file
@@ -385,7 +386,7 @@ function GoogleHub() {
             ? (syncState.lastSyncAt ? `rev ${syncState.lastRev} · synced ${tsRel(syncState.lastSyncAt)} · via ${syncProvider()}` : 'on — press Sync now')
             : 'off'}>
           <Toggle on={syncState.enabled} onChange={setSyncEnabled} disabled={!live} />
-          <Btn k="syncdev" className="btn btn-primary btn-sm" disabled={syncProvider() === 'none' || !syncState.enabled}
+          <Btn busy={busy} k="syncdev" className="btn btn-primary btn-sm" disabled={syncProvider() === 'none' || !syncState.enabled}
             onClick={run('syncdev', () => syncNow({ manual: true }))}>
             {syncing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} Sync now
           </Btn>
@@ -412,6 +413,20 @@ function GoogleHub() {
   )
 }
 
+/* module level — inline components remount on every keystroke */
+const Step = ({ n, children }) => (
+  <div className="flex gap-3 items-start">
+    <span className="w-5 h-5 rounded-full grid place-items-center flex-none text-[10.5px] font-extrabold mt-[1px]"
+      style={{ background: 'var(--i2)22', color: 'var(--i2)' }}>{n}</span>
+    <div className="text-[12.5px] leading-relaxed" style={{ color: 'var(--muted)' }}>{children}</div>
+  </div>
+)
+const L = ({ href, children }) => (
+  <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold underline underline-offset-2" style={{ color: 'var(--i2)' }}>
+    {children}<ExternalLink size={11} />
+  </a>
+)
+
 /* ── guided live-mode setup (no account on our side — Google requires YOUR project) ── */
 function GoogleSetupGuide({ toast }) {
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
@@ -421,18 +436,6 @@ function GoogleSetupGuide({ toast }) {
     try { await navigator.clipboard.writeText(origin); setCopied(true); setTimeout(() => setCopied(false), 1600) }
     catch { toast('Select and copy the URL manually', 'warn') }
   }
-  const Step = ({ n, children }) => (
-    <div className="flex gap-3 items-start">
-      <span className="w-5 h-5 rounded-full grid place-items-center flex-none text-[10.5px] font-extrabold mt-[1px]"
-        style={{ background: 'var(--i2)22', color: 'var(--i2)' }}>{n}</span>
-      <div className="text-[12.5px] leading-relaxed" style={{ color: 'var(--muted)' }}>{children}</div>
-    </div>
-  )
-  const L = ({ href, children }) => (
-    <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold underline underline-offset-2" style={{ color: 'var(--i2)' }}>
-      {children}<ExternalLink size={11} />
-    </a>
-  )
   return (
     <div className="card mb-5 overflow-hidden" style={{ borderRadius: 16, borderStyle: 'dashed' }}>
       <button className="w-full flex items-center gap-2.5 p-4 text-left" onClick={() => setOpen(o => !o)}>

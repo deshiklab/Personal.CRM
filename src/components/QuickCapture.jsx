@@ -44,6 +44,14 @@ const KIND_META = {
   note: { icon: StickyNote, color: '#fbbf24', label: 'Note' },
 }
 
+/* module level — an inline definition remounts on every keystroke (focus loss) */
+const Tab = ({ id, icon: Icon, children, active, onSelect }) => (
+  <button onClick={() => onSelect(id)}
+    className={`chip chip-btn ${active ? 'on' : ''}`} style={{ padding: '7px 13px', fontSize: 12.5 }}>
+    <Icon size={14} /> {children}
+  </button>
+)
+
 export default function QuickCapture() {
   const { contacts, addContact, addTask, addNote, commitImport, toast, logActivity } = useCrm()
   const nav = useNavigate()
@@ -158,13 +166,6 @@ export default function QuickCapture() {
     setBulk('')
   }
 
-  const Tab = ({ id, icon: Icon, children }) => (
-    <button onClick={() => setTab(id)}
-      className={`chip chip-btn ${tab === id ? 'on' : ''}`} style={{ padding: '7px 13px', fontSize: 12.5 }}>
-      <Icon size={14} /> {children}
-    </button>
-  )
-
   return (
     <>
       {/* ── Floating Action Button ── */}
@@ -202,9 +203,9 @@ export default function QuickCapture() {
             </div>
 
             <div className="flex items-center gap-2 mb-5">
-              <Tab id="lead" icon={UserPlus}>Lead</Tab>
-              <Tab id="voice" icon={Mic}>Voice</Tab>
-              <Tab id="bulk" icon={ClipboardPaste}>Bulk paste</Tab>
+              <Tab id="lead" icon={UserPlus} active={tab === 'lead'} onSelect={setTab}>Lead</Tab>
+              <Tab id="voice" icon={Mic} active={tab === 'voice'} onSelect={setTab}>Voice</Tab>
+              <Tab id="bulk" icon={ClipboardPaste} active={tab === 'bulk'} onSelect={setTab}>Bulk paste</Tab>
             </div>
 
             {/* ── LEAD ── */}
