@@ -10,6 +10,7 @@ import { FILE_LOCATIONS, fileLocationInfo, storageBackend, migrateBlobs } from '
 import { biometricAvailable } from '../lib/biometric'
 import { LANGS, t as tr, useLang } from '../lib/i18n'
 import { encryptBackup } from '../lib/vault'
+import ProfileSettings from '../components/ProfileSettings'
 
 const SOURCES = ['Google Contacts', 'Google Calendar', 'CardDAV (iCloud)', 'vCard file (.vcf)', 'Outlook (CSV)']
 const DIRECTIONS = ['Import', 'Export', 'Two-way']
@@ -30,6 +31,7 @@ export default function SettingsSync() {
     <div className="max-w-[1100px] mx-auto">
       <SectionHead kicker="Roadmap #9" title="Settings & Sync"
         sub="Connections, sync rules with per-rule conflict strategy, and a full audit trail." />
+      <ProfileSettings />
       <GistSyncCard />
       <GoogleHub />
       <Connections />
