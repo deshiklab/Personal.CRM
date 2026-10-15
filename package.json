@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "build:demo": "vite build && cp dist/index.html demo-standalone.html",
     "android:sync": "npm run build && npx cap sync android",
     "android:open": "npx cap open android",
     "android:apk": "cd android && ./gradlew assembleDebug"

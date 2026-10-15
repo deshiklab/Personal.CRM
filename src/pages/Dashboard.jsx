@@ -7,9 +7,14 @@ import { t, useLang } from '../lib/i18n'
 import { cn } from '../lib'
 
 export default function Dashboard() {
-  const { widgetPrefs, toggleWidget, moveWidget, resetWidgets, DEFAULT_WIDGET_ORDER } = useCrm()
+  const { widgetPrefs, toggleWidget, moveWidget, resetWidgets, DEFAULT_WIDGET_ORDER, myCard } = useCrm()
   useLang()
   const [edit, setEdit] = useState(false)
+
+  /* dynamic greeting — time of day + the user's own profile name */
+  const firstName = (myCard?.name || '').trim().split(/\s+/).filter(Boolean)[0] || ''
+  const hour = new Date().getHours()
+  const greet = hour < 12 ? t('dash.morning', 'Good morning') : hour < 17 ? t('dash.afternoon', 'Good afternoon') : t('dash.evening', 'Good evening')
 
   const order = useMemo(() => [
     ...widgetPrefs.order.filter(id => DEFAULT_WIDGET_ORDER.includes(id)),
@@ -19,7 +24,7 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-[1200px] mx-auto">
-      <SectionHead kicker="Overview" title={<>{t('dash.greeting')}, <span className="grad-text">BiTsCol</span> 👋</>}
+      <SectionHead kicker="Overview" title={<>{greet}, <span className="grad-text">{firstName || 'BiTsCol'}</span> 👋</>}
         sub="Reorder with arrows, hide what you don't need — your layout is saved."
         right={edit ? (
           <>

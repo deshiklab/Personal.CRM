@@ -10,9 +10,10 @@
  *   • actions — Share my card (QR), Copy vCard, two-step Clear
  */
 import { useEffect, useMemo, useState } from 'react'
-import { User, Pencil, Share2, Copy, Trash2, Save } from 'lucide-react'
+import { Pencil, Share2, Copy, Trash2, Save } from 'lucide-react'
 import { useCrm } from '../store'
 import { Card, Field, Modal } from './ui'
+import Avatar from './Avatar'
 import { t as tr } from '../lib/i18n'
 import { toVCF } from '../lib/vcard'
 import { copyText } from '../lib/share'
@@ -23,28 +24,6 @@ const EMPTY = Object.fromEntries(PROFILE_FIELDS.map(k => [k, '']))
 const LABELS = {
   name: 'Full name', phone: 'Phone', email: 'Email', org: 'Company / organisation',
   role: 'Role / title', url: 'Website', address: 'Address', birthday: 'Birthday (YYYY-MM-DD)', note: 'Note',
-}
-const AVATAR_COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6']
-
-export const initialsOf = name => (name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2)
-  .map(w => w[0].toUpperCase()).join('') || '?'
-const hashOf = s => (s || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0)
-
-/* module-level (inline = remount = focus loss) */
-export function Avatar({ name, size = 56, testid = 'profile-avatar' }) {
-  const n = (name || '').trim()
-  const h = hashOf(n)
-  return (
-    <div data-testid={testid} className="rounded-full grid place-items-center font-bold shrink-0 select-none"
-      style={{
-        width: size, height: size,
-        background: n ? `linear-gradient(135deg, ${AVATAR_COLORS[h % 8]}, ${AVATAR_COLORS[(h + 3) % 8]})` : 'rgba(148,163,184,.14)',
-        color: n ? '#fff' : 'var(--muted)',
-        fontSize: Math.round(size * 0.36),
-      }}>
-      {n ? initialsOf(n) : <User size={Math.round(size * 0.45)} />}
-    </div>
-  )
 }
 
 function ProfileEditor({ open, onClose }) {

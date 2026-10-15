@@ -69,7 +69,7 @@ describe('service worker source', () => {
     expect(main).toContain("navigator.serviceWorker.register('./sw.js')")
     expect(main).not.toContain('import.meta.env.PROD &&')  // registered in dev too
     const sw = read('public/sw.js')
-    expect(sw).toContain("const VERSION = 'pcrm-v3'")
+    expect(sw).toContain("const VERSION = 'pcrm-v4'")
     // dev-safe guard: live modules must never be cache-served
     expect(sw).toMatch(/@vite\|src\|node_modules/)
     expect(sw).toContain('navigate') // offline navigation fallback exists

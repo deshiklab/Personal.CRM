@@ -8,7 +8,7 @@ import React from 'react'
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
 import { HashRouter } from 'react-router-dom'
-import { CrmProvider } from './src/store'
+import { CrmProvider, useCrm } from './src/store'
 import App from './src/App'
 import { detectBackup, encryptBackup, decryptBackup, ENC_MARKER } from './src/lib/vault'
 
@@ -35,6 +35,25 @@ async function mount() {
   return render(
     <HashRouter>
       <CrmProvider>
+        <App />
+      </CrmProvider>
+    </HashRouter>
+  )
+}
+
+/* exposes store actions to the probe (factory reset writes the blank state) */
+function Expose() {
+  const { factoryReset } = useCrm()
+  window.__factoryReset = factoryReset
+  return null
+}
+
+async function mountExposed() {
+  window.location.hash = '#/'
+  return render(
+    <HashRouter>
+      <CrmProvider>
+        <Expose />
         <App />
       </CrmProvider>
     </HashRouter>
@@ -180,5 +199,28 @@ describe('google + gist paths', () => {
     fireEvent.click(await screen.findByTestId('wiz-path-gist'))
     fireEvent.click(await screen.findByTestId('wiz-gist-save'))
     await screen.findByTestId('wiz-pin')
+  })
+})
+
+describe('new setup replays the wizard', () => {
+  it('factory reset ("Reset everything to blank") writes a not-done onboard and the next boot shows the welcome screen', async () => {
+    // an existing install — grandfathers past the wizard
+    window.localStorage.clear()
+    window.localStorage.setItem('pcrm-v1', JSON.stringify(freshState({ myCard: { name: 'Old User', phone: '', email: '', org: '', role: '', url: '', address: '', birthday: '', note: '' } })))
+    await mountExposed()
+    expect(screen.queryByTestId('wiz-skip')).toBeNull()
+
+    const ok = await window.__factoryReset('')   // no pin set → goes straight through
+    expect(ok).toBe(true)
+    await waitFor(() => {
+      const saved = JSON.parse(window.localStorage.getItem('pcrm-v1') || '{}')
+      expect(saved.onboard?.done).toBe(false)   // blank state = new setup, wizard again
+    })
+
+    // the next boot from that blank state shows the welcome screen
+    cleanup()
+    await mount()
+    await screen.findByText('Welcome to Personal CRM')
+    expect(screen.getByTestId('wiz-skip')).toBeTruthy()
   })
 })

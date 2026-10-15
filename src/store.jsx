@@ -810,7 +810,7 @@ export function CrmProvider({ children }) {
     contacts: [], tasks: [], events: [], notes: [], noteLabels: [], files: [], devices: [], reminders: [], kbArticles: [], kbCollections: [], kbViews: {}, tags: [], groups: [], rules: [], audit: [],
     activity: [], imports: [], relFreq: {}, snoozes: {}, carddav: null,
     gcal: { connected: false, email: null, lastSync: null },
-    notifState: {}, notifPrefs, widgetPrefs, filesPrefs: { location: 'data' }, myCard: { name: '', phone: '', email: '', org: '', url: '', role: '', address: '', note: '', birthday: '' }, lang: 'en', qrStyle: null, onboard: { done: true },
+    notifState: {}, notifPrefs, widgetPrefs, filesPrefs: { location: 'data' }, myCard: { name: '', phone: '', email: '', org: '', url: '', role: '', address: '', note: '', birthday: '' }, lang: 'en', qrStyle: null, onboard: { done: false },
     mailboxes: {
       gmail: { connected: false, address: '', lastSync: null },
       outlook: { connected: false, address: '', lastSync: null },
