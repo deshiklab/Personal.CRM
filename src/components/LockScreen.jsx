@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Lock, Unlock, ShieldCheck, Trash2, Loader2, Zap, Fingerprint } from 'lucide-react'
 import { useCrm } from '../store'
 import { verifyBiometric } from '../lib/biometric'
+import { t as tr, useLang } from '../lib/i18n'
 
 /* Full-screen gate shown before the app:
  *   mode 'setup'  — first launch: offer a pin (option + skip link)
@@ -27,6 +28,7 @@ const PinField = ({ value, set, label, innerRef, onEnter, onInput }) => (
 )
 
 export default function LockScreen({ mode }) {
+  useLang()
   const { setupPin, skipPinSetup, unlockWithPin, unlockWithBio, factoryReset, lock } = useCrm()
   const [bioBusy, setBioBusy] = useState(false)
   const [pin, setPin] = useState('')
@@ -69,22 +71,22 @@ export default function LockScreen({ mode }) {
             style={{ background: 'linear-gradient(140deg,#6366f1,#2dd4bf)', color: '#0b0e17' }}>
             <Zap size={26} />
           </div>
-          <h1 className="text-[18px] font-extrabold">Personal CRM</h1>
+          <h1 className="text-[18px] font-extrabold">{tr('lock.title')}</h1>
           <p className="text-[12.5px] mt-1 leading-snug" style={{ color: 'var(--muted)' }}>
             {mode === 'setup'
-              ? 'Set a 4–6 digit pincode. Every start on this device will ask for it.'
-              : 'This app is locked. Enter your pincode to continue.'}
+              ? tr('lock.setCopy')
+              : tr('lock.unlockCopy')}
           </p>
         </div>
 
         <div className="flex flex-col gap-3">
           {mode === 'setup' ? (
             <>
-              <PinField value={pin} set={setPin} label="Choose pincode" innerRef={ref} onInput={() => setErr('')} />
-              <PinField value={pin2} set={setPin2} label="Repeat pincode" onEnter={doSetup} onInput={() => setErr('')} />
+              <PinField value={pin} set={setPin} label={tr('lock.choose')} innerRef={ref} onInput={() => setErr('')} />
+              <PinField value={pin2} set={setPin2} label={tr('lock.repeat')} onEnter={doSetup} onInput={() => setErr('')} />
             </>
           ) : (
-            <PinField value={pin} set={setPin} label="Pincode" innerRef={ref} onEnter={doUnlock} onInput={() => setErr('')} />
+            <PinField value={pin} set={setPin} label={tr('lock.pincode')} innerRef={ref} onEnter={doUnlock} onInput={() => setErr('')} />
           )}
 
           {!!err && (
@@ -105,7 +107,7 @@ export default function LockScreen({ mode }) {
                 finally { setBioBusy(false) }
               }}>
               {bioBusy ? <Loader2 size={15} className="animate-spin" /> : <Fingerprint size={15} />}
-              Use fingerprint / face
+              {tr('lock.bio')}
             </button>
           )}
 
@@ -114,17 +116,17 @@ export default function LockScreen({ mode }) {
             disabled={busy || (mode === 'setup' ? pin.length < 4 || pin2.length < 4 : pin.length < 4)}
             onClick={mode === 'setup' ? doSetup : doUnlock}>
             {busy ? <Loader2 size={15} className="animate-spin" /> : mode === 'setup' ? <ShieldCheck size={15} /> : <Unlock size={15} />}
-            {mode === 'setup' ? 'Set pincode & start' : 'Unlock'}
+            {mode === 'setup' ? tr('lock.setBtn') : tr('lock.unlockBtn')}
           </button>
 
           {mode === 'setup' ? (
             <button className="text-[12px] font-semibold text-center hover:underline" style={{ color: 'var(--faint)' }} onClick={skipPinSetup}>
-              Skip for now — set it later in Settings
+              {tr('lock.skip')}
             </button>
           ) : (
             <button className="text-[11.5px] font-semibold text-center inline-flex items-center gap-1 justify-center mt-1"
               style={{ color: '#f8717188' }} onClick={doForgot}>
-              <Trash2 size={12} /> Forgot pincode? Wipe app & start blank
+              <Trash2 size={12} /> {tr('lock.forgot')}
             </button>
           )}
         </div>

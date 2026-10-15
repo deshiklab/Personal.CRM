@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { UserPlus, CalendarPlus, PlusSquare, Search, Sun, Moon, Download, Cloud, Loader2, CloudOff, BellRing, Check, Bell } from 'lucide-react'
 import { useCrm } from '../store'
+import { t as tr, useLang } from '../lib/i18n'
 import { MONTHS, tsRel } from '../lib'
 import { dueSoonLabel } from '../lib/reminders'
 
@@ -26,6 +27,7 @@ const TITLES = {
 }
 
 export default function Topbar() {
+  useLang()
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const { theme, toggleTheme, syncing, syncState, syncNow, googleMode, syncProvider } = useCrm()
@@ -53,8 +55,8 @@ export default function Topbar() {
       <div className="ml-auto flex items-center gap-2">
         <BellMenu />
         {installEvt && (
-          <button className="btn btn-ghost btn-sm" onClick={install} title="Install as an app (works offline)" style={{ color: 'var(--i2)' }}>
-            <Download size={14} /><span className="hidden md:inline">Install</span>
+          <button className="btn btn-ghost btn-sm" onClick={install} title={tr('top.installTip')} style={{ color: 'var(--i2)' }}>
+            <Download size={14} /><span className="hidden md:inline">{tr('top.install')}</span>
           </button>
         )}
         <button
@@ -81,7 +83,7 @@ export default function Topbar() {
           {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
         </button>
         <button className="btn btn-ghost btn-sm" onClick={() => window.dispatchEvent(new Event('crm:search'))} title="Global search (⌘K)">
-          <Search size={14} /><span className="hidden md:inline">Search</span>
+          <Search size={14} /><span className="hidden md:inline">{tr('top.search')}</span>
           <kbd className="chip hidden md:inline-flex" style={{ fontSize: 10, padding: '1px 7px' }}>⌘K</kbd>
         </button>
         <button className="btn btn-ghost btn-sm" onClick={() => navigate('/contacts?new=1')} title="Add contact">

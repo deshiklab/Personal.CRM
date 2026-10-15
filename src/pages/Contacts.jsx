@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Search, UserPlus, Star, Phone, Mail, Cake, Users, Clock, CheckCircle2, StickyNote, X, Heart, Gift, Globe, MessageCircle, Link2, Share2, Pencil, Trash2, Download, UsersRound, Smartphone, ContactRound } from 'lucide-react'
+import { Search, UserPlus, Star, Phone, Mail, Cake, Users, Clock, CheckCircle2, StickyNote, X, Heart, Gift, Globe, MessageCircle, Link2, Share2, Pencil, Trash2, Download, UsersRound, Smartphone, ContactRound, Activity, CalendarDays, Bell, ListChecks, QrCode } from 'lucide-react'
 import { toVCF, downloadVCF } from '../lib/vcard'
+import MyQrCard from '../components/MyQrCard'
 import { canWritePhoneContacts, saveContactToPhone, saveContactsToPhone } from '../lib/contacts-native'
 import { useCrm } from '../store'
 import { SectionHead, Avatar, TagPill, Pill, Modal, Drawer, Field, Empty, EVENT_COLORS, CsvButton } from '../components/ui'
@@ -40,6 +41,7 @@ export default function Contacts() {
   const [sort, setSort] = useState('name')
   const [openId, setOpenId] = useState(null)
   const [addOpen, setAddOpen] = useState(false)
+  const [qrOpen, setQrOpen] = useState(false)   // X2 — QR business card
   const [sel, setSel] = useState([])            // ids ticked for bulk actions
   const [editId, setEditId] = useState(null)    // contact being edited (null = none)
   const [confirm, setConfirm] = useState(null)  // { ids, label } pending delete
@@ -105,6 +107,7 @@ export default function Contacts() {
           <a className="btn btn-ghost btn-sm" href="#/import?phone=1" title="Import contacts from your phone address book">
             <Smartphone size={13} /> From phone
           </a>
+          <button className="btn btn-ghost btn-sm" data-testid="qr-card-btn" onClick={() => setQrOpen(true)} title="Show my QR card or scan someone's"><QrCode size={14} /> QR card</button>
           <button className="btn btn-primary btn-sm" onClick={() => setAddOpen(true)}><UserPlus size={14} /> Add contact</button>
         </div>} />
 
@@ -289,6 +292,7 @@ export default function Contacts() {
       </Drawer>
 
       <ContactFormModal open={addOpen} onClose={() => setAddOpen(false)} />
+      <MyQrCard open={qrOpen} onClose={() => setQrOpen(false)} />
       <ContactFormModal open={!!editId} onClose={() => setEditId(null)} contact={editId ? crm.contactById[editId] : null} />
 
       <PinConfirm
@@ -317,6 +321,34 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete }) {
   const myNotes = crm.notes.filter(n => !n.trashedAt && n.contactIds.includes(c.id))
   const myEvents = crm.events.filter(e => e.contactId === c.id).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5)
   const myActs = crm.activity.filter(a => a.contactId === c.id).slice(0, 5)
+  const myTasks = crm.tasks.filter(t => t.contactId === c.id)
+  const myReminders = crm.reminders.filter(r => r.refType === 'contact' && r.refId === c.id)
+
+  /* X4 — one unified stream: touchpoints + notes + tasks + events + reminders */
+  const timeline = (() => {
+    const rows = []
+    for (const a of crm.activity.filter(x => x.contactId === c.id)) {
+      rows.push({ ts: a.ts, Icon: Activity, tone: '#38bdf8', text: a.text })
+    }
+    for (const n of myNotes) {
+      rows.push({ ts: n.updatedAt || n.createdAt, Icon: StickyNote, tone: '#fbbf24', text: `Note: ${n.title}` })
+    }
+    for (const e of crm.events.filter(x => x.contactId === c.id)) {
+      rows.push({ ts: `${e.date}T${e.time || '00:00'}`, Icon: CalendarDays, tone: '#a78bfa', text: `Event: ${e.title}` })
+    }
+    for (const t of myTasks) {
+      rows.push({
+        ts: (t.column === 'done' ? t.doneAt : null) || t.createdAt || t.due || '',
+        Icon: t.column === 'done' ? CheckCircle2 : ListChecks,
+        tone: t.column === 'done' ? '#34d399' : '#f59e0b',
+        text: `Task: ${t.title}${t.column === 'done' ? ' — done' : t.due ? ` — due ${t.due}` : ''}`,
+      })
+    }
+    for (const r of myReminders) {
+      rows.push({ ts: r.at || r.createdAt || '', Icon: Bell, tone: '#fb7185', text: `Reminder: ${r.title}` })
+    }
+    return rows.filter(r => r.ts).sort((a, b) => String(b.ts).localeCompare(String(a.ts)))
+  })()
 
   const toggleTag = tid => {
     const has = c.tags.includes(tid)
@@ -428,6 +460,35 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete }) {
           </div>
         )
       })()}
+
+      {/* X4 — unified relationship timeline */}
+      <div className="mt-5" data-testid="contact-timeline">
+        <div className="label">Timeline</div>
+        {timeline.length === 0 ? (
+          <div className="text-[11px]" style={{ color: 'var(--faint)' }}>
+            Nothing logged yet — touchpoints, notes, tasks, events and reminders for {c.name.split(' ')[0]} will line up here.
+          </div>
+        ) : (
+          <div className="flex flex-col">
+            {timeline.slice(0, 12).map((row, i) => (
+              <div key={i} className="flex items-start gap-2.5 py-2 border-b last:border-0" style={{ borderColor: 'rgba(255,255,255,.05)' }}>
+                <span className="w-6 h-6 rounded-lg grid place-items-center flex-none mt-[1px]" style={{ background: row.tone + '1c', color: row.tone }}>
+                  <row.Icon size={12} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[12px] leading-snug">{row.text}</div>
+                  <div className="text-[10px]" style={{ color: 'var(--faint)' }}>{relDay(String(row.ts).slice(0, 10))}</div>
+                </div>
+              </div>
+            ))}
+            {timeline.length > 12 && (
+              <div className="text-[10.5px] text-center mt-2" style={{ color: 'var(--faint)' }}>
+                + {timeline.length - 12} earlier entr{timeline.length - 12 === 1 ? 'y' : 'ies'}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       <div className="card p-4 mt-5 flex flex-col gap-2.5 text-[13px]">
         {c.phone && <div className="flex items-center gap-3"><Phone size={14} style={{ color: 'var(--i2)' }} /> {c.phone}</div>}

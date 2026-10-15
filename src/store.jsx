@@ -11,6 +11,7 @@ import { matchExisting } from './lib/contacts'
 import { deleteBlob } from './lib/filestore'
 import { makeReminder, afterFire, snoozePatch, nextTaskDue } from './lib/reminders'
 import { registerBiometric } from './lib/biometric'
+import { setI18nLang } from './lib/i18n'
 import { scheduleNative, cancelNative, notifyNow } from './lib/native-notify'
 
 const KEY = 'pcrm-v1'
@@ -65,6 +66,8 @@ export function CrmProvider({ children }) {
   const [notifPrefs, setNotifPrefs] = useState(init?.notifPrefs || { task: true, 'follow-up': true, birthday: true, event: true, system: true, note: true, remind: true })
   const [widgetPrefs, setWidgetPrefs] = useState(init?.widgetPrefs || { order: DEFAULT_WIDGET_ORDER, hidden: [] })
   const [filesPrefs, setFilesPrefs] = useState(init?.filesPrefs || { location: 'data' })   // per-device file storage location
+  const [myCard, setMyCard] = useState(init?.myCard || { name: '', phone: '', email: '', org: '', url: '' })  // X2 — my business card
+  const [lang, setLangState] = useState(init?.lang || 'en')   // X6 — interface language (per device)
   const [toasts, setToasts]       = useState([])
   /* google workspace (8b/live): clientId persisted, token in memory only */
   const [googleClientId, setGoogleClientId] = useState(init?.googleClientId || '')
@@ -79,6 +82,7 @@ export function CrmProvider({ children }) {
   /* app lock (per-device pincode): null = never offered | {hash:null,skipped} = skipped/off | {salt,hash} = locked */
   const [lock, setLock] = useState(init?.lock || null)
   const [sessionUnlocked, setSessionUnlocked] = useState(false)   // in-memory only
+  useEffect(() => { setI18nLang(lang) }, [])   // boot the UI language once
   /* github gist is the no-OAuth sync backend: token + created gist id */
   const [gist, setGist] = useState(init?.gist || { token: '', gistId: null })
   const syncBusy = useRef(false)
@@ -99,10 +103,10 @@ export function CrmProvider({ children }) {
     try {
       localStorage.setItem(KEY, JSON.stringify({
         contacts, tasks, events, notes, noteLabels, files, devices, reminders, reminderPrefs, kbArticles, kbCollections, kbViews, tags, groups, rules, audit,
-        activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, filesPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock,
+        activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, filesPrefs, myCard, lang, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock,
       }))
     } catch {}
-  }, [contacts, tasks, events, notes, noteLabels, files, devices, reminders, reminderPrefs, kbArticles, kbCollections, kbViews, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, filesPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock])
+  }, [contacts, tasks, events, notes, noteLabels, files, devices, reminders, reminderPrefs, kbArticles, kbCollections, kbViews, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, filesPrefs, myCard, lang, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock])
 
   /* ── toasts ── */
   const toast = (msg, tone = 'ok') => {
@@ -346,6 +350,8 @@ export function CrmProvider({ children }) {
   }
   const updateReminderPrefs = patch => setReminderPrefs(p => ({ ...p, ...patch }))
   const updateFilesPrefs = patch => setFilesPrefs(p => ({ ...p, ...patch }))
+  const updateMyCard = patch => setMyCard(p => ({ ...p, ...patch }))
+  const setLang = l => { setLangState(l); setI18nLang(l) }
   const markBackup = () => setDriveState(ds => ({ ...ds, lastBackup: new Date().toISOString() }))
 
   /* ── knowledge base ── */
@@ -383,7 +389,7 @@ export function CrmProvider({ children }) {
 
   /* ── tasks ── */
   const addTask = data => {
-    const t = { id: uid(), column: 'todo', priority: 'med', due: null, contactId: null, tags: [], repeat: 'none', ...data }
+    const t = { id: uid(), column: 'todo', priority: 'med', due: null, contactId: null, tags: [], repeat: 'none', createdAt: new Date().toISOString(), doneAt: null, ...data }
     setTasks(ts => [...ts, t])
     logAudit('user', 'Created task', t.title, `Column: ${t.column}${t.due ? ` · due ${t.due}` : ''}`)
     return t
@@ -409,7 +415,9 @@ export function CrmProvider({ children }) {
   }
   const updateTask = (id, patch) => {
     const t = tasks.find(x => x.id === id)
-    setTasks(ts => ts.map(x => x.id === id ? { ...x, ...patch } : x))
+    setTasks(ts => ts.map(x => x.id === id
+      ? { ...x, ...patch, ...(patch.column === 'done' && x.column !== 'done' ? { doneAt: new Date().toISOString() } : {}) }
+      : x))
     if (t && patch.column === 'done' && t.column !== 'done') {
       cancelRemindersFor('task', id)   // done tasks don't ring
       logActivity(`Task completed: ${t.title}`); fireWebhook('task_done', { title: t.title, contactId: t.contactId, due: t.due })
@@ -639,7 +647,7 @@ export function CrmProvider({ children }) {
 
   const buildBackup = () => JSON.stringify({
     app: 'personal-crm', version: 2, exportedAt: new Date().toISOString(),
-    data: { contacts, tasks, events, notes, noteLabels, files, devices, reminders, reminderPrefs, kbArticles, kbCollections, kbViews, tags, groups, rules, relFreq, audit, activity, imports, snoozes, notifState, notifPrefs, widgetPrefs, filesPrefs, mailboxes, emails },
+    data: { contacts, tasks, events, notes, noteLabels, files, devices, reminders, reminderPrefs, kbArticles, kbCollections, kbViews, tags, groups, rules, relFreq, audit, activity, imports, snoozes, notifState, notifPrefs, widgetPrefs, filesPrefs, myCard, lang, mailboxes, emails },
   }, null, 2)
 
   const driveBackupNow = async () => {
@@ -675,6 +683,8 @@ export function CrmProvider({ children }) {
     if (Array.isArray(d.reminders)) setReminders(d.reminders)
     if (d.reminderPrefs) setReminderPrefs(p => ({ ...p, ...d.reminderPrefs }))
     if (d.filesPrefs) setFilesPrefs(p => ({ ...p, ...d.filesPrefs }))
+    if (d.myCard) setMyCard(p => ({ ...p, ...d.myCard }))
+    if (d.lang) { setLangState(d.lang); setI18nLang(d.lang) }
     if (Array.isArray(d.kbArticles)) setKbArticles(d.kbArticles.map(normalizeArticle))
     if (Array.isArray(d.kbCollections)) setKbCollections(d.kbCollections.map(normalizeCollection))
     if (d.kbViews) setKbViews(d.kbViews)
@@ -786,7 +796,7 @@ export function CrmProvider({ children }) {
     contacts: [], tasks: [], events: [], notes: [], noteLabels: [], files: [], devices: [], reminders: [], kbArticles: [], kbCollections: [], kbViews: {}, tags: [], groups: [], rules: [], audit: [],
     activity: [], imports: [], relFreq: {}, snoozes: {}, carddav: null,
     gcal: { connected: false, email: null, lastSync: null },
-    notifState: {}, notifPrefs, widgetPrefs, filesPrefs: { location: 'data' },
+    notifState: {}, notifPrefs, widgetPrefs, filesPrefs: { location: 'data' }, myCard: { name: '', phone: '', email: '', org: '', url: '' }, lang: 'en',
     mailboxes: {
       gmail: { connected: false, address: '', lastSync: null },
       outlook: { connected: false, address: '', lastSync: null },
@@ -1284,7 +1294,7 @@ export function CrmProvider({ children }) {
     reminders, reminderPrefs, addReminder, updateReminder, deleteReminder, fireReminder, snoozeReminder, completeReminder,
     kbArticles, kbCollections, kbViews, kbArticleById, kbCollectionById, addKbArticle, updateKbArticle, deleteKbArticle, touchKbView, addKbCollection, updateKbCollection, deleteKbCollection,
     remindersFor, cancelRemindersFor, updateReminderPrefs,
-    filesPrefs, updateFilesPrefs, markBackup,
+    filesPrefs, updateFilesPrefs, markBackup, myCard, updateMyCard, lang, setLang,
     addTask, moveTask, updateTask, deleteTask, duplicateTask, createFollowUpTask,
     addEvent, moveEvent, deleteEvent,
     addTag, updateTag, deleteTag, mergeTags, bulkTag,

@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react'
 import { RefreshCw, Plus, Trash2, ShieldCheck, Globe, Calendar, Play, RotateCcw, CheckCircle2, X, KeyRound, Users, HardDrive, CloudDownload, Upload, CloudUpload, Loader2, Lock, ShieldAlert, Copy, ClipboardCheck, ListChecks, ChevronDown, ExternalLink, AlarmClock, Volume2, BellRing, Folder, Fingerprint } from 'lucide-react'
 import { useCrm } from '../store'
 import { SectionHead, Card, Modal, Field, Toggle, Pill, Empty } from '../components/ui'
-import { tsRel } from '../lib'
+import { tsRel, cn } from '../lib'
 import { playSound } from '../lib/sound'
 import { SOUND_NAMES } from '../lib/reminders'
 import { notifyPermissionState, requestNotifyPermission } from '../lib/native-notify'
 import { FILE_LOCATIONS, fileLocationInfo, storageBackend, migrateBlobs } from '../lib/filestore'
 import { biometricAvailable } from '../lib/biometric'
+import { LANGS, t as tr, useLang } from '../lib/i18n'
 
 const SOURCES = ['Google Contacts', 'Google Calendar', 'CardDAV (iCloud)', 'vCard file (.vcf)', 'Outlook (CSV)']
 const DIRECTIONS = ['Import', 'Export', 'Two-way']
@@ -36,8 +37,9 @@ export default function SettingsSync() {
       <AuditLog />
       <AppLockCard />
       <ReminderPrefsCard />
-      <SectionHead kicker="Power user" title="Pro / Advanced"
+      <SectionHead kicker="Power user" title={tr('settings.pro')}
         sub="Deep controls for people who like to choose where and how things are stored." />
+      <LanguageCard />
       <FileStorageCard />
       <DangerZone />
     </div>
@@ -519,6 +521,34 @@ function GistSyncCard() {
         Revoke it any time at github.com/settings/tokens. Use the SAME token on every device you want to sync.
         ⚠️ Pick ONE sync backend on all devices — Gist here, or Drive in the Google hub below.</span>
       </p>
+    </Card>
+  )
+}
+
+/* ── X6 — interface language ── */
+function LanguageCard() {
+  const { lang, setLang } = useCrm()
+  useLang()
+  return (
+    <Card className="p-5 mt-4">
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="w-10 h-10 rounded-xl grid place-items-center" style={{ background: '#2dd4bf1c', color: '#2dd4bf' }}>
+          <Globe size={18} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-bold text-[15px]">{tr('settings.lang')}</div>
+          <div className="text-[11.5px]" style={{ color: 'var(--faint)' }}>{tr('settings.langSub')}</div>
+        </div>
+        <div className="flex gap-1.5">
+          {Object.entries(LANGS).map(([code, label]) => (
+            <button key={code} data-testid={`lang-${code}`}
+              className={cn('chip chip-btn', (lang || 'en') === code && 'on')}
+              onClick={() => setLang(code)}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
     </Card>
   )
 }

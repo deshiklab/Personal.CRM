@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Users, CheckSquare, StickyNote, Menu, X,
 } from 'lucide-react'
 import { cn } from '../lib'
+import { t as tr, useLang } from '../lib/i18n'
 
 /* ── viewport hook ─────────────────────────────────────────── */
 /* true while the viewport is narrower than `max` (default: below lg).
@@ -28,25 +29,26 @@ export function useIsMobile(max = 1023) {
 /* Home · Contacts · Tasks · Notes · More — More opens the sidebar as a
  * slide-over sheet. Desktop keeps the full sidebar; this bar is lg:hidden. */
 const TABS = [
-  { to: '/', label: 'Home', icon: LayoutDashboard, end: true },
-  { to: '/contacts', label: 'Contacts', icon: Users },
-  { to: '/tasks', label: 'Tasks', icon: CheckSquare },
-  { to: '/notes', label: 'Notes', icon: StickyNote },
+  { to: '/', label: tr('tabs.home'), icon: LayoutDashboard, end: true },
+  { to: '/contacts', label: tr('tabs.contacts'), icon: Users },
+  { to: '/tasks', label: tr('tabs.tasks'), icon: CheckSquare },
+  { to: '/notes', label: tr('tabs.notes'), icon: StickyNote },
 ]
 export function BottomTabBar({ onMore, moreOpen }) {
+  useLang()
   const navigate = useNavigate()
   const { pathname } = useLocation()
   return (
     <nav className="bottom-tabs lg:hidden" data-testid="bottom-tabs">
-      {TABS.map(t => {
-        const active = t.end ? pathname === t.to : pathname.startsWith(t.to)
+      {TABS.map(item => {
+        const active = item.end ? pathname === item.to : pathname.startsWith(item.to)
         return (
-          <button key={t.to} data-testid={`tab-${t.label.toLowerCase()}`}
+          <button key={item.to} data-testid={`tab-${item.to.replace(/\//g, '') || 'home'}`}
             className={cn('flex flex-col items-center justify-center gap-0.5 flex-1 py-2 min-h-[52px]', active && 'text-[var(--text)]')}
             style={{ color: active ? 'var(--text)' : 'var(--faint)' }}
-            onClick={() => navigate(t.to)}>
-            <t.icon size={19} />
-            <span className="text-[9.5px] font-bold">{t.label}</span>
+            onClick={() => navigate(item.to)}>
+            <item.icon size={19} />
+            <span className="text-[9.5px] font-bold">{item.label}</span>
           </button>
         )
       })}
@@ -54,7 +56,7 @@ export function BottomTabBar({ onMore, moreOpen }) {
         style={{ color: moreOpen ? 'var(--text)' : 'var(--faint)' }}
         onClick={onMore}>
         {moreOpen ? <X size={19} /> : <Menu size={19} />}
-        <span className="text-[9.5px] font-bold">More</span>
+        <span className="text-[9.5px] font-bold">{tr('tabs.more')}</span>
       </button>
     </nav>
   )

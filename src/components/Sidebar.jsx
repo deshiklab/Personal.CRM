@@ -2,8 +2,10 @@ import { NavLink } from 'react-router-dom'
 import { BookOpen, LayoutDashboard, Users, CheckSquare, Calendar, HeartHandshake, UsersRound, Tag, FileUp, Settings2, StickyNote, Network, History, Bell, Gift, BarChart3, Mail, Plug, FolderOpen } from 'lucide-react'
 import { useCrm } from '../store'
 import { daysUntil, tsRel } from '../lib'
+import { t, useLang } from '../lib/i18n'
 
 export default function Sidebar({ sheet = false }) {
+  useLang()
   const { contacts, tasks, rules, gcal, followUpStatus, buildNotifications } = useCrm()
 
   const dueToday = tasks.filter(t => t.column !== 'done' && t.due && daysUntil(t.due) <= 0).length
@@ -12,25 +14,25 @@ export default function Sidebar({ sheet = false }) {
   const unread = buildNotifications().filter(n => n.active && !n.read).length
 
   const NAV = [
-    { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
-    { to: '/contacts', label: 'Contacts', icon: Users },
-    { to: '/tasks', label: 'Tasks', icon: CheckSquare, badge: dueToday, tone: '#fbbf24' },
-    { to: '/notes', label: 'Notes', icon: StickyNote },
-    { to: '/files', label: 'Files', icon: FolderOpen },
-    { to: '/kb', label: 'Knowledge', icon: BookOpen },
-    { to: '/email', label: 'Email', icon: Mail },
-    { to: '/calendar', label: 'Calendar', icon: Calendar },
-    { to: '/birthdays', label: 'Birthdays', icon: Gift },
-    { to: '/follow-ups', label: 'Follow-Ups', icon: HeartHandshake, badge: overdue, tone: '#fb7185' },
-    { to: '/notifications', label: 'Inbox', icon: Bell, badge: unread, tone: '#f472b6' },
-    { to: '/groups', label: 'Groups', icon: UsersRound },
-    { to: '/graph', label: 'Network', icon: Network },
-    { to: '/analytics', label: 'Analytics', icon: BarChart3 },
-    { to: '/tags', label: 'Tags', icon: Tag },
-    { to: '/import', label: 'Import', icon: FileUp },
-    { to: '/history', label: 'History', icon: History },
-    { to: '/integrations', label: 'Integrations', icon: Plug },
-    { to: '/settings', label: 'Settings', icon: Settings2 },
+    { to: '/', label: t('nav.dashboard'), icon: LayoutDashboard, end: true },
+    { to: '/contacts', label: t('nav.contacts'), icon: Users },
+    { to: '/tasks', label: t('nav.tasks'), icon: CheckSquare, badge: dueToday, tone: '#fbbf24' },
+    { to: '/notes', label: t('nav.notes'), icon: StickyNote },
+    { to: '/files', label: t('nav.files'), icon: FolderOpen },
+    { to: '/kb', label: t('nav.kb'), icon: BookOpen },
+    { to: '/email', label: t('nav.email'), icon: Mail },
+    { to: '/calendar', label: t('nav.calendar'), icon: Calendar },
+    { to: '/birthdays', label: t('nav.birthdays'), icon: Gift },
+    { to: '/follow-ups', label: t('nav.followups'), icon: HeartHandshake, badge: overdue, tone: '#fb7185' },
+    { to: '/notifications', label: t('nav.inbox'), icon: Bell, badge: unread, tone: '#f472b6' },
+    { to: '/groups', label: t('nav.groups'), icon: UsersRound },
+    { to: '/graph', label: t('nav.network'), icon: Network },
+    { to: '/analytics', label: t('nav.analytics'), icon: BarChart3 },
+    { to: '/tags', label: t('nav.tags'), icon: Tag },
+    { to: '/import', label: t('nav.import'), icon: FileUp },
+    { to: '/history', label: t('nav.history'), icon: History },
+    { to: '/integrations', label: t('nav.integrations'), icon: Plug },
+    { to: '/settings', label: t('nav.settings'), icon: Settings2 },
   ]
 
   return (

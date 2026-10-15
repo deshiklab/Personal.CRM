@@ -62,6 +62,19 @@ export default function ImportPage() {
   const [params, setParams] = useSearchParams()
   const autoFired = useRef(false)
 
+  /* X2 — a scanned business-card QR hands its vCard text over here */
+  useEffect(() => {
+    try {
+      const pending = sessionStorage.getItem('pcrm-vcard-in')
+      if (pending) {
+        sessionStorage.removeItem('pcrm-vcard-in')
+        setRaw(pending)
+        setRows(null)
+        setSource('qr-scan.vcf')
+      }
+    } catch { /* private mode */ }
+  }, [])
+
   /* diff preview — same matching rules as the commit */
   const analyzed = useMemo(() => {
     if (!rows) return null
