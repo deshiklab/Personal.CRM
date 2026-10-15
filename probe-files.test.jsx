@@ -127,6 +127,8 @@ describe('nearby protocol (pure)', () => {
 describe('Files page', () => {
   it('uploads a file: index entry + device registration + search', async () => {
     renderApp()
+    const wizSkip = screen.queryByTestId('wiz-skip')            // first-run wizard
+    if (wizSkip) fireEvent.click(wizSkip)
     const skip = screen.queryByRole('button', { name: /Skip for now/i })
     if (skip) fireEvent.click(skip)
     await screen.findByText(/Files & Documents/)

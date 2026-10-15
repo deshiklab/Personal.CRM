@@ -69,6 +69,8 @@ export function CrmProvider({ children }) {
   const [myCard, setMyCard] = useState(init?.myCard || { name: '', phone: '', email: '', org: '', url: '', role: '', address: '', note: '', birthday: '' })  // X2 — my business card
   const [lang, setLangState] = useState(init?.lang || 'en')   // X6 — interface language (per device)
   const [qrStyle, setQrStyle] = useState(init?.qrStyle || null)   // QR design studio prefs (null → defaults)
+  /* setup wizard: fresh installs get it; pre-wizard installs are grandfathered */
+  const [onboard, setOnboard] = useState(init?.onboard || (init ? { done: true } : { done: false }))
   const [toasts, setToasts]       = useState([])
   /* google workspace (8b/live): clientId persisted, token in memory only */
   const [googleClientId, setGoogleClientId] = useState(init?.googleClientId || '')
@@ -104,10 +106,10 @@ export function CrmProvider({ children }) {
     try {
       localStorage.setItem(KEY, JSON.stringify({
         contacts, tasks, events, notes, noteLabels, files, devices, reminders, reminderPrefs, kbArticles, kbCollections, kbViews, tags, groups, rules, audit,
-        activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, filesPrefs, myCard, lang, qrStyle, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock,
+        activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, filesPrefs, myCard, lang, qrStyle, onboard, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock,
       }))
     } catch {}
-  }, [contacts, tasks, events, notes, noteLabels, files, devices, reminders, reminderPrefs, kbArticles, kbCollections, kbViews, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, filesPrefs, myCard, lang, qrStyle, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock])
+  }, [contacts, tasks, events, notes, noteLabels, files, devices, reminders, reminderPrefs, kbArticles, kbCollections, kbViews, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, filesPrefs, myCard, lang, qrStyle, onboard, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock])
 
   /* ── toasts ── */
   const toast = (msg, tone = 'ok') => {
@@ -354,6 +356,14 @@ export function CrmProvider({ children }) {
   const updateMyCard = patch => setMyCard(p => ({ ...p, ...patch }))
   const setLang = l => { setLangState(l); setI18nLang(l) }
   const updateQrStyle = patch => setQrStyle(prev => ({ ...(prev || {}), ...patch }))
+  const completeOnboard = patch => setOnboard(o => ({ ...(o || {}), ...(patch || {}), done: true, completedAt: new Date().toISOString() }))
+  /* keep-or-wipe after the sample tour */
+  const wipeSampleData = () => {
+    setContacts([]); setTasks([]); setEvents([]); setNotes([]); setNoteLabels([])
+    setKbArticles([]); setKbCollections([]); setKbViews({}); setTags([]); setGroups([])
+    setAudit([]); setActivity([]); setImports([])
+    toast('🧹 Sample data wiped — your CRM is clean')
+  }
   const markBackup = () => setDriveState(ds => ({ ...ds, lastBackup: new Date().toISOString() }))
 
   /* ── knowledge base ── */
@@ -649,7 +659,7 @@ export function CrmProvider({ children }) {
 
   const buildBackup = () => JSON.stringify({
     app: 'personal-crm', version: 2, exportedAt: new Date().toISOString(),
-    data: { contacts, tasks, events, notes, noteLabels, files, devices, reminders, reminderPrefs, kbArticles, kbCollections, kbViews, tags, groups, rules, relFreq, audit, activity, imports, snoozes, notifState, notifPrefs, widgetPrefs, filesPrefs, myCard, lang, qrStyle, mailboxes, emails },
+    data: { contacts, tasks, events, notes, noteLabels, files, devices, reminders, reminderPrefs, kbArticles, kbCollections, kbViews, tags, groups, rules, relFreq, audit, activity, imports, snoozes, notifState, notifPrefs, widgetPrefs, filesPrefs, myCard, lang, qrStyle, onboard, mailboxes, emails },
   }, null, 2)
 
   const driveBackupNow = async () => {
@@ -688,6 +698,7 @@ export function CrmProvider({ children }) {
     if (d.myCard) setMyCard(p => ({ ...p, ...d.myCard }))
     if (d.lang) { setLangState(d.lang); setI18nLang(d.lang) }
     if (d.qrStyle) setQrStyle(d.qrStyle)
+    if (d.onboard) setOnboard(d.onboard)
     if (Array.isArray(d.kbArticles)) setKbArticles(d.kbArticles.map(normalizeArticle))
     if (Array.isArray(d.kbCollections)) setKbCollections(d.kbCollections.map(normalizeCollection))
     if (d.kbViews) setKbViews(d.kbViews)
@@ -799,7 +810,7 @@ export function CrmProvider({ children }) {
     contacts: [], tasks: [], events: [], notes: [], noteLabels: [], files: [], devices: [], reminders: [], kbArticles: [], kbCollections: [], kbViews: {}, tags: [], groups: [], rules: [], audit: [],
     activity: [], imports: [], relFreq: {}, snoozes: {}, carddav: null,
     gcal: { connected: false, email: null, lastSync: null },
-    notifState: {}, notifPrefs, widgetPrefs, filesPrefs: { location: 'data' }, myCard: { name: '', phone: '', email: '', org: '', url: '', role: '', address: '', note: '', birthday: '' }, lang: 'en', qrStyle: null,
+    notifState: {}, notifPrefs, widgetPrefs, filesPrefs: { location: 'data' }, myCard: { name: '', phone: '', email: '', org: '', url: '', role: '', address: '', note: '', birthday: '' }, lang: 'en', qrStyle: null, onboard: { done: true },
     mailboxes: {
       gmail: { connected: false, address: '', lastSync: null },
       outlook: { connected: false, address: '', lastSync: null },
@@ -1297,7 +1308,7 @@ export function CrmProvider({ children }) {
     reminders, reminderPrefs, addReminder, updateReminder, deleteReminder, fireReminder, snoozeReminder, completeReminder,
     kbArticles, kbCollections, kbViews, kbArticleById, kbCollectionById, addKbArticle, updateKbArticle, deleteKbArticle, touchKbView, addKbCollection, updateKbCollection, deleteKbCollection,
     remindersFor, cancelRemindersFor, updateReminderPrefs,
-    filesPrefs, updateFilesPrefs, markBackup, myCard, updateMyCard, lang, setLang, qrStyle, updateQrStyle,
+    filesPrefs, updateFilesPrefs, markBackup, myCard, updateMyCard, lang, setLang, qrStyle, updateQrStyle, onboard, completeOnboard, wipeSampleData,
     addTask, moveTask, updateTask, deleteTask, duplicateTask, createFollowUpTask,
     addEvent, moveEvent, deleteEvent,
     addTag, updateTag, deleteTag, mergeTags, bulkTag,

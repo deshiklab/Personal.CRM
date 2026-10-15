@@ -9,6 +9,7 @@ import { notifyPermissionState, requestNotifyPermission } from '../lib/native-no
 import { FILE_LOCATIONS, fileLocationInfo, storageBackend, migrateBlobs } from '../lib/filestore'
 import { biometricAvailable } from '../lib/biometric'
 import { LANGS, t as tr, useLang } from '../lib/i18n'
+import { encryptBackup } from '../lib/vault'
 
 const SOURCES = ['Google Contacts', 'Google Calendar', 'CardDAV (iCloud)', 'vCard file (.vcf)', 'Outlook (CSV)']
 const DIRECTIONS = ['Import', 'Export', 'Two-way']
@@ -652,6 +653,22 @@ function AppLockCard() {
   const hasPin = !!lock?.hash
   const valid = a.length >= 4 && b.length >= 4
 
+  const downloadEncrypted = async () => {
+    const pw = window.prompt('Choose a password for the encrypted backup (at least 4 characters):')
+    if (pw === null) return
+    try {
+      const enc = await encryptBackup(buildBackup(), pw)
+      const el = document.createElement('a')
+      el.href = URL.createObjectURL(new Blob([enc], { type: 'application/json' }))
+      el.download = `personal-crm-data-${new Date().toISOString().slice(0, 10)}.pcrm.json`
+      document.body.appendChild(el); el.click(); el.remove()
+      markBackup()
+      toast('🔐 Encrypted backup downloaded — keep the password safe')
+    } catch (e) {
+      toast(e.message || 'Encryption unavailable here', 'warn')
+    }
+  }
+
   const download = () => {
     const json = buildBackup()
     const el = document.createElement('a')
@@ -743,6 +760,7 @@ function AppLockCard() {
       <div className="mt-4 pt-4 flex flex-wrap items-center gap-2" style={{ borderTop: '1px dashed var(--border)' }}>
         <div className="text-[12.5px] font-extrabold w-full mb-1">Local data (no account needed)</div>
         <button className="btn btn-primary btn-sm" onClick={download}><CloudDownload size={13} /> Download all data (.json)</button>
+        <button className="btn btn-ghost btn-sm" data-testid="download-enc" onClick={downloadEncrypted}><Lock size={13} /> Encrypted (.pcrm.json)</button>
         <label className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }}>
           <Upload size={13} /> Restore from a data file…
           <input ref={el => { fileRef.current = el }} type="file" accept=".json,application/json" className="hidden"

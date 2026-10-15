@@ -45,6 +45,8 @@ async function mountApp(hash = '#/', width = 1280) {
   )
 }
 async function skipLock() {
+  const wizSkip = screen.queryByTestId('wiz-skip')          // first-run wizard
+  if (wizSkip) fireEvent.click(wizSkip)
   const skip = screen.queryByRole('button', { name: /skip for now/i })
   if (skip) fireEvent.click(skip)
 }

@@ -92,6 +92,8 @@ describe('contacts: pure mapping & matching', () => {
 describe('contacts: import pipeline UI', () => {
   it('boots the Import page with the phone card + honest hint', async () => {
     renderApp()
+    const wizSkip = screen.queryByTestId('wiz-skip')            // first-run wizard
+    if (wizSkip) fireEvent.click(wizSkip)
     const skip = screen.queryByRole('button', { name: /Skip for now/i })
     if (skip) fireEvent.click(skip)
     await screen.findByText("From your phone")

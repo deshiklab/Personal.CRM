@@ -26,6 +26,8 @@ afterEach(cleanup)   // vitest runs without globals — register RTL cleanup our
 describe('Notes 2.0', () => {
   it('boots, skips pin setup, and shows the Keep-style shell', async () => {
     renderApp('#/notes')
+    const wizSkip = screen.queryByTestId('wiz-skip')            // first-run wizard
+    if (wizSkip) fireEvent.click(wizSkip)
     const skip = screen.queryByRole('button', { name: /Skip for now/i })
     if (skip) fireEvent.click(skip)
     await waitFor(() => expect(screen.getByPlaceholderText(/Take a note/)).toBeTruthy())

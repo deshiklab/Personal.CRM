@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { backupNudgeText } from './lib/backup-nudge'
 import { parseQuickLink } from './lib/quicklinks'
+import SetupWizard from './components/SetupWizard'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { StickyNote, CheckSquare, Copy, X, Share2 } from 'lucide-react'
 import Sidebar from './components/Sidebar'
@@ -33,12 +34,13 @@ import ReminderHost from './components/ReminderHost'
 import { BottomTabBar, Sheet } from './components/Mobile'
 
 export default function App() {
-  const { lock, sessionUnlocked } = useCrm()
+  const { lock, sessionUnlocked, onboard } = useCrm()
   const [moreOpen, setMoreOpen] = useState(false)
   const { pathname } = useLocation()
   useEffect(() => { setMoreOpen(false) }, [pathname])
   /* pincode gate: setup is offered on FIRST launch (skippable), unlock is
      required every start (in-memory session, auto-relocks when idle) */
+  if (!onboard?.done) return <SetupWizard />
   if (!lock) return <LockScreen mode="setup" />
   if (lock.hash && !sessionUnlocked) return <LockScreen mode="unlock" />
   return (
