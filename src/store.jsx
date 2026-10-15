@@ -345,6 +345,7 @@ export function CrmProvider({ children }) {
   }
   const updateReminderPrefs = patch => setReminderPrefs(p => ({ ...p, ...patch }))
   const updateFilesPrefs = patch => setFilesPrefs(p => ({ ...p, ...patch }))
+  const markBackup = () => setDriveState(ds => ({ ...ds, lastBackup: new Date().toISOString() }))
 
   /* ── knowledge base ── */
   const addKbArticle = data => {
@@ -1246,7 +1247,7 @@ export function CrmProvider({ children }) {
     reminders, reminderPrefs, addReminder, updateReminder, deleteReminder, fireReminder, snoozeReminder, completeReminder,
     kbArticles, kbCollections, kbViews, kbArticleById, kbCollectionById, addKbArticle, updateKbArticle, deleteKbArticle, touchKbView, addKbCollection, updateKbCollection, deleteKbCollection,
     remindersFor, cancelRemindersFor, updateReminderPrefs,
-    filesPrefs, updateFilesPrefs,
+    filesPrefs, updateFilesPrefs, markBackup,
     addTask, moveTask, updateTask, deleteTask, duplicateTask, createFollowUpTask,
     addEvent, moveEvent, deleteEvent,
     addTag, updateTag, deleteTag, mergeTags, bulkTag,

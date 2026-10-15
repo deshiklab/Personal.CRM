@@ -608,7 +608,7 @@ const PinRow = ({ v, set, ph, innerRef }) => (
 )
 
 function AppLockCard() {
-  const { lock, setupPin, changePin, removePin, factoryReset, buildBackup, restoreAll, toast, lockNow } = useCrm()
+  const { lock, setupPin, changePin, removePin, factoryReset, buildBackup, restoreAll, toast, lockNow, markBackup } = useCrm()
   const [modal, setModal] = useState('')      // 'set' | 'change' | 'remove' | 'wipe'
   const [a, setA] = useState('')              // first/new pin
   const [b, setB] = useState('')              // confirm new pin
@@ -625,6 +625,7 @@ function AppLockCard() {
     el.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }))
     el.download = `personal-crm-data-${new Date().toISOString().slice(0, 10)}.json`
     document.body.appendChild(el); el.click(); el.remove()
+    markBackup()
     toast('⬇️ Full data downloaded as JSON — keep it somewhere safe')
   }
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { backupNudgeText } from './lib/backup-nudge'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { StickyNote, CheckSquare, Copy, X, Share2 } from 'lucide-react'
 import Sidebar from './components/Sidebar'
@@ -78,9 +79,22 @@ export default function App() {
       <QuickCapture />
       <ReminderHost />
       <ShareTargetHandler />
+      <BackupNudge />
       <ToastHost />
     </div>
   )
+}
+
+/* X5 — auto-backup nudge: one passive toast per app start when backups are stale */
+function BackupNudge() {
+  const { driveState, toast } = useCrm()
+  useEffect(() => {
+    const txt = backupNudgeText(driveState?.lastBackup)
+    if (!txt) return
+    const t = setTimeout(() => toast(txt, 'warn'), 2500)
+    return () => clearTimeout(t)
+  }, [])
+  return null
 }
 
 /* ── PWA share target: "Share to Personal CRM" from WhatsApp & friends ──
