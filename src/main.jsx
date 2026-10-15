@@ -13,8 +13,10 @@ createRoot(document.getElementById('root')).render(
   </HashRouter>
 )
 
-/* PWA: register the offline service worker (production, http(s) only) */
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+/* PWA: register the offline service worker everywhere (http(s) only).
+ * The worker passes dev-server modules through untouched, so registering in
+ * development is safe — and makes the app installable from the preview. */
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch(() => {})
   })

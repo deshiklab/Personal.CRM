@@ -1,6 +1,6 @@
 /* Personal CRM — offline-first service worker
  * The whole app builds to ONE inlined HTML file, so caching the shell = offline app. */
-const VERSION = 'pcrm-v2'
+const VERSION = 'pcrm-v3'
 const SHELL = ['./', './index.html', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png']
 
@@ -19,6 +19,12 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const { request } = e
   if (request.method !== 'GET') return
+
+  /* never touch the dev server's live modules — keeps HMR honest while the
+   * worker still makes the app installable during development */
+  const url = new URL(request.url)
+  if (url.origin === location.origin &&
+      /^\/(?:@vite|src|node_modules|__vite|@fs|@id|@react-refresh)/.test(url.pathname)) return
 
   /* navigations: network-first, fall back to cached shell (true offline) */
   if (request.mode === 'navigate') {

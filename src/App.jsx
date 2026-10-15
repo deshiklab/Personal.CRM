@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { StickyNote, CheckSquare, Copy, X, Share2 } from 'lucide-react'
 import Sidebar from './components/Sidebar'
 import Topbar from './components/Topbar'
 import GlobalSearch from './components/GlobalSearch'
@@ -76,7 +77,73 @@ export default function App() {
       <GlobalSearch />
       <QuickCapture />
       <ReminderHost />
+      <ShareTargetHandler />
       <ToastHost />
+    </div>
+  )
+}
+
+/* ── PWA share target: "Share to Personal CRM" from WhatsApp & friends ──
+ * The manifest routes shared text/links to ./?title=&text=&url= — we stash
+ * them, clean the URL, and offer the three things people actually want. */
+function ShareTargetHandler() {
+  const crm = useCrm()
+  const [shared, setShared] = useState(null)
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    try {
+      const p = new URLSearchParams(window.location.search)
+      const title = p.get('title') || ''
+      const text = p.get('text') || ''
+      const url = p.get('url') || ''
+      if (title || text || url) {
+        setShared({ title, text, url })
+        window.history.replaceState({}, '', window.location.pathname + window.location.hash)
+      }
+    } catch { /* no-op */ }
+  }, [])
+
+  if (!shared) return null
+  const body = [shared.text, shared.url].filter(Boolean).join('\n')
+  const fallbackTitle = (shared.title || shared.text || shared.url || 'Shared item').slice(0, 60).split('\n')[0]
+  const done = msg => { setShared(null); setCopied(false); if (msg) crm.toast(msg) }
+
+  return (
+    <div className="modal-wrap fixed inset-0 z-[95] overflow-y-auto p-4 sm:p-8 flex items-start justify-center"
+      style={{ background: 'rgba(6,8,12,.7)', backdropFilter: 'blur(6px)' }} onClick={() => done()}>
+      <div className="modal-panel fadein w-full max-w-md p-6 my-auto" data-testid="share-target-modal" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-9 h-9 rounded-xl grid place-items-center flex-none" style={{ background: 'rgba(129,140,248,.16)', color: '#818cf8' }}>
+            <Share2 size={16} />
+          </div>
+          <h3 className="text-[16.5px] font-bold tracking-tight flex-1">Shared with you</h3>
+          <button className="icon-btn" title="Dismiss" onClick={() => done()}><X size={16} /></button>
+        </div>
+        <div className="card p-3.5 text-[12.5px] leading-relaxed max-h-[36vh] overflow-y-auto" style={{ color: 'var(--muted)' }}>
+          {shared.title && <div className="font-semibold text-[13px] mb-1" style={{ color: 'var(--text)' }}>{shared.title}</div>}
+          {body || <span style={{ color: 'var(--faint)' }}>(empty share)</span>}
+        </div>
+        <div className="flex flex-col gap-2 mt-4">
+          <button className="btn btn-primary justify-center" data-testid="share-as-note"
+            onClick={() => { crm.addNote({ title: fallbackTitle, body }); done('📝 Saved to Notes') }}>
+            <StickyNote size={15} /> Save as note
+          </button>
+          <button className="btn btn-ghost justify-center" data-testid="share-as-task"
+            onClick={() => { crm.addTask({ title: fallbackTitle, column: 'todo', priority: 'med', description: body }); done('✅ Task created') }}>
+            <CheckSquare size={15} /> Create task
+          </button>
+          <button className="btn btn-ghost justify-center" data-testid="share-copy"
+            onClick={async () => {
+              const { copyText } = await import('./lib/share')
+              const ok = await copyText(body)
+              setCopied(ok)
+              if (ok) done('📋 Copied to clipboard')
+            }}>
+            <Copy size={15} /> {copied ? 'Copied!' : 'Copy text'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

@@ -1,7 +1,7 @@
 {
   "name": "Personal CRM — BiTsCol",
   "short_name": "Personal CRM",
-  "description": "A fully client-side personal CRM: contacts, tasks, follow-ups, birthdays, network graph, analytics — with offline support.",
+  "description": "A fully client-side personal CRM: contacts, tasks, calendar, Keep-class notes, files with nearby transfer, knowledge base, real reminders — works offline.",
   "id": "./",
   "start_url": "./",
   "scope": "./",
@@ -14,9 +14,21 @@
     { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["productivity", "business", "utilities"],
+  "share_target": {
+    "action": "./",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": { "title": "title", "text": "text", "url": "url" }
+  },
   "shortcuts": [
     { "name": "Quick Capture", "url": "./#/contacts?new=1", "description": "Capture a lead in one tap" },
+    { "name": "New note", "url": "./#/notes?new=1", "description": "Keep-style quick note" },
     { "name": "Today's tasks", "url": "./#/tasks" },
+    { "name": "Knowledge Base", "url": "./#/kb", "description": "Personal wiki" },
+    { "name": "Files", "url": "./#/files" },
     { "name": "Analytics", "url": "./#/analytics" }
   ]
 }

@@ -10,7 +10,7 @@ All data lives in your browser's `localStorage` — nothing ever leaves your mac
 
 ---
 
-## ✅ What's inside (17 screens)
+## ✅ What's inside (21 screens)
 
 | Area | Route | What you get |
 |---|---|---|
@@ -21,7 +21,7 @@ All data lives in your browser's `localStorage` — nothing ever leaves your mac
 | Calendar | `/#/calendar` | Month/week/day grids, drag-to-move events, birthdays inline, **`.ics` export**, every event gets a zero-auth **“Add to Google Calendar”** link |
 | Birthdays | `/#/birthdays` | Auto “Wish 🎂” task rule ≤7 days out, month strip, anniversaries, gift ideas |
 | Follow-Ups | `/#/follow-ups` | Cadence engine per relationship type (client/lead/friend/mentor…), snooze, quick "log contact" |
-| Notifications | `/#/notifications` | Unified inbox — tasks, follow-ups, birthdays, events, system — with per-category preferences |
+| Notifications | `/#/notifications` | Unified inbox — tasks, follow-ups, birthdays, events, **reminders**, system — with per-category preferences, a reminders schedule panel and a **New reminder** composer |
 | Groups | `/#/groups` | Color-coded relationship groups |
 | Network | `/#/graph` | Drag nudge relationship map with connector finding ("who links X and Y") |
 | Analytics | `/#/analytics` | 3/6/12-month windows: acquisition bars, completion gauge + turnaround, most-contacted ranking, tag donut, weekly rhythm, auto-insights |
@@ -30,8 +30,11 @@ All data lives in your browser's `localStorage` — nothing ever leaves your mac
 | History | `/#/history` | Every import/sync batch with per-record diffs and **one-click rollback** |
 | Integrations | `/#/integrations` | Connection board + the four third-party bridges below + **read-only ICS calendar-feed subscriptions** (public Google/iCloud feeds, optional opt-in relay) |
 | Settings | `/#/settings` | **Google Workspace hub** (Calendar/People/Drive/Gmail, live-only with guided setup), CardDAV, automation rules, audit log, sample reset |
-| Quick Capture | FAB (everywhere) | One-tap lead, voice-note parsing, bulk paste via import pipeline |
-| Global Search | `⌘K` | Command palette over contacts/tasks/notes/events/tags |
+| Notes | `/#/notes` | Google Keep-class: checklists, 10-color palette, labels, archive + 30-day trash, markdown toolbar, pin, repeat, per-note reminders |
+| Files | `/#/files` | Local-first file store (IndexedDB / Android Documents / memory), per-device lists ("which device holds what"), search, star, folders, add-from-link, and **Nearby transfer** — QR-paired WebRTC device-to-device with SHA-256 verify |
+| Knowledge Base | `/#/kb` | Personal wiki: markdown articles, `[[wiki-links]]` with reciprocal **backlinks** ("Mentioned in" / "See also"), nested collections, templates (meeting notes, project brief, book summary, decision log…), tags, linked contacts, .md export |
+| Quick Capture | FAB (everywhere) | One-tap lead, voice-note parsing, bulk paste via import pipeline — raised above the mobile tab bar |
+| Global Search | `⌘K` | Command palette over contacts/tasks/notes/articles/events/groups/tags |
 
 ---
 
@@ -67,6 +70,12 @@ With a Google Client ID saved: **Connect Gmail** in `/email` pulls the last 21 d
 
 ---
 
+## 📱 PWA + mobile (360 px → phone-native)
+
+- **Installable PWA** — manifest + offline service worker (the whole app is one inlined HTML file, so caching the shell = offline app). Install from the browser menu; **"Share to Personal CRM"** works from WhatsApp & friends (shared text becomes a note/task in one tap).
+- **Mobile-first UI** — bottom tab bar (Home · Contacts · Tasks · Notes · More), More opens the full sidebar as a sheet, 44 px tap targets, full-screen detail modals on phones, contacts card list, kanban column picker, calendar defaults to week view.
+- **Real reminders** — WebAudio bells/rings in-app + system notifications (Android fires with the app closed via `@capacitor/local-notifications`), snooze/done, repeating reminders, attachable to tasks, events, notes and contacts.
+
 ## 📱 Android app (fully local + Google only)
 
 The entire CRM ships as a native Android app via **Capacitor** — the same React codebase runs in a
@@ -81,6 +90,7 @@ scope), **Calendar** and **Contacts** import (read-only). No servers, no trackin
 | 1 · Get the APK | Easiest: GitHub → **Actions → Build Android APK → Run workflow** → download the `personal-crm-android-debug` artifact. Or locally: `npm install && npm run android:sync && npm run android:open` (Android Studio) → ▶ Run |
 | 2 · Google setup | Follow the SAME in-app guide (**Settings → Google hub**) — on Android it adds one step: create an **Android OAuth client** with package `com.bitscol.personalcrm` + this SHA-1 (the repo's shared debug keystore): `DE:E4:74:EA:F9:4A:35:E7:16:16:95:48:1F:88:0B:39:F0:B2:B0:2E` |
 | 3 · Install & connect | Allow “install unknown apps” on the phone → Settings → Google hub → paste your Web Client ID → **Connect** → the native Google account picker appears |
+| 4 · First-run permissions | The app asks for: **contacts** (phone import/export), **notifications** (reminders fire with the app closed), **vibrate**, **boot-completed** (reminders survive reboots), **camera** (photo attachments) — every native feature has a web fallback if you decline |
 | Release signing | Add repo secrets `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` → the same workflow also emits a signed **release APK** |
 
 Why native sign-in? Google **blocks OAuth inside WebViews**, so the APK uses `@capgo/capacitor-social-login`
@@ -184,3 +194,18 @@ The production build inlines everything into one HTML file via `vite-plugin-sing
 ---
 
 Built for **BiTsCol**. MIT-style do-what-you-want — it's a personal tool, make it yours.
+
+---
+
+## 📓 Release notes
+
+### v0.2.0 (versionCode 2) — the phone-first release
+- **Notes 2.0** — Keep-class notes: checklists, colors, labels, archive/trash, markdown, reminders.
+- **Phone contacts** — vCard/CSV in + out, Android address-book bridge, yearless birthdays.
+- **Files & Nearby transfer** — local file store with per-device lists, SHAREit-style QR-paired device-to-device transfer with checksum verify, share sheet + add-from-link.
+- **Share into the app** — PWA share target: WhatsApp & friends → save as note/task.
+- **Reminders that ring** — WebAudio bells, system notifications (app closed), snooze/repeat, task/event/note/contact attach points, topbar bell + schedule panel.
+- **Knowledge Base** — personal wiki with `[[backlinks]]`, nested collections, templates, ⌘K search.
+- **Mobile responsiveness** — bottom tab bar, sheets, 44 px targets, phone layouts on every screen.
+- **PWA hardening** — installable from the dev preview, dev-safe offline worker, richer shortcuts.
+- **Android** — 6 Capacitor plugins (contacts, camera, filesystem, local-notifications, share, social-login), `POST_NOTIFICATIONS`/`VIBRATE`/`RECEIVE_BOOT_COMPLETED`/`WAKE_LOCK`/`CAMERA`/contacts permissions, versionCode 2 / 0.2.0.
