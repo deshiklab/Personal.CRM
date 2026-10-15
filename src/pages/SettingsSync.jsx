@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { RefreshCw, Plus, Trash2, ShieldCheck, Globe, Calendar, Play, RotateCcw, CheckCircle2, X, KeyRound, Users, HardDrive, CloudDownload, Upload, CloudUpload, Loader2, Lock, ShieldAlert, Copy, ClipboardCheck, ListChecks, ChevronDown, ExternalLink, AlarmClock, Volume2, BellRing, Folder } from 'lucide-react'
+import { RefreshCw, Plus, Trash2, ShieldCheck, Globe, Calendar, Play, RotateCcw, CheckCircle2, X, KeyRound, Users, HardDrive, CloudDownload, Upload, CloudUpload, Loader2, Lock, ShieldAlert, Copy, ClipboardCheck, ListChecks, ChevronDown, ExternalLink, AlarmClock, Volume2, BellRing, Folder, Fingerprint } from 'lucide-react'
 import { useCrm } from '../store'
 import { SectionHead, Card, Modal, Field, Toggle, Pill, Empty } from '../components/ui'
 import { tsRel } from '../lib'
@@ -7,6 +7,7 @@ import { playSound } from '../lib/sound'
 import { SOUND_NAMES } from '../lib/reminders'
 import { notifyPermissionState, requestNotifyPermission } from '../lib/native-notify'
 import { FILE_LOCATIONS, fileLocationInfo, storageBackend, migrateBlobs } from '../lib/filestore'
+import { biometricAvailable } from '../lib/biometric'
 
 const SOURCES = ['Google Contacts', 'Google Calendar', 'CardDAV (iCloud)', 'vCard file (.vcf)', 'Outlook (CSV)']
 const DIRECTIONS = ['Import', 'Export', 'Two-way']
@@ -608,7 +609,9 @@ const PinRow = ({ v, set, ph, innerRef }) => (
 )
 
 function AppLockCard() {
-  const { lock, setupPin, changePin, removePin, factoryReset, buildBackup, restoreAll, toast, lockNow, markBackup } = useCrm()
+  const { lock, setupPin, changePin, removePin, factoryReset, buildBackup, restoreAll, toast, lockNow, markBackup, enableBiometric, disableBiometric } = useCrm()
+  const [bioAvail, setBioAvail] = useState(false)
+  useEffect(() => { biometricAvailable().then(setBioAvail).catch(() => setBioAvail(false)) }, [])
   const [modal, setModal] = useState('')      // 'set' | 'change' | 'remove' | 'wipe'
   const [a, setA] = useState('')              // first/new pin
   const [b, setB] = useState('')              // confirm new pin
@@ -687,6 +690,25 @@ function AppLockCard() {
           <button className="btn btn-primary btn-sm" onClick={() => setModal('set')}><ShieldCheck size={13} /> Set pincode</button>
         )}
       </div>
+
+      {hasPin && (
+        <div className="flex flex-wrap items-center gap-2 mt-2">
+          {(lock?.bioIds || []).length > 0 ? (
+            <button className="btn btn-ghost btn-sm" data-testid="bio-disable" onClick={disableBiometric}>
+              <Fingerprint size={13} /> Turn off fingerprint / face
+            </button>
+          ) : (
+            <button className="btn btn-ghost btn-sm" data-testid="bio-enable" disabled={!bioAvail} onClick={() => enableBiometric()}>
+              <Fingerprint size={13} /> Enable fingerprint / face
+            </button>
+          )}
+          {!bioAvail && (
+            <span className="text-[11px]" style={{ color: 'var(--faint)' }}>
+              No fingerprint/face authenticator detected on this device — pincode stays the way in.
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="mt-4 pt-4 flex flex-wrap items-center gap-2" style={{ borderTop: '1px dashed var(--border)' }}>
         <div className="text-[12.5px] font-extrabold w-full mb-1">Local data (no account needed)</div>

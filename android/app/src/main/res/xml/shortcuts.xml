@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- X7 — long-press launcher shortcuts. Each fires a VIEW intent that the
+     app maps to a hash route (src/lib/quicklinks.js). -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="new-note"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_new_note"
+        android:shortcutLongLabel="@string/shortcut_new_note">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="pcrm://quick/note" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="new-contact"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_new_contact"
+        android:shortcutLongLabel="@string/shortcut_new_contact">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="pcrm://quick/contact" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="knowledge-base"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_kb"
+        android:shortcutLongLabel="@string/shortcut_kb">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="pcrm://quick/kb" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="files"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_files"
+        android:shortcutLongLabel="@string/shortcut_files">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="pcrm://quick/files" />
+    </shortcut>
+</shortcuts>

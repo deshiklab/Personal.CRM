@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { backupNudgeText } from './lib/backup-nudge'
+import { parseQuickLink } from './lib/quicklinks'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { StickyNote, CheckSquare, Copy, X, Share2 } from 'lucide-react'
 import Sidebar from './components/Sidebar'
@@ -80,9 +81,28 @@ export default function App() {
       <ReminderHost />
       <ShareTargetHandler />
       <BackupNudge />
+      <QuickLinkHandler />
       <ToastHost />
     </div>
   )
+}
+
+/* X7 — home-screen shortcuts / deep links (pcrm://quick/…) */
+function QuickLinkHandler() {
+  useEffect(() => {
+    let sub = null
+    const go = url => {
+      const link = parseQuickLink(url)
+      if (link) window.location.hash = link.hash
+    }
+    /* dynamic: the plugin only exists inside the Android app */
+    import('@capacitor/app').then(({ App }) => {
+      App.getLaunchUrl().then(r => { if (r?.url) go(r.url) }).catch(() => {})
+      App.addListener('appUrlOpen', e => go(e.url)).then(h => { sub = h }).catch(() => {})
+    }).catch(() => { /* web: nothing to listen to */ })
+    return () => { try { sub?.remove?.() } catch { /* detached */ } }
+  }, [])
+  return null
 }
 
 /* X5 — auto-backup nudge: one passive toast per app start when backups are stale */

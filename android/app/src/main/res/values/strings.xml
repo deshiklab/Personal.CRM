@@ -4,4 +4,8 @@
     <string name="title_activity_main">Personal CRM</string>
     <string name="package_name">com.bitscol.personalcrm</string>
     <string name="custom_url_scheme">com.bitscol.personalcrm</string>
+    <string name="shortcut_new_note">New note</string>
+    <string name="shortcut_new_contact">New contact</string>
+    <string name="shortcut_kb">Knowledge Base</string>
+    <string name="shortcut_files">Files</string>
 </resources>

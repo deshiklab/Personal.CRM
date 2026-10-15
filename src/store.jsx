@@ -10,6 +10,7 @@ import { normalizeNote, isTrashExpired, advanceReminder, TRASH_RETENTION_DAYS } 
 import { matchExisting } from './lib/contacts'
 import { deleteBlob } from './lib/filestore'
 import { makeReminder, afterFire, snoozePatch, nextTaskDue } from './lib/reminders'
+import { registerBiometric } from './lib/biometric'
 import { scheduleNative, cancelNative, notifyNow } from './lib/native-notify'
 
 const KEY = 'pcrm-v1'
@@ -728,7 +729,7 @@ export function CrmProvider({ children }) {
   const setupPin = async pin => {
     const salt = uid()
     const hash = await hashPin(pin, salt)
-    setLock({ salt, hash, setAt: new Date().toISOString() })
+    setLock({ salt, hash, setAt: new Date().toISOString(), bioIds: [] })
     setSessionUnlocked(true)
     logAudit('user', 'App lock enabled', 'Pincode set')
     toast('🔒 App lock enabled — pincode is required at every start on this device')
@@ -747,18 +748,38 @@ export function CrmProvider({ children }) {
     if (!(await verifyPin(oldPin))) return false
     const salt = uid()
     const hash = await hashPin(newPin, salt)
-    setLock({ salt, hash, setAt: new Date().toISOString() })
+    setLock(l => ({ salt, hash, setAt: new Date().toISOString(), bioIds: l?.bioIds || [] }))
     logAudit('user', 'Pincode changed', 'App lock')
     toast('🔒 Pincode changed')
     return true
   }
   const removePin = async pin => {
     if (!(await verifyPin(pin))) return false
-    setLock({ hash: null, skipped: true })
+    setLock({ hash: null, skipped: true, bioIds: [] })
     logAudit('user', 'App lock removed', 'App lock')
     toast('App lock removed', 'warn')
     return true
   }
+
+  /* X3 — biometric unlock (WebAuthn platform authenticator) alongside PIN */
+  const enableBiometric = async () => {
+    try {
+      const id = await registerBiometric()
+      setLock(l => ({ ...(l || {}), bioIds: [...new Set([...(l?.bioIds || []), id])] }))
+      logAudit('user', 'Biometric unlock enabled', 'Platform authenticator')
+      toast('👍 Biometric unlock enabled — pincode stays as the fallback')
+      return true
+    } catch (e) {
+      toast('Biometric setup was cancelled or unavailable', 'warn')
+      return false
+    }
+  }
+  const disableBiometric = () => {
+    setLock(l => ({ ...(l || {}), bioIds: [] }))
+    logAudit('user', 'Biometric unlock disabled', 'App lock')
+    toast('Biometric unlock disabled', 'warn')
+  }
+  const unlockWithBio = () => { setSessionUnlocked(true); return true }
 
   /* factory reset to a BLANK crm — PIN-confirmed; wipes everything incl. pincode */
   const blankState = () => ({
@@ -1272,7 +1293,7 @@ export function CrmProvider({ children }) {
     mailboxes, emails, connectMailbox, disconnectMailbox, syncMailbox, logEmailTouch, triageEmailAsLead, ignoreEmail,
     googleClientId, googleMode, saveGoogleClientId, connectGoogleLive, syncGoogleCalendar, syncGoogleContacts,
     driveState, driveBackupNow, driveRestoreNow, restoreAll, disconnectGoogle,
-    webhooks, saveWebhooks, testWebhook, icsFeeds, addIcsFeed, syncIcsFeed, removeIcsFeed, syncing, syncState, syncReport, syncNow, setSyncEnabled, gist, saveGistToken, syncProvider, lock, sessionUnlocked, setupPin, skipPinSetup, unlockWithPin, lockNow, changePin, removePin, verifyPin, factoryReset, buildBackup,
+    webhooks, saveWebhooks, testWebhook, icsFeeds, addIcsFeed, syncIcsFeed, removeIcsFeed, syncing, syncState, syncReport, syncNow, setSyncEnabled, gist, saveGistToken, syncProvider, lock, sessionUnlocked, setupPin, skipPinSetup, unlockWithPin, lockNow, changePin, removePin, verifyPin, factoryReset, enableBiometric, disableBiometric, unlockWithBio, buildBackup,
     commitImport, rollbackImport, resolveAuditConflict, updateFrequency, snoozeFollowUp, unsnooze, resetAll,
     notifState, notifPrefs, buildNotifications, dismissNotif, snoozeNotif, unsnoozeNotif, markNotifRead, markAllNotifsRead, toggleNotifPref,
     widgetPrefs, toggleWidget, moveWidget, resetWidgets, DEFAULT_WIDGET_ORDER,

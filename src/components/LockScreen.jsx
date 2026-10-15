@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
-import { Lock, Unlock, ShieldCheck, Trash2, Loader2, Zap } from 'lucide-react'
+import { Lock, Unlock, ShieldCheck, Trash2, Loader2, Zap, Fingerprint } from 'lucide-react'
 import { useCrm } from '../store'
+import { verifyBiometric } from '../lib/biometric'
 
 /* Full-screen gate shown before the app:
  *   mode 'setup'  — first launch: offer a pin (option + skip link)
@@ -26,7 +27,8 @@ const PinField = ({ value, set, label, innerRef, onEnter, onInput }) => (
 )
 
 export default function LockScreen({ mode }) {
-  const { setupPin, skipPinSetup, unlockWithPin, factoryReset } = useCrm()
+  const { setupPin, skipPinSetup, unlockWithPin, unlockWithBio, factoryReset, lock } = useCrm()
+  const [bioBusy, setBioBusy] = useState(false)
   const [pin, setPin] = useState('')
   const [pin2, setPin2] = useState('')
   const [err, setErr] = useState('')
@@ -89,6 +91,22 @@ export default function LockScreen({ mode }) {
             <div className="text-[12.5px] font-semibold text-center" style={{ color: '#f87171' }}>
               {err}{mode === 'unlock' && attempts >= 2 ? ` · ${attempts} failed attempts` : ''}
             </div>
+          )}
+
+          {mode === 'unlock' && (lock?.bioIds || []).length > 0 && (
+            <button className="btn btn-ghost w-full justify-center" data-testid="bio-unlock" disabled={busy || bioBusy}
+              onClick={async () => {
+                setBioBusy(true)
+                try {
+                  const ok = await verifyBiometric(lock.bioIds)
+                  if (ok) unlockWithBio()
+                  else setErr('Biometric check failed — use your pincode')
+                } catch { setErr('Biometric unavailable — use your pincode') }
+                finally { setBioBusy(false) }
+              }}>
+              {bioBusy ? <Loader2 size={15} className="animate-spin" /> : <Fingerprint size={15} />}
+              Use fingerprint / face
+            </button>
           )}
 
           <button
