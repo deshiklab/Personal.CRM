@@ -261,7 +261,7 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete }) {
   const st = crm.followUpStatus(c)
   const cgs = contactGroupIds(c)
   const rel = crm.relFreq[c.rel]
-  const myNotes = crm.notes.filter(n => n.contactIds.includes(c.id))
+  const myNotes = crm.notes.filter(n => !n.trashedAt && n.contactIds.includes(c.id))
   const myEvents = crm.events.filter(e => e.contactId === c.id).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5)
   const myActs = crm.activity.filter(a => a.contactId === c.id).slice(0, 5)
 

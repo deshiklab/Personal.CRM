@@ -114,13 +114,27 @@ export const EVENTS = [
 ]
 
 /* ── Notes ────────────────────────────────────────────────── */
+/* ── Note labels (Keep-style, separate from contact tags) ─── */
+export const NOTE_LABELS = [
+  { id: 'nl_ideas',    name: 'Ideas',       color: '#a78bfa' },
+  { id: 'nl_meetings', name: 'Meeting log', color: '#38bdf8' },
+  { id: 'nl_personal', name: 'Personal',    color: '#f472b6' },
+  { id: 'nl_gifts',    name: 'Gift ideas',  color: '#fbbf24' },
+]
+
 export const NOTES = [
-  { id:'n1', title:'Arjun prefers WhatsApp', body:'Email is fine for docs, but he replies to WhatsApp within the hour. SkyBridge is actively deploying — invested $2M in fintech seed funds this year.', contactIds:['c5'], pinned:true,  updated:tsAgo(60*26) },
-  { id:'n2', title:'Call log: Vikram', body:'Wants the proposal by Friday. Budget approved ~$40k. Decision-maker is their CTO, include technical appendix.', contactIds:['c6'], pinned:false, updated:tsAgo(60*5) },
-  { id:'n3', title:'Gift ideas', body:'Ayesha: medical thrillers, stethoscope charm. Rina: handloom saree (jamuna green). Vikram: noise-cancelling buds.', contactIds:['c2','c12','c6'], pinned:false, updated:tsAgo(60*50) },
-  { id:'n4', title:'Conference 2026 shortlist', body:'Send early-bird links to Arjun, Imran and Anika before prices double in November.', contactIds:['c5','c11','c18'], pinned:true,  updated:tsAgo(60*90) },
-  { id:'n5', title:'TradePort renewal terms', body:'Karim wants a 2-year lock with quarterly reviews. Legal to confirm exit clause wording.', contactIds:['c13'], pinned:false, updated:tsAgo(60*130) },
-  { id:'n6', title:'Cricket academy sponsorship', body:'Farhan asked if we\'d sponsor jerseys for the under-15 squad — ~৳45,000 including printing.', contactIds:['c10'], pinned:false, updated:tsAgo(60*200) },
+  { id:'n1', title:'Arjun prefers WhatsApp', body:'Email is fine for docs, but he replies to WhatsApp within the hour. SkyBridge is actively deploying — invested $2M in fintech seed funds this year.', contactIds:['c5'], pinned:true, color:'amber', labels:['nl_ideas'], kind:'text', checklist:[], archivedAt:null, trashedAt:null, remindAt:null, repeat:'none', updated:tsAgo(60*26), createdAt:tsAgo(60*24*9) },
+  { id:'n2', title:'Call log: Vikram', body:'Wants the proposal by Friday. Budget approved ~$40k. Decision-maker is their CTO, include technical appendix.', contactIds:['c6'], pinned:false, color:'sky', labels:['nl_meetings'], kind:'text', checklist:[], archivedAt:null, trashedAt:null, remindAt:null, repeat:'none', updated:tsAgo(60*5), createdAt:tsAgo(60*20) },
+  { id:'n3', title:'Gift ideas', body:'', contactIds:['c2','c12','c6'], pinned:false, color:'rose', labels:['nl_gifts'], kind:'checklist',
+    checklist:[{id:'ck1',text:'Ayesha: medical thrillers + stethoscope charm',done:false},{id:'ck2',text:'Rina: handloom saree (jamuna green)',done:true},{id:'ck3',text:'Vikram: noise-cancelling buds',done:false}],
+    archivedAt:null, trashedAt:null, remindAt:`${daysAheadISO(3)}T10:00`, repeat:'none', updated:tsAgo(60*50), createdAt:tsAgo(60*24*30) },
+  { id:'n4', title:'Conference 2026 shortlist', body:'Send early-bird links to Arjun, Imran and Anika before prices double in November.', contactIds:['c5','c11','c18'], pinned:true, color:'violet', labels:['nl_ideas'], kind:'text', checklist:[], archivedAt:null, trashedAt:null, remindAt:`${daysAheadISO(1)}T09:30`, repeat:'weekly', updated:tsAgo(60*90), createdAt:tsAgo(60*24*12) },
+  { id:'n5', title:'TradePort renewal terms', body:'Karim wants a 2-year lock with quarterly reviews. Legal to confirm exit clause wording.', contactIds:['c13'], pinned:false, color:null, labels:['nl_meetings'], kind:'text', checklist:[], archivedAt:null, trashedAt:null, remindAt:null, repeat:'none', updated:tsAgo(60*130), createdAt:tsAgo(60*24*40) },
+  { id:'n6', title:'Cricket academy sponsorship', body:'Farhan asked if we\u2019d sponsor jerseys for the under-15 squad — ~৳45,000 including printing.', contactIds:['c10'], pinned:false, color:'mint', labels:[], kind:'checklist',
+    checklist:[{id:'ck4',text:'Get 3 printing quotes',done:true},{id:'ck5',text:'Confirm logo placement with Farhan',done:false},{id:'ck6',text:'Send sponsorship one-pager',done:false}],
+    archivedAt:null, trashedAt:null, remindAt:null, repeat:'none', updated:tsAgo(60*200), createdAt:tsAgo(60*24*50) },
+  { id:'n7', title:'Dhaka Founders Meetup — talking points', body:'Open with the offline-first story. Mention the vCard/ICS bridges. Keep the demo under 4 minutes.', contactIds:[], pinned:false, color:null, labels:['nl_personal'], kind:'text', checklist:[], archivedAt:tsAgo(60*24*3), trashedAt:null, remindAt:null, repeat:'none', updated:tsAgo(60*24*3), createdAt:tsAgo(60*24*20) },
+  { id:'n8', title:'Old WiFi password list', body:'Archived — keeping for reference.', contactIds:[], pinned:false, color:null, labels:[], kind:'text', checklist:[], archivedAt:null, trashedAt:tsAgo(60*24*2), remindAt:null, repeat:'none', updated:tsAgo(60*24*2), createdAt:tsAgo(60*24*80) },
 ]
 
 /* ── Sync rules ───────────────────────────────────────────── */

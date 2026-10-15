@@ -68,7 +68,7 @@ export default function GlobalSearch() {
       type: 'notes', id: n.id, title: n.title || 'Untitled note',
       subtitle: n.body ? n.body.slice(0, 70) : 'Empty note',
       keywords: (n.contactIds || []).map(id => contactById[id]?.name || '').join(' '),
-      badge: n.pinned ? 'Pinned' : null, to: `/notes?open=${n.id}`,
+      badge: n.trashedAt ? 'Trash' : n.archivedAt ? 'Archived' : n.pinned ? 'Pinned' : null, to: `/notes?open=${n.id}`,
     }))
     events.forEach(e => items.push({
       type: 'events', id: e.id, title: e.title,

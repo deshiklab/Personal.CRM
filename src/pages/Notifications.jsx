@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, CheckSquare, HeartHandshake, Cake, Calendar, ShieldAlert, Check, Clock, X, RotateCcw, PlusSquare, BellRing, History } from 'lucide-react'
+import { Bell, CheckSquare, HeartHandshake, Cake, Calendar, ShieldAlert, Check, Clock, X, RotateCcw, PlusSquare, BellRing, History, StickyNote } from 'lucide-react'
 import { useCrm } from '../store'
 import { SectionHead, Card, Stat, Avatar, Pill, Toggle, Empty, CsvButton } from '../components/ui'
 import { todayISO, daysAheadISO } from '../lib'
@@ -10,6 +10,7 @@ const TYPES = {
   'follow-up':{ label: 'Follow-ups',icon: HeartHandshake,  color: '#fb7185' },
   birthday:   { label: 'Birthdays', icon: Cake,            color: '#f472b6' },
   event:      { label: 'Events',    icon: Calendar,        color: '#a78bfa' },
+  note:       { label: 'Note reminders', icon: StickyNote, color: '#fbbf24' },
   system:     { label: 'System',    icon: ShieldAlert,     color: '#fbbf24' },
 }
 const PRIO_COLOR = { high: '#fb7185', med: '#fbbf24', low: '#94a3b8' }
@@ -97,7 +98,7 @@ function NotifCard({ n, snoozed, dismissedCard }) {
   }
 
   return (
-    <Card className="p-3.5 flex items-start gap-3" style={{ opacity: dismissedCard ? .55 : 1 }}>
+    <Card className="p-3.5 flex items-start gap-3" data-notif-key={n.key} style={{ opacity: dismissedCard ? .55 : 1 }}>
       <span className="w-9 h-9 rounded-xl grid place-items-center flex-none mt-0.5" style={{ background: t.color + '1c', color: t.color }}>
         <t.icon size={16} />
       </span>

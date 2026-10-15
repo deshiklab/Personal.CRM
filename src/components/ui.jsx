@@ -96,7 +96,7 @@ export function Toggle({ on, onChange, disabled }) {
   )
 }
 
-export function Modal({ open, onClose, title, children, wide = false }) {
+export function Modal({ open, onClose, title, children, wide = false, size }) {
   useEffect(() => {
     if (!open) return
     const fn = e => e.key === 'Escape' && onClose?.()
@@ -104,10 +104,11 @@ export function Modal({ open, onClose, title, children, wide = false }) {
     return () => window.removeEventListener('keydown', fn)
   }, [open, onClose])
   if (!open) return null
+  const maxW = size === 'xl' ? 'max-w-3xl' : size === 'lg' ? 'max-w-2xl' : wide ? 'max-w-2xl' : 'max-w-lg'
   return (
     <div className="fixed inset-0 z-[90] overflow-y-auto p-4 sm:p-8 flex items-start justify-center"
       style={{ background: 'rgba(6,8,12,.7)', backdropFilter: 'blur(6px)' }} onClick={onClose}>
-      <Panel className={cn('fadein w-full p-6 my-auto', wide ? 'max-w-2xl' : 'max-w-lg')} onClick={e => e.stopPropagation()}>
+      <Panel className={cn('fadein w-full p-6 my-auto', maxW)} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[16.5px] font-bold tracking-tight">{title}</h3>
           <button className="icon-btn" onClick={onClose}><X size={16} /></button>

@@ -5,6 +5,7 @@ import * as goog from './lib/google'
 import * as icslib from './lib/ics'
 import * as ds from './lib/drivesync'
 import * as gs from './lib/gistsync'
+import { normalizeNote, isTrashExpired, advanceReminder, TRASH_RETENTION_DAYS } from './lib/notes'
 
 const KEY = 'pcrm-v1'
 const load = () => { try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s) } catch {} return null }
@@ -30,7 +31,8 @@ export function CrmProvider({ children }) {
   const [contacts, setContacts]   = useState(() => (init?.contacts || seed.CONTACTS).map(normalizeContact))
   const [tasks, setTasks]         = useState(init?.tasks     || seed.TASKS)
   const [events, setEvents]       = useState(init?.events    || seed.EVENTS)
-  const [notes, setNotes]         = useState(init?.notes     || seed.NOTES)
+  const [notes, setNotes]         = useState(() => (init?.notes || seed.NOTES).map(normalizeNote))
+  const [noteLabels, setNoteLabels] = useState(init?.noteLabels || seed.NOTE_LABELS)
   const [tags, setTags]           = useState(init?.tags      || seed.TAGS)
   const [groups, setGroups]       = useState(init?.groups    || seed.GROUPS)
   const [rules, setRules]         = useState(init?.rules     || seed.SYNC_RULES)
@@ -47,7 +49,7 @@ export function CrmProvider({ children }) {
   })
   const [emails, setEmails]       = useState(init?.emails    || [])
   const [notifState, setNotifState] = useState(init?.notifState || {})
-  const [notifPrefs, setNotifPrefs] = useState(init?.notifPrefs || { task: true, 'follow-up': true, birthday: true, event: true, system: true })
+  const [notifPrefs, setNotifPrefs] = useState(init?.notifPrefs || { task: true, 'follow-up': true, birthday: true, event: true, system: true, note: true })
   const [widgetPrefs, setWidgetPrefs] = useState(init?.widgetPrefs || { order: DEFAULT_WIDGET_ORDER, hidden: [] })
   const [toasts, setToasts]       = useState([])
   /* google workspace (8b/live): clientId persisted, token in memory only */
@@ -82,11 +84,11 @@ export function CrmProvider({ children }) {
   useEffect(() => {
     try {
       localStorage.setItem(KEY, JSON.stringify({
-        contacts, tasks, events, notes, tags, groups, rules, audit,
+        contacts, tasks, events, notes, noteLabels, tags, groups, rules, audit,
         activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock,
       }))
     } catch {}
-  }, [contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock])
+  }, [contacts, tasks, events, notes, noteLabels, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock])
 
   /* ── toasts ── */
   const toast = (msg, tone = 'ok') => {
@@ -177,20 +179,58 @@ export function CrmProvider({ children }) {
       : `Group set for ${contactIds.length} contact(s)`)
   }
 
-  /* ── notes ── */
+  /* ── notes (Keep-class: checklist, colors, labels, archive/trash, reminders) ── */
   const addNote = data => {
-    const n = { id: uid(), pinned: false, updated: new Date().toISOString(), ...data }
+    const n = normalizeNote({ id: uid(), pinned: false, updated: new Date().toISOString(), ...data })
     setNotes(ns => [n, ...ns])
     logActivity(`Added note: "${data.title}"`, data.contactIds?.[0] || null)
     return n
   }
   const updateNote = (id, patch) =>
     setNotes(ns => ns.map(n => n.id === id ? { ...n, ...patch, updated: new Date().toISOString() } : n))
-  const deleteNote = id => {
+  const duplicateNote = id => {
+    const n = notes.find(x => x.id === id)
+    if (!n) return null
+    return addNote({ ...n, title: `${n.title || 'Untitled'} (copy)`, pinned: false,
+      checklist: (n.checklist || []).map(c => ({ ...c, id: uid() })), mergedAt: null })
+  }
+  /* soft-delete → trash (restorable, 30-day auto-purge) */
+  const trashNote = id => {
+    const n = notes.find(x => x.id === id)
+    updateNote(id, { trashedAt: new Date().toISOString(), remindAt: null })
+    if (n) logAudit('user', 'Moved note to trash', n.title || 'Untitled')
+  }
+  const restoreNote = id => {
+    updateNote(id, { trashedAt: null })
+    logAudit('user', 'Restored note from trash', notes.find(x => x.id === id)?.title || 'Untitled')
+  }
+  const purgeNote = id => {
     const n = notes.find(x => x.id === id)
     setNotes(ns => ns.filter(x => x.id !== id))
-    if (n) logAudit('user', 'Deleted note', n.title || 'Untitled')
+    if (n) logAudit('user', 'Deleted note forever', n.title || 'Untitled')
   }
+  /* backward-compatible alias: old callers expect permanent delete */
+  const deleteNote = purgeNote
+  const toggleArchiveNote = id => {
+    const n = notes.find(x => x.id === id)
+    updateNote(id, n?.archivedAt ? { archivedAt: null } : { archivedAt: new Date().toISOString(), pinned: false })
+  }
+  /* note labels (separate from contact tags) */
+  const addNoteLabel = (name, color = '#818cf8') => {
+    const l = { id: uid(), name: name.trim(), color }
+    setNoteLabels(ls => [...ls, l])
+    return l
+  }
+  const updateNoteLabel = (id, patch) => setNoteLabels(ls => ls.map(l => l.id === id ? { ...l, ...patch } : l))
+  const deleteNoteLabel = id => {
+    setNoteLabels(ls => ls.filter(l => l.id !== id))
+    setNotes(ns => ns.map(n => ({ ...n, labels: (n.labels || []).filter(x => x !== id) })))
+  }
+  const noteLabelById = useMemo(() => Object.fromEntries(noteLabels.map(l => [l.id, l])), [noteLabels])
+  /* 30-day trash auto-purge on launch */
+  useEffect(() => {
+    setNotes(ns => ns.some(isTrashExpired) ? ns.filter(n => !isTrashExpired(n)) : ns)
+  }, [])
 
   /* ── tasks ── */
   const addTask = data => {
@@ -429,7 +469,7 @@ export function CrmProvider({ children }) {
 
   const buildBackup = () => JSON.stringify({
     app: 'personal-crm', version: 2, exportedAt: new Date().toISOString(),
-    data: { contacts, tasks, events, notes, tags, groups, rules, relFreq, audit, activity, imports, snoozes, notifState, notifPrefs, widgetPrefs, mailboxes, emails },
+    data: { contacts, tasks, events, notes, noteLabels, tags, groups, rules, relFreq, audit, activity, imports, snoozes, notifState, notifPrefs, widgetPrefs, mailboxes, emails },
   }, null, 2)
 
   const driveBackupNow = async () => {
@@ -458,7 +498,8 @@ export function CrmProvider({ children }) {
   const restoreAll = parsed => {
     const d = parsed?.data || parsed
     if (!d || !Array.isArray(d.contacts)) { toast('That file is not a Personal CRM backup', 'warn'); return false }
-    setContacts(d.contacts.map(normalizeContact)); setTasks(d.tasks || []); setEvents(d.events || []); setNotes(d.notes || [])
+    setContacts(d.contacts.map(normalizeContact)); setTasks(d.tasks || []); setEvents(d.events || []); setNotes((d.notes || []).map(normalizeNote))
+    if (Array.isArray(d.noteLabels)) setNoteLabels(d.noteLabels)
     setTags(d.tags || []); setGroups(d.groups || []); setRules(d.rules || [])
     if (d.relFreq) setRelFreq(d.relFreq); if (d.audit) setAudit(d.audit); if (d.activity) setActivity(d.activity)
     if (d.imports) setImports(d.imports); if (d.snoozes) setSnoozes(d.snoozes)
@@ -544,7 +585,7 @@ export function CrmProvider({ children }) {
 
   /* factory reset to a BLANK crm — PIN-confirmed; wipes everything incl. pincode */
   const blankState = () => ({
-    contacts: [], tasks: [], events: [], notes: [], tags: [], groups: [], rules: [], audit: [],
+    contacts: [], tasks: [], events: [], notes: [], noteLabels: [], tags: [], groups: [], rules: [], audit: [],
     activity: [], imports: [], relFreq: {}, snoozes: {}, carddav: null,
     gcal: { connected: false, email: null, lastSync: null },
     notifState: {}, notifPrefs, widgetPrefs,
@@ -580,13 +621,14 @@ export function CrmProvider({ children }) {
 
   /* ── multi-device sync: single personal-crm-sync.json in the user's Drive ── */
   const snapshotCore = () => ({
-    contacts, tasks, events, notes, tags, groups, rules, relFreq, emails,
+    contacts, tasks, events, notes, noteLabels, tags, groups, rules, relFreq, emails,
   })
   const applySyncSnapshot = d => {
     if (Array.isArray(d.contacts)) setContacts(d.contacts.map(normalizeContact))
     if (Array.isArray(d.tasks)) setTasks(d.tasks)
     if (Array.isArray(d.events)) setEvents(d.events)
-    if (Array.isArray(d.notes)) setNotes(d.notes)
+    if (Array.isArray(d.notes)) setNotes(d.notes.map(normalizeNote))
+    if (Array.isArray(d.noteLabels)) setNoteLabels(d.noteLabels)
     if (Array.isArray(d.tags)) setTags(d.tags)
     if (Array.isArray(d.groups)) setGroups(d.groups)
     if (Array.isArray(d.rules)) setRules(d.rules)
@@ -931,7 +973,18 @@ export function CrmProvider({ children }) {
   const resetAll = () => { try { localStorage.removeItem(KEY) } catch {} location.reload() }
 
   /* ── notifications (derived feed + dismiss/snooze/read state) ── */
-  const dismissNotif = (key, on = true) => setNotifState(s => ({ ...s, [key]: { ...(s[key] || {}), dismissed: on } }))
+  const dismissNotif = (key, on = true) => {
+    /* dismissing a note reminder advances a repeating one to its next run */
+    if (on && key.startsWith('note-')) {
+      const id = key.slice(5)
+      setNotes(ns => ns.map(n => {
+        if (n.id !== id || !n.remindAt) return n
+        const next = advanceReminder(n.remindAt, n.repeat)
+        return { ...n, remindAt: next }
+      }))
+    }
+    setNotifState(s => ({ ...s, [key]: { ...(s[key] || {}), dismissed: on } }))
+  }
   const snoozeNotif = (key, days) => { setNotifState(s => ({ ...s, [key]: { ...(s[key] || {}), snoozedUntil: daysAheadISO(days) } })); toast(`Snoozed for ${days} day${days > 1 ? 's' : ''}`) }
   const unsnoozeNotif = key => setNotifState(s => ({ ...s, [key]: { ...(s[key] || {}), snoozedUntil: null } }))
   const markNotifRead = key => setNotifState(s => ({ ...s, [key]: { ...(s[key] || {}), read: true } }))
@@ -975,6 +1028,19 @@ export function CrmProvider({ children }) {
       const d = daysUntil(e.date)
       if (d === 0 || d === 1) list.push({ key: `evt-${e.id}`, type: 'event', title: e.title, body: `${d === 0 ? 'Today' : 'Tomorrow'} at ${e.time}${e.location ? ` · ${e.location}` : ''}`, priority: 'med', eventId: e.id, contactId: e.contactId, ts: e.date })
     })
+    notes.forEach(n => {
+      if (n.trashedAt || !n.remindAt) return
+      const t = new Date(n.remindAt).getTime()
+      if (isNaN(t) || t > Date.now() + 86400000) return   // only show when due / overdue / within a day
+      const hhmm = (n.remindAt.slice(11, 16) || '')
+      const overdue = t < Date.now()
+      const snippet = (n.title || (n.checklist?.[0]?.text) || n.body || 'note reminder')
+      list.push({
+        key: `note-${n.id}`, type: 'note', title: snippet.slice(0, 70) || 'Note reminder',
+        body: overdue ? `Reminder overdue (${n.remindAt.replace('T', ' ')})` : `Reminder ${hhmm ? `at ${hhmm}` : ''}${n.repeat !== 'none' ? ` · repeats ${n.repeat}` : ''}`,
+        priority: overdue ? 'high' : 'med', noteId: n.id, contactId: n.contactIds?.[0] || null, ts: n.remindAt,
+      })
+    })
     audit.forEach(a => { if (a.status === 'warn') list.push({ key: `sync-${a.id}`, type: 'system', title: a.action, body: `${a.entity}${a.detail ? ` — ${a.detail}` : ''}`, priority: 'med', auditId: a.id, ts: a.ts }) })
 
     const PRIO = { high: 0, med: 1, low: 2 }
@@ -988,9 +1054,10 @@ export function CrmProvider({ children }) {
   }
 
   const value = {
-    contacts, tasks, events, notes, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, toasts,
+    contacts, tasks, events, notes, noteLabels, noteLabelById, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, toasts,
     contactById, groupById, tagById, toast, followUpStatus, logActivity, logAudit,
-    addContact, updateContact, toggleStar, markContacted, deleteContact, bulkDeleteContacts, bulkSetGroups, contactGroupIds, addNote, updateNote, deleteNote,
+    addContact, updateContact, toggleStar, markContacted, deleteContact, bulkDeleteContacts, bulkSetGroups, contactGroupIds, addNote, updateNote, deleteNote, duplicateNote, trashNote, restoreNote, purgeNote, toggleArchiveNote,
+    addNoteLabel, updateNoteLabel, deleteNoteLabel,
     addTask, moveTask, updateTask, deleteTask, duplicateTask, createFollowUpTask,
     addEvent, moveEvent, deleteEvent,
     addTag, updateTag, deleteTag, mergeTags, bulkTag,
