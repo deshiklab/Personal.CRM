@@ -15,3 +15,14 @@ if (!window.ResizeObserver) {
 if (!navigator.clipboard) {
   Object.defineProperty(navigator, 'clipboard', { value: { writeText: async () => {} }, configurable: true })
 }
+/* File/Blob conveniences jsdom may lack */
+if (typeof Blob !== 'undefined' && !Blob.prototype.arrayBuffer) {
+  Blob.prototype.arrayBuffer = function () {
+    return new Promise((resolve, reject) => {
+      const fr = new FileReader()
+      fr.onload = () => resolve(fr.result)
+      fr.onerror = () => reject(fr.error)
+      fr.readAsArrayBuffer(this)
+    })
+  }
+}

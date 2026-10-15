@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, CheckSquare, Calendar, HeartHandshake, UsersRound, Tag, FileUp, Settings2, StickyNote, Network, History, Bell, Gift, BarChart3, Mail, Plug } from 'lucide-react'
+import { LayoutDashboard, Users, CheckSquare, Calendar, HeartHandshake, UsersRound, Tag, FileUp, Settings2, StickyNote, Network, History, Bell, Gift, BarChart3, Mail, Plug, FolderOpen } from 'lucide-react'
 import { useCrm } from '../store'
 import { daysUntil, tsRel } from '../lib'
 
@@ -16,6 +16,7 @@ export default function Sidebar() {
     { to: '/contacts', label: 'Contacts', icon: Users },
     { to: '/tasks', label: 'Tasks', icon: CheckSquare, badge: dueToday, tone: '#fbbf24' },
     { to: '/notes', label: 'Notes', icon: StickyNote },
+    { to: '/files', label: 'Files', icon: FolderOpen },
     { to: '/email', label: 'Email', icon: Mail },
     { to: '/calendar', label: 'Calendar', icon: Calendar },
     { to: '/birthdays', label: 'Birthdays', icon: Gift },

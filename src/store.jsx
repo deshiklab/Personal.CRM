@@ -7,6 +7,7 @@ import * as ds from './lib/drivesync'
 import * as gs from './lib/gistsync'
 import { normalizeNote, isTrashExpired, advanceReminder, TRASH_RETENTION_DAYS } from './lib/notes'
 import { matchExisting } from './lib/contacts'
+import { deleteBlob } from './lib/filestore'
 
 const KEY = 'pcrm-v1'
 const load = () => { try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s) } catch {} return null }
@@ -34,6 +35,8 @@ export function CrmProvider({ children }) {
   const [events, setEvents]       = useState(init?.events    || seed.EVENTS)
   const [notes, setNotes]         = useState(() => (init?.notes || seed.NOTES).map(normalizeNote))
   const [noteLabels, setNoteLabels] = useState(init?.noteLabels || seed.NOTE_LABELS)
+  const [files, setFiles]         = useState(init?.files     || [])
+  const [devices, setDevices]     = useState(init?.devices   || [])
   const [tags, setTags]           = useState(init?.tags      || seed.TAGS)
   const [groups, setGroups]       = useState(init?.groups    || seed.GROUPS)
   const [rules, setRules]         = useState(init?.rules     || seed.SYNC_RULES)
@@ -85,11 +88,11 @@ export function CrmProvider({ children }) {
   useEffect(() => {
     try {
       localStorage.setItem(KEY, JSON.stringify({
-        contacts, tasks, events, notes, noteLabels, tags, groups, rules, audit,
+        contacts, tasks, events, notes, noteLabels, files, devices, tags, groups, rules, audit,
         activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock,
       }))
     } catch {}
-  }, [contacts, tasks, events, notes, noteLabels, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock])
+  }, [contacts, tasks, events, notes, noteLabels, files, devices, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock])
 
   /* ── toasts ── */
   const toast = (msg, tone = 'ok') => {
@@ -232,6 +235,51 @@ export function CrmProvider({ children }) {
   useEffect(() => {
     setNotes(ns => ns.some(isTrashExpired) ? ns.filter(n => !isTrashExpired(n)) : ns)
   }, [])
+
+  /* ── files & devices (index syncs, blobs stay on their device) ── */
+  const thisDevice = () => {
+    let kind = 'web'
+    try {
+      kind = goog.isNative() ? 'android' : (typeof matchMedia === 'function' && matchMedia('(display-mode: standalone)').matches ? 'pwa' : 'web')
+    } catch { /* default web */ }
+    return {
+      id: syncState.deviceId || 'unknown',
+      name: `${kind === 'android' ? 'Android app' : kind === 'pwa' ? 'PWA' : 'Web'} · ${(syncState.deviceId || '').slice(-4)}`,
+      kind, lastSeen: new Date().toISOString(),
+    }
+  }
+  const addFileMeta = data => {
+    const d = thisDevice()
+    const f = {
+      id: uid(), name: 'file', mime: 'application/octet-stream', size: 0, sha256: '',
+      folder: 'Inbox', tags: [], contactIds: [], starred: false,
+      origin: 'import', storedAt: new Date().toISOString(),
+      deviceId: d.id, deviceName: d.name, ...data,
+    }
+    setFiles(fs => [f, ...fs])
+    setDevices(ds => {
+      const i = ds.findIndex(x => x.id === d.id)
+      return i < 0 ? [...ds, d] : ds.map((x, j) => j === i ? { ...x, ...d } : x)
+    })
+    logActivity(`Added file: \"${f.name}\"`)
+    return f
+  }
+  const updateFileMeta = (id, patch) => setFiles(fs => fs.map(f => f.id === id ? { ...f, ...patch } : f))
+  const deleteFile = async id => {
+    const f = files.find(x => x.id === id)
+    setFiles(fs => fs.filter(x => x.id !== id))
+    try { await deleteBlob(id) } catch { /* blob may live on another device */ }
+    if (f) logAudit('user', 'Deleted file', f.name, `${f.deviceName || 'device'}`)
+  }
+  const touchDevice = () => {
+    const d = thisDevice()
+    setDevices(ds => {
+      const i = ds.findIndex(x => x.id === d.id)
+      return i < 0 ? [...ds, d] : ds.map((x, j) => j === i ? { ...x, ...d } : x)
+    })
+    return d
+  }
+  const filesOfDevice = deviceId => files.filter(f => f.deviceId === deviceId)
 
   /* ── tasks ── */
   const addTask = data => {
@@ -470,7 +518,7 @@ export function CrmProvider({ children }) {
 
   const buildBackup = () => JSON.stringify({
     app: 'personal-crm', version: 2, exportedAt: new Date().toISOString(),
-    data: { contacts, tasks, events, notes, noteLabels, tags, groups, rules, relFreq, audit, activity, imports, snoozes, notifState, notifPrefs, widgetPrefs, mailboxes, emails },
+    data: { contacts, tasks, events, notes, noteLabels, files, devices, tags, groups, rules, relFreq, audit, activity, imports, snoozes, notifState, notifPrefs, widgetPrefs, mailboxes, emails },
   }, null, 2)
 
   const driveBackupNow = async () => {
@@ -501,6 +549,8 @@ export function CrmProvider({ children }) {
     if (!d || !Array.isArray(d.contacts)) { toast('That file is not a Personal CRM backup', 'warn'); return false }
     setContacts(d.contacts.map(normalizeContact)); setTasks(d.tasks || []); setEvents(d.events || []); setNotes((d.notes || []).map(normalizeNote))
     if (Array.isArray(d.noteLabels)) setNoteLabels(d.noteLabels)
+    if (Array.isArray(d.files)) setFiles(d.files)
+    if (Array.isArray(d.devices)) setDevices(d.devices)
     setTags(d.tags || []); setGroups(d.groups || []); setRules(d.rules || [])
     if (d.relFreq) setRelFreq(d.relFreq); if (d.audit) setAudit(d.audit); if (d.activity) setActivity(d.activity)
     if (d.imports) setImports(d.imports); if (d.snoozes) setSnoozes(d.snoozes)
@@ -586,7 +636,7 @@ export function CrmProvider({ children }) {
 
   /* factory reset to a BLANK crm — PIN-confirmed; wipes everything incl. pincode */
   const blankState = () => ({
-    contacts: [], tasks: [], events: [], notes: [], noteLabels: [], tags: [], groups: [], rules: [], audit: [],
+    contacts: [], tasks: [], events: [], notes: [], noteLabels: [], files: [], devices: [], tags: [], groups: [], rules: [], audit: [],
     activity: [], imports: [], relFreq: {}, snoozes: {}, carddav: null,
     gcal: { connected: false, email: null, lastSync: null },
     notifState: {}, notifPrefs, widgetPrefs,
@@ -622,7 +672,7 @@ export function CrmProvider({ children }) {
 
   /* ── multi-device sync: single personal-crm-sync.json in the user's Drive ── */
   const snapshotCore = () => ({
-    contacts, tasks, events, notes, noteLabels, tags, groups, rules, relFreq, emails,
+    contacts, tasks, events, notes, noteLabels, files, devices, tags, groups, rules, relFreq, emails,
   })
   const applySyncSnapshot = d => {
     if (Array.isArray(d.contacts)) setContacts(d.contacts.map(normalizeContact))
@@ -630,6 +680,8 @@ export function CrmProvider({ children }) {
     if (Array.isArray(d.events)) setEvents(d.events)
     if (Array.isArray(d.notes)) setNotes(d.notes.map(normalizeNote))
     if (Array.isArray(d.noteLabels)) setNoteLabels(d.noteLabels)
+    if (Array.isArray(d.files)) setFiles(d.files)
+    if (Array.isArray(d.devices)) setDevices(d.devices)
     if (Array.isArray(d.tags)) setTags(d.tags)
     if (Array.isArray(d.groups)) setGroups(d.groups)
     if (Array.isArray(d.rules)) setRules(d.rules)
@@ -1057,10 +1109,11 @@ export function CrmProvider({ children }) {
   }
 
   const value = {
-    contacts, tasks, events, notes, noteLabels, noteLabelById, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, toasts,
+    contacts, tasks, events, notes, noteLabels, noteLabelById, files, devices, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, toasts,
     contactById, groupById, tagById, toast, followUpStatus, logActivity, logAudit,
     addContact, updateContact, toggleStar, markContacted, deleteContact, bulkDeleteContacts, bulkSetGroups, contactGroupIds, addNote, updateNote, deleteNote, duplicateNote, trashNote, restoreNote, purgeNote, toggleArchiveNote,
     addNoteLabel, updateNoteLabel, deleteNoteLabel,
+    addFileMeta, updateFileMeta, deleteFile, touchDevice, filesOfDevice,
     addTask, moveTask, updateTask, deleteTask, duplicateTask, createFollowUpTask,
     addEvent, moveEvent, deleteEvent,
     addTag, updateTag, deleteTag, mergeTags, bulkTag,

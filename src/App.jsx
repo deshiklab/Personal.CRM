@@ -22,6 +22,7 @@ import SettingsSync from './pages/SettingsSync'
 import IntegrationsPage from './pages/IntegrationsPage'
 import FollowUps from './pages/FollowUps'
 import Notifications from './pages/Notifications'
+import FilesPage from './pages/FilesPage'
 
 export default function App() {
   const { lock, sessionUnlocked } = useCrm()
@@ -40,6 +41,7 @@ export default function App() {
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/notes" element={<Notes />} />
+            <Route path="/files" element={<FilesPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/birthdays" element={<Birthdays />} />
             <Route path="/follow-ups" element={<FollowUps />} />
