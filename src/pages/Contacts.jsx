@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Search, UserPlus, Star, Phone, Mail, Cake, Users, Clock, CheckCircle2, StickyNote, X, Heart, Gift, Globe, MessageCircle, Link2, Share2, Pencil, Trash2, Download, UsersRound } from 'lucide-react'
+import { Search, UserPlus, Star, Phone, Mail, Cake, Users, Clock, CheckCircle2, StickyNote, X, Heart, Gift, Globe, MessageCircle, Link2, Share2, Pencil, Trash2, Download, UsersRound, Smartphone, ContactRound } from 'lucide-react'
 import { toVCF, downloadVCF } from '../lib/vcard'
+import { canWritePhoneContacts, saveContactToPhone, saveContactsToPhone } from '../lib/contacts-native'
 import { useCrm } from '../store'
 import { SectionHead, Avatar, TagPill, Pill, Modal, Drawer, Field, Empty, EVENT_COLORS, CsvButton } from '../components/ui'
 import { relDay, fmtHuman, tsRel } from '../lib'
@@ -99,6 +100,9 @@ export default function Contacts() {
             { label: 'Interests', get: r => (r.interests || []).join('; ') },
             { label: 'Socials', get: r => Object.entries(r.socials || {}).map(([p, v]) => `${p}:${v}`).join('; ') },
           ]} />
+          <a className="btn btn-ghost btn-sm" href="#/import?phone=1" title="Import contacts from your phone address book">
+            <Smartphone size={13} /> From phone
+          </a>
           <button className="btn btn-primary btn-sm" onClick={() => setAddOpen(true)}><UserPlus size={14} /> Add contact</button>
         </div>} />
 
@@ -156,6 +160,16 @@ export default function Contacts() {
           <button className="btn btn-ghost btn-sm" onClick={() => downloadVCF(selContacts)} title="Download the selected cards as .vcf">
             <Download size={13} /> .vcf
           </button>
+          {canWritePhoneContacts() && (
+            <button className="btn btn-ghost btn-sm" title="Save the selected contacts into your phone address book"
+              onClick={async () => {
+                const rows = selContacts.map(c => ({ name: c.name, phone: c.phone, email: c.email, org: c.company, bday: c.birthday }))
+                const { saved, failed } = await saveContactsToPhone(rows)
+                crm.toast(`📇 Saved ${saved} to phone${failed ? ` · ${failed} failed` : ''}`, failed && !saved ? 'warn' : 'ok')
+              }}>
+              <ContactRound size={13} /> Save to phone
+            </button>
+          )}
           <div className="flex-1" />
           <button className="btn btn-ghost btn-sm" onClick={() => setSel([])}>Clear</button>
           <button className="btn btn-danger btn-sm" onClick={() => askDelete(sel)}>
@@ -314,6 +328,15 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete }) {
             <button className="btn btn-ghost flex-1 justify-center" onClick={shareCard} title="Share the full contact card (.vcf) — works with phone share sheet">
               <Share2 size={14} /> Share card
             </button>
+            {canWritePhoneContacts() && (
+              <button className="btn btn-ghost flex-1 justify-center" title="Save a copy into your phone address book"
+                onClick={async () => {
+                  const res = await saveContactToPhone({ name: c.name, phone: c.phone, email: c.email, org: c.company, bday: c.birthday })
+                  res.ok ? crm.toast(`📇 ${c.name} saved to phone`) : crm.toast(`Could not save to phone (${res.reason})`, 'warn')
+                }}>
+                <ContactRound size={14} /> Save to phone
+              </button>
+            )}
           </div>
         )
       })()}

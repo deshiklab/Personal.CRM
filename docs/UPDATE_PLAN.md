@@ -1,11 +1,12 @@
 # Personal CRM — Feature Update Plan (v0.2)
 
-> Status: **IN PROGRESS** — WS-1 (Notes 2.0) implemented ✅ · awaiting green light for the next workstream
+> Status: **IN PROGRESS** — WS-1 (Notes 2.0) ✅ · WS-2 (Phone Contacts) ✅ · next: WS-3/4/5
 > Branch: `arena/8018c92d-personal-crm`
 > Date: 2026-10-15
 
 ### Progress log
 - **WS-1 Notes → Google Keep-class — DONE** (2026-10-15): checklists, 10-color palette, note labels + manager, archive & 30-day trash (restore/purge), masonry grid + list view, Keep-style quick-add (Enter / multi-line paste), per-note reminders (quick chips + datetime + daily/weekly/monthly repeat) wired into the Notification Center, markdown toolbar + preview, share / `.md` export / duplicate, contact links + merge-to-timeline preserved. New: `src/lib/markdown.js`, `src/lib/notes.js`, `src/components/NoteCard.jsx`, `src/components/NoteEditor.jsx`; test harness: `vitest` + `probe-notes.test.jsx` (14 tests) and `probe-notes.mjs` (playwright, for browser environments). Notes attachments intentionally deferred to WS-5 (file store).
+- **WS-2 Phone Contacts import/export — DONE** (2026-10-15): `@capacitor-community/contacts@8` (read + write, `READ_CONTACTS`/`WRITE_CONTACTS` in the Android manifest), `src/lib/contacts.js` (pure mapping + **phone → email → name** normalized dedupe, now shared by the Import diff preview AND `commitImport`) and `src/lib/contacts-native.js` (capability detection + graceful fallbacks). Import page gains a "From your phone" card (native address book → same diff-preview → commit → rollback pipeline; Chrome contact picker on the web; honest hints when unavailable; `/import?phone=1` deep link). Contacts page gains "From phone" and **"Save to phone"** (per-contact drawer + bulk bar; native-only, vCard share remains the everywhere-path). Phone imports land as `acquaintance`, vcf/paste imports keep the `lead` default. Tests: `probe-contacts.test.jsx` (10 tests — caught a `setRaw()` undefined crash in the commit flow).
 
 ---
 

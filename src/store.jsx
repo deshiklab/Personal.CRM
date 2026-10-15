@@ -6,6 +6,7 @@ import * as icslib from './lib/ics'
 import * as ds from './lib/drivesync'
 import * as gs from './lib/gistsync'
 import { normalizeNote, isTrashExpired, advanceReminder, TRASH_RETENTION_DAYS } from './lib/notes'
+import { matchExisting } from './lib/contacts'
 
 const KEY = 'pcrm-v1'
 const load = () => { try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s) } catch {} return null }
@@ -891,11 +892,13 @@ export function CrmProvider({ children }) {
 
   const ignoreEmail = id => setEmails(es => es.map(x => x.id === id ? { ...x, status: 'ignored' } : x))
 
-  const commitImport = (rows, source = 'pasted.vcf') => {
+  const commitImport = (rows, source = 'pasted.vcf', opts = {}) => {
+    const { rel = 'lead', groupId = 'g_leads' } = opts
     let added = 0, updated = 0, skipped = 0
     const details = []
     rows.forEach(r => {
-      const existing = contacts.find(c => c.name.trim().toLowerCase() === r.name.trim().toLowerCase())
+      /* dedupe: normalized phone → email → name (same rule as the diff preview) */
+      const existing = matchExisting(contacts, r)
       if (existing) {
         const patch = {}
         if (r.phone && r.phone !== existing.phone) patch.phone = r.phone
@@ -911,7 +914,7 @@ export function CrmProvider({ children }) {
           details.push({ contactId: existing.id, name: existing.name, status: 'skipped', changes: [] })
         }
       } else {
-        const c = addContact({ name: r.name, phone: r.phone || '', email: r.email || '', company: r.org || '', birthday: r.bday || null, groupId: 'g_leads', rel: 'lead' })
+        const c = addContact({ name: r.name, phone: r.phone || '', email: r.email || '', company: r.org || '', birthday: r.bday || null, groupId, rel })
         added++
         details.push({ contactId: c.id, name: c.name, status: 'added', changes: [{ field: 'record', from: '', to: 'new contact' }] })
       }

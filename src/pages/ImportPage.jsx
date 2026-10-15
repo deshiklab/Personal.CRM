@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { FileUp, Upload, ScanLine, CheckCircle2, AlertTriangle, MinusCircle, ArrowRight } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { FileUp, Upload, ScanLine, CheckCircle2, AlertTriangle, MinusCircle, ArrowRight, Smartphone, ContactRound, Info } from 'lucide-react'
 import { useCrm } from '../store'
 import { SectionHead, Pill, Card, Empty } from '../components/ui'
 import { tsRel, todayISO } from '../lib'
+import { matchExisting } from '../lib/contacts'
+import { canReadPhoneContacts, contactPickerAvailable, phoneContactsAvailable, readPhoneContacts, readHint } from '../lib/contacts-native'
 
 const SAMPLE = `BEGIN:VCARD
 VERSION:3.0
@@ -54,11 +56,17 @@ export default function ImportPage() {
   const { contacts, imports, commitImport, toast } = useCrm()
   const [raw, setRaw] = useState('')
   const [rows, setRows] = useState(null)
+  const [source, setSource] = useState('pasted.vcf')
+  const [phoneBusy, setPhoneBusy] = useState(false)
+  const [phoneErr, setPhoneErr] = useState(null)
+  const [params, setParams] = useSearchParams()
+  const autoFired = useRef(false)
 
+  /* diff preview — same matching rules as the commit */
   const analyzed = useMemo(() => {
     if (!rows) return null
     return rows.map(r => {
-      const ex = contacts.find(c => c.name.trim().toLowerCase() === r.name.trim().toLowerCase())
+      const ex = matchExisting(contacts, r)
       if (!ex) return { ...r, status: 'new' }
       const diff = (r.phone && r.phone !== ex.phone) || (r.email && r.email !== ex.email) || (r.org && r.org !== ex.company) || (r.bday && r.bday !== ex.birthday)
       return { ...r, status: diff ? 'update' : 'skip', existing: ex }
@@ -75,15 +83,78 @@ export default function ImportPage() {
     const f = e.target.files?.[0]
     if (!f) return
     const reader = new FileReader()
-    reader.onload = () => setRaw(String(reader.result || ''))
+    reader.onload = () => { setRaw(String(reader.result || '')); setSource(f.name || 'upload.vcf') }
     reader.readAsText(f)
   }
+
+  /* ── phone contacts import ── */
+  const importFromPhone = async () => {
+    setPhoneErr(null)
+    if (!canReadPhoneContacts()) {
+      setPhoneErr('unavailable')
+      return
+    }
+    setPhoneBusy(true)
+    const res = await readPhoneContacts()
+    setPhoneBusy(false)
+    if (!res.ok) {
+      setPhoneErr(res.reason === 'denied' ? 'denied' : res.reason === 'cancelled' ? 'cancelled' : 'error')
+      return
+    }
+    if (!res.rows.length) { setPhoneErr('empty'); return }
+    setRows(res.rows)
+    setRaw('')
+    setSource(res.source === 'picker' ? 'chrome-contact-picker' : 'phone-contacts')
+    toast(`📇 Found ${res.rows.length} contact(s) on your phone`)
+  }
+
+  /* /import?phone=1 — deep-link from the Contacts page */
+  useEffect(() => {
+    if (params.get('phone') === '1' && !autoFired.current) {
+      autoFired.current = true
+      importFromPhone()
+      params.delete('phone')
+      setParams(params, { replace: true })
+    }
+  }, [])
 
   return (
     <div className="max-w-[1000px] mx-auto">
       <SectionHead kicker="Data in / out" title="Import & Export"
-        sub="Paste or upload a .vcf file — the scanner parses contacts and shows a diff before anything is written." />
+        sub="From your phone, a .vcf file, or pasted vCards — every import shows a diff before anything is written, and stays one-click reversible." />
 
+      {/* ── phone contacts ── */}
+      <Card className="p-5 mb-4">
+        <div className="flex items-start gap-3 flex-wrap">
+          <div className="w-10 h-10 rounded-xl grid place-items-center flex-none" style={{ background: 'rgba(52,211,153,.15)', color: '#34d399' }}>
+            <Smartphone size={18} />
+          </div>
+          <div className="flex-1 min-w-[240px]">
+            <h3 className="font-bold text-[14.5px] inline-flex items-center gap-2">From your phone
+              {phoneContactsAvailable() && <Pill color="#34d399">Android</Pill>}
+              {!phoneContactsAvailable() && contactPickerAvailable() && <Pill color="#38bdf8">Contact picker</Pill>}
+            </h3>
+            <div className="text-[12px] mt-1 leading-relaxed" style={{ color: 'var(--muted)' }}>{readHint()}</div>
+            {phoneErr && (
+              <div className="text-[11.5px] mt-1.5 inline-flex items-center gap-1.5" style={{ color: '#fbbf24' }}>
+                <Info size={12} />
+                {phoneErr === 'denied' && 'Permission denied — allow Contacts access in Android Settings → Apps → Personal CRM.'}
+                {phoneErr === 'unavailable' && 'No phone contact access here. Install the Android app, or drop a .vcf file below.'}
+                {phoneErr === 'cancelled' && 'Picker closed without selecting anyone.'}
+                {phoneErr === 'empty' && 'No contacts with a name were found.'}
+                {phoneErr === 'error' && 'Could not read phone contacts.'}
+              </div>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <button className="btn btn-primary btn-sm" disabled={phoneBusy || !canReadPhoneContacts()} onClick={importFromPhone}>
+              <ContactRound size={13} /> {phoneBusy ? 'Reading…' : 'Import from phone'}
+            </button>
+          </div>
+        </div>
+      </Card>
+
+      {/* ── vCard scanner ── */}
       <Card className="p-5">
         <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
           <h3 className="font-bold text-[14.5px] inline-flex items-center gap-2"><ScanLine size={16} style={{ color: 'var(--i2)' }} /> vCard scanner</h3>
@@ -92,14 +163,14 @@ export default function ImportPage() {
               <Upload size={13} /> Upload .vcf
               <input type="file" accept=".vcf,text/vcard,text/plain" className="hidden" onChange={onFile} />
             </label>
-            <button className="btn btn-ghost btn-sm" onClick={() => { setRaw(SAMPLE); setRows(null) }}>Load sample</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setRaw(SAMPLE); setRows(null); setSource('sample.vcf') }}>Load sample</button>
           </div>
         </div>
         <textarea className="input font-mono" style={{ fontSize: 12 }} rows={8} placeholder="Paste vCard 3.0 content here (BEGIN:VCARD …)"
-          value={raw} onChange={e => { setRaw(e.target.value); setRows(null) }} />
+          value={raw} onChange={e => { setRaw(e.target.value); setRows(null); setSource('pasted.vcf') }} />
         <div className="flex justify-between items-center mt-3 flex-wrap gap-2">
           <span className="text-[12px]" style={{ color: 'var(--faint)' }}>{raw ? `${(raw.match(/BEGIN:VCARD/gi) || []).length} card(s) detected` : 'Supports vCard 2.1 / 3.0 / 4.0'}</span>
-          <button className="btn btn-primary btn-sm" disabled={!raw.trim()}
+          <button className="btn btn-primary btn-sm" disabled={!(raw || '').trim()}
             onClick={() => { const r = parseVcf(raw); setRows(r); r.length ? toast(`Parsed ${r.length} contact(s)`) : toast('No parsable vCards found', 'warn') }}>
             <ScanLine size={13} /> Scan
           </button>
@@ -109,7 +180,7 @@ export default function ImportPage() {
       {analyzed && (
         <Card className="p-5 mt-4 fadein">
           <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
-            <h3 className="font-bold text-[14.5px]">Preview diff</h3>
+            <h3 className="font-bold text-[14.5px]">Preview diff <span className="text-[11px] font-semibold ml-1.5" style={{ color: 'var(--faint)' }}>from {source}</span></h3>
             <div className="flex gap-2">
               <Pill color="#34d399">{counts.new} new</Pill>
               <Pill color="#fbbf24">{counts.update} update</Pill>
@@ -138,7 +209,12 @@ export default function ImportPage() {
           </div>
           <div className="flex justify-end mt-4">
             <button className="btn btn-primary" disabled={counts.new + counts.update === 0}
-              onClick={() => { commitImport(analyzed, todayISO() + '-import.vcf'); setRaw(''); setRows(null); toast('Import complete') }}>
+              onClick={() => {
+                commitImport(analyzed, todayISO() + '-' + source,
+                  source === 'phone-contacts' || source === 'chrome-contact-picker'
+                    ? { rel: 'acquaintance', groupId: null } : {})
+                setRaw(''); setRows(null); toast('Import complete')
+              }}>
               <FileUp size={14} /> Import {counts.new + counts.update} contact(s)
             </button>
           </div>
