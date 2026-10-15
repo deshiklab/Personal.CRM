@@ -191,7 +191,7 @@ export default function GlobalSearch() {
         </div>
 
         {/* type filters */}
-        <div className="flex gap-1.5 px-4 pt-3 flex-wrap">
+        <div className="flex gap-1.5 px-4 pt-3 overflow-x-auto toolbar-row">
           <button className={`chip chip-btn ${filter === 'all' ? 'on' : ''}`} onClick={() => setFilter('all')}>All</button>
           {TYPES.map(t => (
             <button key={t.id} className={`chip chip-btn ${filter === t.id ? 'on' : ''}`} onClick={() => setFilter(f => f === t.id ? 'all' : t.id)}>

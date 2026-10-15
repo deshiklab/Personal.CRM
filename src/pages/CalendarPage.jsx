@@ -12,7 +12,10 @@ const TYPE_LABEL = { meeting: 'Meeting', call: 'Call', 'follow-up': 'Follow-up',
 export default function CalendarPage() {
   const { events, gcal, moveEvent, contactById } = useCrm()
   const [params, setParams] = useSearchParams()
-  const [view, setView] = useState('month')
+  // phones default to the week view — the month grid is a pinch-happy mess at 360px
+  const [view, setView] = useState(() => {
+    try { return typeof matchMedia === 'function' && matchMedia('(max-width: 640px)').matches ? 'week' : 'month' } catch { return 'month' }
+  })
   const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d })
   const [newDate, setNewDate] = useState(null)   // open create modal on this date
   const [detail, setDetail] = useState(null)     // event object
@@ -178,7 +181,7 @@ function MonthView({ cursor, byDate, setNewDate, setDetail, dragId, setDragId, o
           const shown = chips.slice(0, 3)
           return (
             <div key={i}
-              className={cn('min-h-[104px] p-1.5 cursor-pointer transition-colors', overCell === iso && 'dragover')}
+              className={cn('min-h-[64px] sm:min-h-[104px] p-1 sm:p-1.5 cursor-pointer transition-colors', overCell === iso && 'dragover')}
               style={{ borderRight: (i + 1) % 7 ? '1px solid rgba(255,255,255,.05)' : 'none', borderBottom: '1px solid rgba(255,255,255,.05)', background: outside ? 'rgba(255,255,255,.012)' : 'transparent' }}
               onClick={() => setNewDate(iso)}
               {...dropHandlers(iso)}>

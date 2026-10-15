@@ -3,7 +3,7 @@ import { BookOpen, LayoutDashboard, Users, CheckSquare, Calendar, HeartHandshake
 import { useCrm } from '../store'
 import { daysUntil, tsRel } from '../lib'
 
-export default function Sidebar() {
+export default function Sidebar({ sheet = false }) {
   const { contacts, tasks, rules, gcal, followUpStatus, buildNotifications } = useCrm()
 
   const dueToday = tasks.filter(t => t.column !== 'done' && t.due && daysUntil(t.due) <= 0).length
@@ -34,11 +34,11 @@ export default function Sidebar() {
   ]
 
   return (
-    <aside className="w-[62px] lg:w-60 flex-none h-screen flex flex-col border-r" style={{ borderColor: 'var(--border)', background: 'var(--sidebg)' }}>
+    <aside className={sheet ? 'w-full h-full flex flex-col border-r' : 'hidden lg:flex w-60 flex-none h-screen flex-col border-r'} style={{ borderColor: 'var(--border)', background: 'var(--sidebg)' }}>
       <div className="h-16 flex items-center gap-3 px-3 lg:px-5 border-b" style={{ borderColor: 'var(--border)' }}>
         <div className="w-8 h-8 rounded-xl grid place-items-center text-[15px] font-black flex-none"
           style={{ background: 'linear-gradient(120deg,#818cf8,#38bdf8 55%,#34d399)', color: '#0a0c11', boxShadow: '0 4px 18px rgba(129,140,248,.35)' }}>⚡</div>
-        <div className="hidden lg:block leading-tight">
+        <div className={sheet ? 'leading-tight' : 'hidden lg:block leading-tight'}>
           <div className="text-[14px] font-extrabold tracking-tight">Personal CRM</div>
           <div className="text-[10.5px] font-semibold" style={{ color: 'var(--faint)' }}>BiTsCol workspace</div>
         </div>
@@ -52,17 +52,17 @@ export default function Sidebar() {
             style={({ isActive }) => isActive
               ? { background: 'rgba(129,140,248,.16)', color: 'var(--text)' }
               : { color: 'var(--muted)' }}>
-            <n.icon size={17} className="flex-none mx-auto lg:mx-0" />
-            <span className="hidden lg:inline flex-1">{n.label}</span>
+            <n.icon size={17} className={sheet ? 'flex-none' : 'flex-none mx-auto lg:mx-0'} />
+            <span className={sheet ? 'flex-1' : 'hidden lg:inline flex-1'}>{n.label}</span>
             {n.badge > 0 && (
-              <span className="hidden lg:inline text-[10.5px] font-extrabold rounded-full px-2 py-0.5"
+              <span className={sheet ? 'text-[10.5px] font-extrabold rounded-full px-2 py-0.5' : 'hidden lg:inline text-[10.5px] font-extrabold rounded-full px-2 py-0.5'}
                 style={{ background: n.tone + '22', color: n.tone }}>{n.badge}</span>
             )}
           </NavLink>
         ))}
       </nav>
 
-      <div className="p-3 hidden lg:block">
+      <div className={sheet ? 'p-3' : 'p-3 hidden lg:block'}>
         <div className="card p-3">
           <div className="text-[10.5px] font-bold uppercase tracking-[.08em] mb-2" style={{ color: 'var(--faint)' }}>Sync status</div>
           <div className="flex items-center gap-2 text-[12px] font-semibold" style={{ color: gcal.connected ? '#34d399' : '#fbbf24' }}>

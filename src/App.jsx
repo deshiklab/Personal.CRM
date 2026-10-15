@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import Topbar from './components/Topbar'
 import GlobalSearch from './components/GlobalSearch'
@@ -26,9 +27,13 @@ import FilesPage from './pages/FilesPage'
 import KnowledgeBase from './pages/KnowledgeBase'
 import ArticleEditor from './pages/ArticleEditor'
 import ReminderHost from './components/ReminderHost'
+import { BottomTabBar, Sheet } from './components/Mobile'
 
 export default function App() {
   const { lock, sessionUnlocked } = useCrm()
+  const [moreOpen, setMoreOpen] = useState(false)
+  const { pathname } = useLocation()
+  useEffect(() => { setMoreOpen(false) }, [pathname])
   /* pincode gate: setup is offered on FIRST launch (skippable), unlock is
      required every start (in-memory session, auto-relocks when idle) */
   if (!lock) return <LockScreen mode="setup" />
@@ -38,7 +43,7 @@ export default function App() {
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Topbar />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 pb-28 lg:pb-6">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/contacts" element={<Contacts />} />
@@ -64,6 +69,10 @@ export default function App() {
           </Routes>
         </main>
       </div>
+      <BottomTabBar moreOpen={moreOpen} onMore={() => setMoreOpen(o => !o)} />
+      <Sheet open={moreOpen} onClose={() => setMoreOpen(false)} title="All sections">
+        <Sidebar sheet />
+      </Sheet>
       <GlobalSearch />
       <QuickCapture />
       <ReminderHost />

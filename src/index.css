@@ -145,3 +145,36 @@ select.input option{background:#12151d;color:var(--text)}
 [data-theme="light"] .seg button.on{color:var(--text);background:rgba(129,140,248,.20)}
 [data-theme="light"] .chip.on{color:var(--text)}
 [data-theme="light"] aside nav a[style]{color:var(--text)}
+
+/* ── mobile usability (WS-7) ─────────────────────────────── */
+/* 44px minimum tap targets below lg */
+@media (max-width: 1023px){
+  .icon-btn{min-width:44px;min-height:44px}
+  .btn{min-height:44px}
+  .btn-sm{min-height:44px;padding:8px 14px}
+  .chip{min-height:34px;padding:7px 13px}
+  .chip-btn{min-height:38px}
+}
+/* bottom tab bar with safe-area clearance */
+.bottom-tabs{position:fixed;left:0;right:0;bottom:0;z-index:80;display:flex;align-items:stretch;
+  background:var(--topbg);backdrop-filter:blur(12px);border-top:1px solid var(--border);
+  padding-bottom:env(safe-area-inset-bottom)}
+/* quick-capture FAB clears the bottom bar */
+@media (max-width: 767px){
+  .fab-raise{bottom:calc(72px + env(safe-area-inset-bottom))!important}
+}
+/* sheet: bottom sheet on phones, centered panel on desktop */
+.sheet-panel{display:flex;flex-direction:column;max-height:88vh;background:var(--panel);
+  border:1px solid var(--border);border-radius:20px 20px 0 0;box-shadow:0 -18px 50px rgba(0,0,0,.45)}
+@media (min-width: 768px){
+  .sheet-panel{border-radius:20px;max-height:82vh;box-shadow:0 18px 50px rgba(0,0,0,.45)}
+}
+.sheet-handle{width:38px;height:4px;border-radius:999px;background:var(--border2);margin:8px auto 0}
+/* horizontally scrolling toolbar/chip rows */
+.toolbar-row{overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;flex-wrap:nowrap}
+.toolbar-row::-webkit-scrollbar{display:none}
+/* detail modals: full-screen on phones (all Modal consumers migrate at once) */
+@media (max-width: 767px){
+  .modal-wrap{padding:0!important;align-items:stretch!important}
+  .modal-panel{max-width:100%!important;min-height:100%;border-radius:0!important;border:none!important}
+}

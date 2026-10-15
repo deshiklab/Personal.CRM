@@ -180,7 +180,7 @@ export default function Contacts() {
         </div>
       )}
 
-      <div className="card overflow-hidden overflow-x-auto">
+      <div className="card overflow-hidden overflow-x-auto hidden md:block">
         <table className="table min-w-[760px]">
           <thead><tr>
             <th style={{ width: 34 }}>
@@ -244,6 +244,43 @@ export default function Contacts() {
           </tbody>
         </table>
         {list.length === 0 && <Empty icon={Users} title="No contacts match">Try clearing filters.</Empty>}
+      </div>
+
+      {/* phone: stacked contact cards — tap opens the full-screen drawer */}
+      <div className="md:hidden flex flex-col gap-2" data-testid="contacts-cards">
+        {list.map(c => {
+          const st = followUpStatus(c)
+          const cgs = contactGroupIds(c)
+          return (
+            <div key={c.id} className="card p-3.5 cursor-pointer" data-testid={`ccard-${c.id}`} onClick={() => setOpenId(c.id)}>
+              <div className="flex items-start gap-3">
+                <Avatar name={c.name} size={38} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <div className="font-semibold text-[13.5px] truncate flex-1">{c.name}</div>
+                    <button className="icon-btn !w-8 !h-8" title={c.starred ? 'Unstar' : 'Star'}
+                      onClick={e => { e.stopPropagation(); crm.toggleStar(c.id) }}>
+                      <Star size={13} style={{ color: c.starred ? '#fbbf24' : 'var(--faint)' }} fill={c.starred ? '#fbbf24' : 'none'} />
+                    </button>
+                  </div>
+                  <div className="text-[11.5px] truncate" style={{ color: 'var(--faint)' }}>{[c.role, c.company].filter(Boolean).join(' · ') || '—'}</div>
+                  <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                    <Pill color={ST_TONE[st.state]}>{ST_LABEL[st.state]}{st.state === 'overdue' ? ` +${st.overdueBy}d` : ''}</Pill>
+                    <span className="text-[11px]" style={{ color: 'var(--muted)' }}>{relDay(c.lastContact)}</span>
+                    {cgs.slice(0, 1).map(gid => groupById[gid] && <Pill key={gid} color={groupById[gid].color}>{groupById[gid].name}</Pill>)}
+                    {c.tags.slice(0, 2).map(tid => <TagPill key={tid} tag={crm.tagById[tid]} small />)}
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5 flex-none">
+                  <button className="icon-btn !w-9 !h-9" title="Edit contact"
+                    onClick={e => { e.stopPropagation(); setEditId(c.id) }}><Pencil size={13} /></button>
+                  <button className="icon-btn !w-9 !h-9" title="Delete contact" style={{ color: '#fb7185' }}
+                    onClick={e => { e.stopPropagation(); askDelete([c.id]) }}><Trash2 size={13} /></button>
+                </div>
+              </div>
+            </div>
+          )
+        })}
       </div>
 
       <Drawer open={!!open} onClose={() => setOpenId(null)}>

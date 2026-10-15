@@ -7,6 +7,7 @@ import {
 import { useCrm } from '../store'
 import { SectionHead, Avatar, DueBadge, Modal, Field, TagPill, PRIORITY_COLORS, CsvButton } from '../components/ui'
 import RemindMeRow from '../components/RemindMeRow'
+import { useIsMobile, ToolbarRow } from '../components/Mobile'
 import { cn, tsRel } from '../lib'
 
 const COLUMNS = [
@@ -25,6 +26,8 @@ export default function Tasks() {
   const [detailId, setDetailId] = useState(null)
   const [dragId, setDragId] = useState(null)
   const [overCol, setOverCol] = useState(null)
+  const isPhone = useIsMobile(639)
+  const [phoneCol, setPhoneCol] = useState('todo')
 
   /* advanced filtering */
   const [q, setQ] = useState('')
@@ -108,12 +111,27 @@ export default function Tasks() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 flex-1 items-start">
-        {COLUMNS.map(col => {
+      {isPhone && (
+        <ToolbarRow className="mb-3" data-testid="task-col-picker">
+          {COLUMNS.map(c => {
+            const n = tasks.filter(t => t.column === c.id).length
+            return (
+              <button key={c.id} className={`chip chip-btn ${phoneCol === c.id ? 'on' : ''}`}
+                data-testid={`colpick-${c.id}`} onClick={() => setPhoneCol(c.id)}>
+                <span className="w-2 h-2 rounded-full" style={{ background: c.color }} /> {c.name} · {n}
+              </button>
+            )
+          })}
+        </ToolbarRow>
+      )}
+      <div className={isPhone
+        ? 'flex gap-3 flex-1 items-start overflow-x-auto snap-x snap-mandatory pb-2'
+        : 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 flex-1 items-start'}>
+        {(isPhone ? COLUMNS.filter(c => c.id === phoneCol) : COLUMNS).map(col => {
           const items = visible.filter(t => t.column === col.id)
           return (
             <div key={col.id}
-              className={cn('rounded-2xl p-2.5 min-h-[120px] transition-colors', overCol === col.id && 'dragover')}
+              className={cn('rounded-2xl p-2.5 min-h-[120px] transition-colors', isPhone && 'flex-1 min-w-full snap-start', overCol === col.id && 'dragover')}
               style={{ background: 'rgba(255,255,255,.025)' }}
               onDragOver={e => { e.preventDefault(); setOverCol(col.id) }}
               onDragLeave={() => setOverCol(c => c === col.id ? null : c)}
