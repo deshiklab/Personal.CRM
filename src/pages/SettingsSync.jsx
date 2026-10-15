@@ -1,8 +1,11 @@
-import { useState } from 'react'
-import { RefreshCw, Plus, Trash2, ShieldCheck, Globe, Calendar, Play, RotateCcw, CheckCircle2, X, KeyRound, Users, HardDrive, CloudDownload, Upload, CloudUpload, Loader2, Lock, ShieldAlert, Copy, ClipboardCheck, ListChecks, ChevronDown, ExternalLink } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { RefreshCw, Plus, Trash2, ShieldCheck, Globe, Calendar, Play, RotateCcw, CheckCircle2, X, KeyRound, Users, HardDrive, CloudDownload, Upload, CloudUpload, Loader2, Lock, ShieldAlert, Copy, ClipboardCheck, ListChecks, ChevronDown, ExternalLink, AlarmClock, Volume2, BellRing } from 'lucide-react'
 import { useCrm } from '../store'
 import { SectionHead, Card, Modal, Field, Toggle, Pill, Empty } from '../components/ui'
 import { tsRel } from '../lib'
+import { playSound } from '../lib/sound'
+import { SOUND_NAMES } from '../lib/reminders'
+import { notifyPermissionState, requestNotifyPermission } from '../lib/native-notify'
 
 const SOURCES = ['Google Contacts', 'Google Calendar', 'CardDAV (iCloud)', 'vCard file (.vcf)', 'Outlook (CSV)']
 const DIRECTIONS = ['Import', 'Export', 'Two-way']
@@ -30,6 +33,7 @@ export default function SettingsSync() {
       <RulesTable />
       <AuditLog />
       <AppLockCard />
+      <ReminderPrefsCard />
       <DangerZone />
     </div>
   )
@@ -684,6 +688,66 @@ function AppLockCard() {
           </div>
         </div>
       </Modal>
+    </Card>
+  )
+}
+
+/* ── Reminder bells & rings ── */
+function ReminderPrefsCard() {
+  const crm = useCrm()
+  const p = crm.reminderPrefs
+  const [perm, setPerm] = useState('checking…')
+  useEffect(() => { notifyPermissionState().then(setPerm) }, [])
+  return (
+    <Card className="p-5">
+      <h3 className="font-bold text-[13.5px] flex items-center gap-2"><AlarmClock size={14} style={{ color: '#34d399' }} /> Reminder bells & rings</h3>
+      <p className="text-[11.5px] mt-1 mb-3" style={{ color: 'var(--faint)' }}>
+        How reminders announce themselves when they fire — in-app ring, system notification, vibration.
+      </p>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[12.5px] font-medium">Reminders enabled</span>
+          <Toggle on={p.enabled !== false} onChange={v => crm.updateReminderPrefs({ enabled: v })} />
+        </div>
+        <div>
+          <div className="label">Ring sound</div>
+          <div className="flex gap-2">
+            <select className="input flex-1" value={p.sound || 'bell'} onChange={e => crm.updateReminderPrefs({ sound: e.target.value })}>
+              {Object.entries(SOUND_NAMES).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+            </select>
+            <button className="btn btn-ghost" data-testid="test-ring" onClick={() => { const ok = playSound(p.sound || 'bell', p.volume); crm.toast(ok ? '🔔 Test ring played' : 'Audio unavailable on this device', ok ? 'ok' : 'warn') }}>
+              <Volume2 size={13} /> Test ring
+            </button>
+          </div>
+        </div>
+        <div>
+          <div className="label flex justify-between"><span>Volume</span><span style={{ color: 'var(--faint)' }}>{Math.round((p.volume ?? 0.7) * 100)}%</span></div>
+          <input type="range" min="0" max="1" step="0.05" value={p.volume ?? 0.7} className="w-full accent-[#34d399]" onChange={e => crm.updateReminderPrefs({ volume: Number(e.target.value) })} />
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[12.5px] font-medium">Vibrate on ring (Android)</span>
+          <Toggle on={p.vibrate !== false} onChange={v => crm.updateReminderPrefs({ vibrate: v })} />
+        </div>
+        <div>
+          <div className="label">Default lead time</div>
+          <select className="input" value={p.leadDefault ?? 10} onChange={e => crm.updateReminderPrefs({ leadDefault: Number(e.target.value) })}>
+            <option value={0}>At the exact time</option>
+            <option value={5}>5 minutes before</option>
+            <option value={10}>10 minutes before</option>
+            <option value={30}>30 minutes before</option>
+            <option value={60}>1 hour before</option>
+          </select>
+        </div>
+        <div className="flex items-center gap-2 text-[11.5px] rounded-xl px-3 py-2" style={{ background: 'rgba(255,255,255,.03)' }}>
+          <BellRing size={12} style={{ color: perm === 'granted' ? '#34d399' : '#fbbf24' }} />
+          <span className="flex-1">System notification permission: <b>{perm}</b></span>
+          {perm !== 'granted' && (
+            <button className="btn btn-ghost btn-sm" onClick={async () => { const s = await requestNotifyPermission(); setPerm(s); crm.toast(s === 'granted' ? 'Permission granted' : 'Permission not granted', s === 'granted' ? 'ok' : 'warn') }}>
+              Allow
+            </button>
+          )}
+        </div>
+      </div>
     </Card>
   )
 }

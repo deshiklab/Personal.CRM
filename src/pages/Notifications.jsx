@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, CheckSquare, HeartHandshake, Cake, Calendar, ShieldAlert, Check, Clock, X, RotateCcw, PlusSquare, BellRing, History, StickyNote } from 'lucide-react'
+import { Bell, CheckSquare, HeartHandshake, Cake, Calendar, ShieldAlert, Check, Clock, X, RotateCcw, PlusSquare, BellRing, History, StickyNote, AlarmClock, Repeat, Trash2, Plus } from 'lucide-react'
 import { useCrm } from '../store'
-import { SectionHead, Card, Stat, Avatar, Pill, Toggle, Empty, CsvButton } from '../components/ui'
+import { SectionHead, Card, Stat, Avatar, Pill, Toggle, Empty, CsvButton, Modal, Field } from '../components/ui'
 import { todayISO, daysAheadISO } from '../lib'
+import { dueSoonLabel, REPEATS, SOUND_NAMES } from '../lib/reminders'
 
 const TYPES = {
   task:       { label: 'Tasks',     icon: CheckSquare,     color: '#38bdf8' },
@@ -11,6 +12,7 @@ const TYPES = {
   birthday:   { label: 'Birthdays', icon: Cake,            color: '#f472b6' },
   event:      { label: 'Events',    icon: Calendar,        color: '#a78bfa' },
   note:       { label: 'Note reminders', icon: StickyNote, color: '#fbbf24' },
+  remind:     { label: 'Reminders', icon: AlarmClock,      color: '#34d399' },
   system:     { label: 'System',    icon: ShieldAlert,     color: '#fbbf24' },
 }
 const PRIO_COLOR = { high: '#fb7185', med: '#fbbf24', low: '#94a3b8' }
@@ -19,8 +21,9 @@ export default function Notifications() {
   const crm = useCrm()
   const { buildNotifications, markAllNotifsRead, notifPrefs } = crm
   const [filter, setFilter] = useState('all')
+  const [newRem, setNewRem] = useState(false)
 
-  const all = useMemo(() => buildNotifications(), [crm.contacts, crm.tasks, crm.events, crm.audit, crm.notifState, crm.notifPrefs])
+  const all = useMemo(() => buildNotifications(), [crm.contacts, crm.tasks, crm.events, crm.audit, crm.notifState, crm.notifPrefs, crm.reminders])
   const active = all.filter(n => n.active)
   const unread = active.filter(n => !n.read)
   const snoozed = all.filter(n => n.enabled && n.snoozedUntil && !n.dismissed)
@@ -36,6 +39,7 @@ export default function Notifications() {
       <SectionHead kicker="Beyond the core · 2" title="Notification Center"
         sub="One inbox for task due-dates, follow-up nudges, birthdays, events and sync conflicts — resolve items at the source and they clear themselves."
         right={<div className="flex items-center gap-2">
+          <button className="btn btn-primary btn-sm" data-testid="new-reminder-btn" onClick={() => setNewRem(true)}><Plus size={13} /> New reminder</button>
           <CsvButton filename="notifications.csv" rows={crm.buildNotifications()} headers={[
             { label: 'Type', get: r => r.type }, { label: 'Priority', get: r => r.priority },
             { label: 'Title', get: r => r.title }, { label: 'Detail', get: r => r.body },
@@ -78,6 +82,9 @@ export default function Notifications() {
 
         <PrefsCard mutedTypes={mutedTypes} />
       </div>
+
+      <ScheduledReminders onNew={() => setNewRem(true)} />
+      <NewReminderModal open={newRem} onClose={() => setNewRem(false)} />
     </div>
   )
 }
@@ -139,6 +146,15 @@ function NotifCard({ n, snoozed, dismissedCard }) {
               </>
             )}
             {n.type === 'event' && <button className="btn btn-primary btn-sm" onClick={openEntity}><Calendar size={12} /> Open in calendar</button>}
+            {n.type === 'remind' && (() => {
+              const rid = n.key.startsWith('rem-') ? n.key.slice(4) : null
+              return (
+                <>
+                  <button className="btn btn-primary btn-sm" disabled={!rid} onClick={() => { touch(); rid && crm.completeReminder(rid) }}><Check size={12} /> Mark done</button>
+                  <button className="btn btn-ghost btn-sm" disabled={!rid} onClick={() => { touch(); rid && crm.snoozeReminder(rid, 10) }}><Clock size={12} /> 10m</button>
+                </>
+              )
+            })()}
             {n.type === 'system' && (
               <button className="btn btn-primary btn-sm" onClick={openEntity}><History size={12} /> Review conflict</button>
             )}
@@ -196,5 +212,104 @@ function PrefsCard({ mutedTypes }) {
       )}
       <button className="btn btn-ghost btn-sm w-full mt-4" onClick={testPush}><BellRing size={13} /> Send test notification</button>
     </Card>
+  )
+}
+
+/* ── scheduled reminders library: upcoming / fired history, quick actions ── */
+function ScheduledReminders({ onNew }) {
+  const crm = useCrm()
+  const now = Date.now()
+  const sorted = [...crm.reminders].sort((a, b) => (a.at || '').localeCompare(b.at || ''))
+  const upcoming = sorted.filter(r => r.status !== 'done' && new Date(r.at).getTime() >= now - 864e5)
+  const history = sorted.filter(r => r.status === 'done' || new Date(r.at).getTime() < now - 864e5)
+
+  return (
+    <Card className="p-4 mt-5">
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <AlarmClock size={15} style={{ color: '#34d399' }} />
+        <h3 className="font-bold text-[13.5px] flex-1">Scheduled reminders</h3>
+        <button className="btn btn-ghost btn-sm" onClick={onNew}><Plus size={12} /> New reminder</button>
+      </div>
+      {sorted.length === 0 && (
+        <Empty icon={AlarmClock} title="No reminders yet">
+          Set them from a task, event or contact — or create a standalone one above.
+        </Empty>
+      )}
+      {upcoming.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          {upcoming.map(r => (
+            <div key={r.id} data-testid={`sched-${r.id}`} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5" style={{ background: 'rgba(255,255,255,.03)' }}>
+              <AlarmClock size={13} style={{ color: r.status === 'fired' ? '#fb7185' : '#34d399' }} className="flex-none" />
+              <div className="min-w-0 flex-1">
+                <div className="text-[12.5px] font-semibold truncate">{r.title}</div>
+                <div className="text-[11px]" style={{ color: 'var(--faint)' }}>
+                  {String(r.at).replace('T', ' ')} · {dueSoonLabel(r.at)}
+                  {r.repeat !== 'none' && <> · <Repeat size={9} className="inline" /> {REPEATS[r.repeat] || r.repeat}</>}
+                  {r.status === 'fired' && <span style={{ color: '#fb7185' }}> · fired</span>}
+                  {r.refType !== 'custom' && <> · on {r.refType}</>}
+                </div>
+              </div>
+              <button className="btn btn-ghost btn-sm" onClick={() => crm.snoozeReminder(r.id, 10)} title="Snooze 10 minutes"><Clock size={11} /> 10m</button>
+              <button className="icon-btn !w-7 !h-7" title="Mark done" onClick={() => crm.completeReminder(r.id)}><Check size={12} /></button>
+              <button className="icon-btn !w-7 !h-7" title="Delete" onClick={() => crm.deleteReminder(r.id)}><Trash2 size={12} /></button>
+            </div>
+          ))}
+        </div>
+      )}
+      {history.length > 0 && (
+        <>
+          <div className="text-[10.5px] font-bold uppercase tracking-[.09em] mt-4 mb-1.5" style={{ color: 'var(--faint)' }}>History</div>
+          <div className="flex flex-col gap-1 opacity-70">
+            {history.slice(-8).reverse().map(r => (
+              <div key={r.id} className="flex items-center gap-2 text-[11.5px] px-3 py-1.5">
+                <Check size={11} className="flex-none" style={{ color: '#34d399' }} />
+                <span className="flex-1 truncate">{r.title}</span>
+                <span style={{ color: 'var(--faint)' }}>{String(r.at).replace('T', ' ')}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </Card>
+  )
+}
+
+function NewReminderModal({ open, onClose }) {
+  const crm = useCrm()
+  const [f, setF] = useState({ title: '', body: '', at: '', repeat: 'none', sound: '' })
+  const set = (k, v) => setF(x => ({ ...x, [k]: v }))
+  return (
+    <Modal open={open} onClose={onClose} title="New reminder">
+      <div className="flex flex-col gap-4">
+        <Field label="Title *"><input className="input" value={f.title} onChange={e => set('title', e.target.value)} placeholder="e.g. Call the dentist" /></Field>
+        <Field label="Note (optional)"><input className="input" value={f.body} onChange={e => set('body', e.target.value)} placeholder="Extra detail…" /></Field>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="When *"><input className="input" type="datetime-local" value={f.at} onChange={e => set('at', e.target.value)} /></Field>
+          <Field label="Repeat">
+            <select className="input" value={f.repeat} onChange={e => set('repeat', e.target.value)}>
+              {Object.entries(REPEATS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+            </select>
+          </Field>
+        </div>
+        <Field label="Sound">
+          <select className="input" value={f.sound} onChange={e => set('sound', e.target.value)}>
+            <option value="">Default ({SOUND_NAMES[crm.reminderPrefs.sound] || 'Bell'})</option>
+            {Object.entries(SOUND_NAMES).map(([k, l]) => <option key={k} value={k === 'silent' ? 'silent' : k}>{l}</option>)}
+          </select>
+        </Field>
+      </div>
+      <div className="flex justify-end gap-2 mt-6">
+        <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+        <button className="btn btn-primary" disabled={!f.title.trim() || !f.at}
+          onClick={() => {
+            crm.addReminder({ refType: 'custom', refId: null, title: f.title.trim(), body: f.body, at: f.at, repeat: f.repeat, sound: f.sound || undefined })
+            crm.toast('⏰ Reminder set')
+            setF({ title: '', body: '', at: '', repeat: 'none', sound: '' })
+            onClose()
+          }}>
+          <AlarmClock size={14} /> Set reminder
+        </button>
+      </div>
+    </Modal>
   )
 }

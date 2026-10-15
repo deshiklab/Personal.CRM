@@ -8,6 +8,8 @@ import * as gs from './lib/gistsync'
 import { normalizeNote, isTrashExpired, advanceReminder, TRASH_RETENTION_DAYS } from './lib/notes'
 import { matchExisting } from './lib/contacts'
 import { deleteBlob } from './lib/filestore'
+import { makeReminder, afterFire, snoozePatch } from './lib/reminders'
+import { scheduleNative, cancelNative, notifyNow } from './lib/native-notify'
 
 const KEY = 'pcrm-v1'
 const load = () => { try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s) } catch {} return null }
@@ -37,6 +39,8 @@ export function CrmProvider({ children }) {
   const [noteLabels, setNoteLabels] = useState(init?.noteLabels || seed.NOTE_LABELS)
   const [files, setFiles]         = useState(init?.files     || [])
   const [devices, setDevices]     = useState(init?.devices   || [])
+  const [reminders, setReminders] = useState(init?.reminders || [])
+  const [reminderPrefs, setReminderPrefs] = useState(init?.reminderPrefs || { sound: 'bell', volume: 0.7, vibrate: true, enabled: true, leadDefault: 10 })
   const [tags, setTags]           = useState(init?.tags      || seed.TAGS)
   const [groups, setGroups]       = useState(init?.groups    || seed.GROUPS)
   const [rules, setRules]         = useState(init?.rules     || seed.SYNC_RULES)
@@ -53,7 +57,7 @@ export function CrmProvider({ children }) {
   })
   const [emails, setEmails]       = useState(init?.emails    || [])
   const [notifState, setNotifState] = useState(init?.notifState || {})
-  const [notifPrefs, setNotifPrefs] = useState(init?.notifPrefs || { task: true, 'follow-up': true, birthday: true, event: true, system: true, note: true })
+  const [notifPrefs, setNotifPrefs] = useState(init?.notifPrefs || { task: true, 'follow-up': true, birthday: true, event: true, system: true, note: true, remind: true })
   const [widgetPrefs, setWidgetPrefs] = useState(init?.widgetPrefs || { order: DEFAULT_WIDGET_ORDER, hidden: [] })
   const [toasts, setToasts]       = useState([])
   /* google workspace (8b/live): clientId persisted, token in memory only */
@@ -88,11 +92,11 @@ export function CrmProvider({ children }) {
   useEffect(() => {
     try {
       localStorage.setItem(KEY, JSON.stringify({
-        contacts, tasks, events, notes, noteLabels, files, devices, tags, groups, rules, audit,
+        contacts, tasks, events, notes, noteLabels, files, devices, reminders, reminderPrefs, tags, groups, rules, audit,
         activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock,
       }))
     } catch {}
-  }, [contacts, tasks, events, notes, noteLabels, files, devices, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock])
+  }, [contacts, tasks, events, notes, noteLabels, files, devices, reminders, reminderPrefs, tags, groups, rules, audit, activity, imports, relFreq, snoozes, carddav, gcal, notifState, notifPrefs, widgetPrefs, mailboxes, emails, googleClientId, driveState, webhooks, icsFeeds, syncState, gist, lock])
 
   /* ── toasts ── */
   const toast = (msg, tone = 'ok') => {
@@ -281,6 +285,61 @@ export function CrmProvider({ children }) {
   }
   const filesOfDevice = deviceId => files.filter(f => f.deviceId === deviceId)
 
+  /* ── reminders (alert engine data) ── */
+  const addReminder = data => {
+    const r = makeReminder(data, reminderPrefs)
+    setReminders(rs => [r, ...rs])
+    scheduleNative([r])
+    logAudit('user', 'Reminder set', r.title, r.at || 'no time')
+    logActivity(`Reminder set: "${r.title}"`, r.refType === 'contact' ? r.refId : null)
+    return r
+  }
+  const updateReminder = (id, patch) => {
+    setReminders(rs => rs.map(r => r.id === id ? { ...r, ...patch } : r))
+    const r = reminders.find(x => x.id === id)
+    if (r && patch.at !== undefined) {
+      cancelNative([id])
+      if (patch.at && (patch.status || r.status) === 'scheduled') scheduleNative([{ ...r, ...patch }])
+    }
+  }
+  const deleteReminder = id => {
+    cancelNative([id])
+    setReminders(rs => rs.filter(r => r.id !== id))
+    logAudit('user', 'Reminder deleted', reminders.find(r => r.id === id)?.title || id)
+  }
+  /* fired: repeating reminders advance to their next run, one-shots latch */
+  const fireReminder = id => {
+    setReminders(rs => rs.map(r => {
+      if (r.id !== id || r.status !== 'scheduled') return r
+      const next = afterFire(r)
+      if (next.status === 'scheduled') scheduleNative([{ ...r, ...next }])
+      return { ...r, ...next }
+    }))
+    const r = reminders.find(x => x.id === id)
+    if (r) notifyNow(r.title || 'Reminder', r.body || '')
+  }
+  const snoozeReminder = (id, minutes = 10) => {
+    setReminders(rs => rs.map(r => {
+      if (r.id !== id) return r
+      const next = snoozePatch(r, minutes)
+      scheduleNative([{ ...r, ...next }])
+      return { ...r, ...next }
+    }))
+    toast(`Snoozed ${minutes}m`)
+  }
+  const completeReminder = id => {
+    cancelNative([id])
+    setReminders(rs => rs.map(r => r.id === id ? { ...r, status: 'done' } : r))
+  }
+  const remindersFor = (refType, refId) => reminders.filter(r => r.refType === refType && r.refId === refId && r.status !== 'done')
+  const cancelRemindersFor = (refType, refId) => {
+    const doomed = reminders.filter(r => r.refType === refType && r.refId === refId).map(r => r.id)
+    if (!doomed.length) return
+    cancelNative(doomed)
+    setReminders(rs => rs.filter(r => !doomed.includes(r.id)))
+  }
+  const updateReminderPrefs = patch => setReminderPrefs(p => ({ ...p, ...patch }))
+
   /* ── tasks ── */
   const addTask = data => {
     const t = { id: uid(), column: 'todo', priority: 'med', due: null, contactId: null, tags: [], ...data }
@@ -295,10 +354,14 @@ export function CrmProvider({ children }) {
   const updateTask = (id, patch) => {
     const t = tasks.find(x => x.id === id)
     setTasks(ts => ts.map(x => x.id === id ? { ...x, ...patch } : x))
-    if (t && patch.column === 'done' && t.column !== 'done') { logActivity(`Task completed: ${t.title}`); fireWebhook('task_done', { title: t.title, contactId: t.contactId, due: t.due }) }
+    if (t && patch.column === 'done' && t.column !== 'done') {
+      cancelRemindersFor('task', id)   // done tasks don't ring
+      logActivity(`Task completed: ${t.title}`); fireWebhook('task_done', { title: t.title, contactId: t.contactId, due: t.due })
+    }
   }
   const deleteTask = id => {
     const t = tasks.find(x => x.id === id)
+    cancelRemindersFor('task', id)
     setTasks(ts => ts.filter(x => x.id !== id))
     if (t) { logAudit('user', 'Deleted task', t.title, `Column: ${t.column}`); toast('Task deleted', 'warn') }
   }
@@ -334,6 +397,7 @@ export function CrmProvider({ children }) {
   }
   const deleteEvent = id => {
     const e = events.find(x => x.id === id)
+    cancelRemindersFor('event', id)
     setEvents(es => es.filter(x => x.id !== id))
     if (e) logAudit('user', 'Deleted event', e.title, e.date)
   }
@@ -518,7 +582,7 @@ export function CrmProvider({ children }) {
 
   const buildBackup = () => JSON.stringify({
     app: 'personal-crm', version: 2, exportedAt: new Date().toISOString(),
-    data: { contacts, tasks, events, notes, noteLabels, files, devices, tags, groups, rules, relFreq, audit, activity, imports, snoozes, notifState, notifPrefs, widgetPrefs, mailboxes, emails },
+    data: { contacts, tasks, events, notes, noteLabels, files, devices, reminders, reminderPrefs, tags, groups, rules, relFreq, audit, activity, imports, snoozes, notifState, notifPrefs, widgetPrefs, mailboxes, emails },
   }, null, 2)
 
   const driveBackupNow = async () => {
@@ -551,6 +615,8 @@ export function CrmProvider({ children }) {
     if (Array.isArray(d.noteLabels)) setNoteLabels(d.noteLabels)
     if (Array.isArray(d.files)) setFiles(d.files)
     if (Array.isArray(d.devices)) setDevices(d.devices)
+    if (Array.isArray(d.reminders)) setReminders(d.reminders)
+    if (d.reminderPrefs) setReminderPrefs(p => ({ ...p, ...d.reminderPrefs }))
     setTags(d.tags || []); setGroups(d.groups || []); setRules(d.rules || [])
     if (d.relFreq) setRelFreq(d.relFreq); if (d.audit) setAudit(d.audit); if (d.activity) setActivity(d.activity)
     if (d.imports) setImports(d.imports); if (d.snoozes) setSnoozes(d.snoozes)
@@ -636,7 +702,7 @@ export function CrmProvider({ children }) {
 
   /* factory reset to a BLANK crm — PIN-confirmed; wipes everything incl. pincode */
   const blankState = () => ({
-    contacts: [], tasks: [], events: [], notes: [], noteLabels: [], files: [], devices: [], tags: [], groups: [], rules: [], audit: [],
+    contacts: [], tasks: [], events: [], notes: [], noteLabels: [], files: [], devices: [], reminders: [], tags: [], groups: [], rules: [], audit: [],
     activity: [], imports: [], relFreq: {}, snoozes: {}, carddav: null,
     gcal: { connected: false, email: null, lastSync: null },
     notifState: {}, notifPrefs, widgetPrefs,
@@ -672,7 +738,7 @@ export function CrmProvider({ children }) {
 
   /* ── multi-device sync: single personal-crm-sync.json in the user's Drive ── */
   const snapshotCore = () => ({
-    contacts, tasks, events, notes, noteLabels, files, devices, tags, groups, rules, relFreq, emails,
+    contacts, tasks, events, notes, noteLabels, files, devices, reminders, reminderPrefs, tags, groups, rules, relFreq, emails,
   })
   const applySyncSnapshot = d => {
     if (Array.isArray(d.contacts)) setContacts(d.contacts.map(normalizeContact))
@@ -682,6 +748,8 @@ export function CrmProvider({ children }) {
     if (Array.isArray(d.noteLabels)) setNoteLabels(d.noteLabels)
     if (Array.isArray(d.files)) setFiles(d.files)
     if (Array.isArray(d.devices)) setDevices(d.devices)
+    if (Array.isArray(d.reminders)) setReminders(d.reminders)
+    if (d.reminderPrefs) setReminderPrefs(p => ({ ...p, ...d.reminderPrefs }))
     if (Array.isArray(d.tags)) setTags(d.tags)
     if (Array.isArray(d.groups)) setGroups(d.groups)
     if (Array.isArray(d.rules)) setRules(d.rules)
@@ -1038,6 +1106,8 @@ export function CrmProvider({ children }) {
         return { ...n, remindAt: next }
       }))
     }
+    /* dismissing an alert reminder marks it done (snooze re-arms instead) */
+    if (on && key.startsWith('rem-')) completeReminder(key.slice(4))
     setNotifState(s => ({ ...s, [key]: { ...(s[key] || {}), dismissed: on } }))
   }
   const snoozeNotif = (key, days) => { setNotifState(s => ({ ...s, [key]: { ...(s[key] || {}), snoozedUntil: daysAheadISO(days) } })); toast(`Snoozed for ${days} day${days > 1 ? 's' : ''}`) }
@@ -1096,6 +1166,20 @@ export function CrmProvider({ children }) {
         priority: overdue ? 'high' : 'med', noteId: n.id, contactId: n.contactIds?.[0] || null, ts: n.remindAt,
       })
     })
+    reminders.forEach(r => {
+      if (r.status === 'done' || !r.at) return
+      const t = new Date(r.at).getTime()
+      if (isNaN(t) || t > Date.now() + 86400000) return
+      const overdue = t < Date.now()
+      list.push({
+        key: `rem-${r.id}`, type: 'remind', title: r.title || 'Reminder',
+        body: overdue
+          ? `Overdue · ${r.at.replace('T', ' ')}${r.repeat !== 'none' ? ` · repeats ${r.repeat}` : ''}`
+          : `At ${r.at.replace('T', ' ')}${r.repeat !== 'none' ? ` · repeats ${r.repeat}` : ''}`,
+        priority: overdue ? 'high' : 'med', reminderId: r.id,
+        contactId: r.refType === 'contact' ? r.refId : null, ts: r.at,
+      })
+    })
     audit.forEach(a => { if (a.status === 'warn') list.push({ key: `sync-${a.id}`, type: 'system', title: a.action, body: `${a.entity}${a.detail ? ` — ${a.detail}` : ''}`, priority: 'med', auditId: a.id, ts: a.ts }) })
 
     const PRIO = { high: 0, med: 1, low: 2 }
@@ -1114,6 +1198,8 @@ export function CrmProvider({ children }) {
     addContact, updateContact, toggleStar, markContacted, deleteContact, bulkDeleteContacts, bulkSetGroups, contactGroupIds, addNote, updateNote, deleteNote, duplicateNote, trashNote, restoreNote, purgeNote, toggleArchiveNote,
     addNoteLabel, updateNoteLabel, deleteNoteLabel,
     addFileMeta, updateFileMeta, deleteFile, touchDevice, filesOfDevice,
+    reminders, reminderPrefs, addReminder, updateReminder, deleteReminder, fireReminder, snoozeReminder, completeReminder,
+    remindersFor, cancelRemindersFor, updateReminderPrefs,
     addTask, moveTask, updateTask, deleteTask, duplicateTask, createFollowUpTask,
     addEvent, moveEvent, deleteEvent,
     addTag, updateTag, deleteTag, mergeTags, bulkTag,

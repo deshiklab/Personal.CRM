@@ -23,6 +23,7 @@ import IntegrationsPage from './pages/IntegrationsPage'
 import FollowUps from './pages/FollowUps'
 import Notifications from './pages/Notifications'
 import FilesPage from './pages/FilesPage'
+import ReminderHost from './components/ReminderHost'
 
 export default function App() {
   const { lock, sessionUnlocked } = useCrm()
@@ -61,6 +62,7 @@ export default function App() {
       </div>
       <GlobalSearch />
       <QuickCapture />
+      <ReminderHost />
       <ToastHost />
     </div>
   )

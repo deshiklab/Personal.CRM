@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { UserPlus, CalendarPlus, PlusSquare, Search, Sun, Moon, Download, Cloud, Loader2, CloudOff } from 'lucide-react'
+import { UserPlus, CalendarPlus, PlusSquare, Search, Sun, Moon, Download, Cloud, Loader2, CloudOff, BellRing, Check, Bell } from 'lucide-react'
 import { useCrm } from '../store'
 import { MONTHS, tsRel } from '../lib'
+import { dueSoonLabel } from '../lib/reminders'
 
 const TITLES = {
   '/': 'Dashboard',
@@ -50,6 +51,7 @@ export default function Topbar() {
         <div className="text-[11.5px] font-medium hidden sm:block" style={{ color: 'var(--faint)' }}>{dateStr}</div>
       </div>
       <div className="ml-auto flex items-center gap-2">
+        <BellMenu />
         {installEvt && (
           <button className="btn btn-ghost btn-sm" onClick={install} title="Install as an app (works offline)" style={{ color: 'var(--i2)' }}>
             <Download size={14} /><span className="hidden md:inline">Install</span>
@@ -93,5 +95,59 @@ export default function Topbar() {
         </button>
       </div>
     </header>
+  )
+}
+
+/* live reminders dropdown — next 5 up, quick-done, deep link to the center */
+function BellMenu() {
+  const crm = useCrm()
+  const navigate = useNavigate()
+  const [open, setOpen] = useState(false)
+  const box = useRef(null)
+  const upcoming = crm.reminders
+    .filter(r => r.status !== 'done' && r.at)
+    .sort((a, b) => (a.at || '').localeCompare(b.at || ''))
+    .slice(0, 5)
+  const active = crm.reminders.filter(r => r.status !== 'done' && r.at).length
+
+  useEffect(() => {
+    const onDoc = e => { if (open && box.current && !box.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [open])
+
+  return (
+    <div className="relative" ref={box}>
+      <button className="icon-btn" title="Upcoming reminders" onClick={() => setOpen(o => !o)}>
+        <BellRing size={15} style={active ? { color: '#fbbf24' } : undefined} />
+        {active > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-1 rounded-full text-[9px] font-black grid place-items-center"
+            style={{ background: '#fbbf24', color: '#0a0c11' }}>{active}</span>
+        )}
+      </button>
+      {open && (
+        <div className="panel absolute right-0 mt-2 w-[290px] p-2 z-50 fadein">
+          <div className="text-[10px] font-bold uppercase tracking-[.09em] px-2 py-1.5" style={{ color: 'var(--faint)' }}>Upcoming reminders</div>
+          {upcoming.length === 0 && (
+            <div className="text-[12px] px-2 py-3 text-center" style={{ color: 'var(--faint)' }}>
+              Nothing scheduled. Set reminders from tasks, events, notes or the inbox.
+            </div>
+          )}
+          {upcoming.map(r => (
+            <div key={r.id} className="flex items-start gap-2 rounded-xl px-2 py-2 hover:bg-white/[.05]">
+              <Bell size={12} className="flex-none mt-0.5" style={{ color: '#fbbf24' }} />
+              <div className="min-w-0 flex-1">
+                <div className="text-[12px] font-semibold truncate">{r.title || 'Reminder'}</div>
+                <div className="text-[10px]" style={{ color: 'var(--faint)' }}>{String(r.at).replace('T', ' ')} · {dueSoonLabel(r.at)}{r.repeat !== 'none' ? ` ↻` : ''}</div>
+              </div>
+              <button className="icon-btn !w-6 !h-6" title="Mark done" onClick={() => crm.completeReminder(r.id)}><Check size={11} /></button>
+            </div>
+          ))}
+          <button className="btn btn-ghost btn-sm w-full mt-1" onClick={() => { setOpen(false); navigate('/notifications') }}>
+            All reminders & inbox
+          </button>
+        </div>
+      )}
+    </div>
   )
 }

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { useCrm } from '../store'
 import { SectionHead, Avatar, DueBadge, Modal, Field, TagPill, PRIORITY_COLORS, CsvButton } from '../components/ui'
+import RemindMeRow from '../components/RemindMeRow'
 import { cn, tsRel } from '../lib'
 
 const COLUMNS = [
@@ -240,6 +241,7 @@ function TaskDetailModal({ t, onClose }) {
         <Field label="Due date">
           <input className="input" type="date" value={t.due || ''} onChange={e => updateTask(t.id, { due: e.target.value || null })} />
         </Field>
+        <RemindMeRow refType="task" refId={t.id} title={`Task: ${t.title}`} date={t.due} time="09:00" subtitle={contact ? `for ${contact.name}` : ''} />
         <Field label="Linked contact">
           <select className="input" value={t.contactId || ''} onChange={e => updateTask(t.id, { contactId: e.target.value || null })}>
             <option value="">None</option>

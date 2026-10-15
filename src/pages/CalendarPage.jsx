@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, CalendarPlus, Cake, Clock, Trash2, Link2, FileDown, ExternalLink } from 'lucide-react'
 import { useCrm } from '../store'
 import { SectionHead, Seg, Modal, Field, Avatar, Pill, EVENT_COLORS, Empty, CsvButton } from '../components/ui'
+import RemindMeRow from '../components/RemindMeRow'
 import { downloadICS, gcalTemplateUrl } from '../lib/ics'
 import { cn, isoDate, todayISO, monthMatrix, MONTHS, WEEKDAYS_S, addDays } from '../lib'
 
@@ -269,8 +270,8 @@ function DayView({ cursor, byDate, setNewDate, setDetail }) {
 }
 
 function EventModal({ iso, onClose }) {
-  const { addEvent, contacts, toast } = useCrm()
-  const empty = { title: '', type: 'meeting', time: '10:00', endTime: '10:30', contactId: '', location: '' }
+  const { addEvent, addReminder, contacts, toast } = useCrm()
+  const empty = { title: '', type: 'meeting', time: '10:00', endTime: '10:30', contactId: '', location: '', lead: '10' }
   const [f, setF] = useState(empty)
   useEffect(() => { if (iso) setF(empty) }, [iso])
   const set = (k, v) => setF(x => ({ ...x, [k]: v }))
@@ -298,11 +299,34 @@ function EventModal({ iso, onClose }) {
           <Field label="End"><input className="input" type="time" value={f.endTime} onChange={e => set('endTime', e.target.value)} /></Field>
         </div>
         <Field label="Location"><input className="input" value={f.location} onChange={e => set('location', e.target.value)} placeholder="Optional — café, office, video link…" /></Field>
+        <Field label="Reminder">
+          <select className="input" value={f.lead} onChange={e => set('lead', e.target.value)}>
+            <option value="">No reminder</option>
+            <option value="0">At start time</option>
+            <option value="10">10 min before</option>
+            <option value="30">30 min before</option>
+            <option value="60">1 hour before</option>
+            <option value="1440">1 day before</option>
+          </select>
+        </Field>
       </div>
       <div className="flex justify-end gap-2 mt-6">
         <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
         <button className="btn btn-primary" disabled={!f.title.trim()}
-          onClick={() => { addEvent({ title: f.title.trim(), type: f.type, time: f.time, endTime: f.endTime, contactId: f.contactId || null, location: f.location, date: iso }); toast('Event created'); onClose() }}>
+          onClick={() => {
+            const ev = addEvent({ title: f.title.trim(), type: f.type, time: f.time, endTime: f.endTime, contactId: f.contactId || null, location: f.location, date: iso })
+            if (f.lead !== '' && ev) {
+              const at = new Date(`${iso}T${f.time}`)
+              at.setMinutes(at.getMinutes() - Number(f.lead))
+              const pad2 = v => String(v).padStart(2, '0')
+              addReminder({
+                refType: 'event', refId: ev.id, title: `Event: ${ev.title}`,
+                body: `${iso} ${f.time}${f.location ? ` · ${f.location}` : ''}`,
+                at: `${at.getFullYear()}-${pad2(at.getMonth() + 1)}-${pad2(at.getDate())}T${pad2(at.getHours())}:${pad2(at.getMinutes())}`,
+              })
+            }
+            toast('Event created'); onClose()
+          }}>
           <CalendarPlus size={14} /> Create event
         </button>
       </div>
@@ -333,6 +357,9 @@ function EventDetail({ ev, onClose }) {
              title="Opens a pre-filled Google Calendar event — works with zero setup, any Google account">
             <ExternalLink size={12} /> Add to Google Calendar
           </a>
+        </div>
+        <div className="pt-1">
+          <RemindMeRow refType="event" refId={ev.id} title={`Event: ${ev.title}`} date={ev.date} time={ev.time} subtitle={ev.location || ''} />
         </div>
         {contact && (
           <div className="flex items-center gap-2 pt-1">

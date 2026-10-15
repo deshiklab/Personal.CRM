@@ -8,6 +8,7 @@ import { SectionHead, Avatar, TagPill, Pill, Modal, Drawer, Field, Empty, EVENT_
 import { relDay, fmtHuman, tsRel } from '../lib'
 import { contactGroupIds } from '../store'
 import PinConfirm from '../components/PinConfirm'
+import RemindMeRow from '../components/RemindMeRow'
 
 const ST_TONE = { overdue: '#fb7185', 'due-soon': '#fbbf24', ok: '#34d399', snoozed: '#94a3b8' }
 const ST_LABEL = { overdue: 'Overdue', 'due-soon': 'Due soon', ok: 'In touch', snoozed: 'Snoozed' }
@@ -357,6 +358,10 @@ function ContactDrawer({ contact: c, onOpen, onClose, onEdit, onDelete }) {
           style={{ color: '#fb7185', borderColor: '#fb718544' }}>
           <Trash2 size={14} /> Delete contact
         </button>
+      </div>
+
+      <div className="mt-4">
+        <RemindMeRow refType="contact" refId={c.id} title={`Remind: ${c.name}`} subtitle={c.phone || c.email || ''} />
       </div>
 
       <div className="card p-4 mt-5 flex flex-col gap-2.5 text-[13px]">
