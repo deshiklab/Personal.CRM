@@ -152,24 +152,38 @@ jobs:
             echo
             echo "Built from \`${GITHUB_SHA::7}\` on \`${GITHUB_REF_NAME}\`."
           } > /tmp/notes.md
-          if gh release view "$TAG" --json tagName > /dev/null 2>&1; then
+          # run_cmd <label> <cmd…> — capture output + exit code, surface failures as annotations
+          run_cmd() {
+            local label="$1"; shift
+            local out code
+            out="$("$@" 2>&1)"; code=$?
+            echo "--- [$label] exit=$code"
+            [ -n "$out" ] && printf '%s\n' "$out"
+            [ "$code" -ne 0 ] && echo "::warning::$label failed (exit $code): $(printf '%s' "$out" | head -c 500 | tr '\n' ' ')"
+            return 0
+          }
+          asset_id() { gh release view "$TAG" --json assets --jq ".assets[] | select(.name==\"personal-crm-${TAG}-debug.apk\") | .id" 2>/dev/null | head -1; }
+          run_cmd "gh auth status" gh auth status
+          BEFORE_ID="$(asset_id)"
+          echo "asset id before: ${BEFORE_ID:-<none>}"
+          if [ -n "$BEFORE_ID" ]; then
             echo "release $TAG exists → refreshing assets + notes"
-            gh release upload "$TAG" release-assets/*.apk --clobber; echo "upload_exit=$?"
-            gh release edit "$TAG" --title "Personal CRM ${VER} (${TAG})" --notes-file /tmp/notes.md; echo "edit_exit=$?"
+            run_cmd "release upload" gh release upload "$TAG" release-assets/*.apk --clobber
+            run_cmd "release edit" gh release edit "$TAG" --title "Personal CRM ${VER} (${TAG})" --notes-file /tmp/notes.md
           else
             echo "creating release $TAG"
-            gh release create "$TAG" release-assets/*.apk \
-              --target "$GITHUB_SHA" \
-              --title "Personal CRM ${VER} (${TAG})" \
-              --notes-file /tmp/notes.md \
-              --latest; echo "create_exit=$?"
+            run_cmd "release create" gh release create "$TAG" release-assets/*.apk --target "$GITHUB_SHA" --title "Personal CRM ${VER} (${TAG})" --notes-file /tmp/notes.md --latest
           fi
-          echo "--- release state:"
-          gh release view "$TAG" --json tagName,assets --jq '{tag:.tagName,assets:[.assets[]|{name:.name,size:.size}]}'
-          # fail the job only when the APK asset is genuinely missing from the release
-          if gh release view "$TAG" --json assets --jq '.assets[].name' | grep -q "^personal-crm-${TAG}-debug\.apk$"; then
-            echo "verified: APK asset present on $TAG"
-          else
+          AFTER_ID="$(asset_id)"
+          echo "asset id after: ${AFTER_ID:-<none>}"
+          gh release view "$TAG" --json tagName,assets --jq '{tag:.tagName,assets:[.assets[]|{name:.name,size:.size,id:.id}]}' 2>&1
+          # ── verification: the APK must exist, and on the update path it must be a NEW asset ──
+          if [ -z "$AFTER_ID" ]; then
             echo "::error::APK asset missing from release $TAG"
             exit 1
           fi
+          if [ -n "$BEFORE_ID" ] && [ "$BEFORE_ID" = "$AFTER_ID" ]; then
+            echo "::error::APK asset on release $TAG was NOT replaced (id $AFTER_ID unchanged) — the upload did not take effect"
+            exit 1
+          fi
+          echo "verified: APK asset present on $TAG (id $AFTER_ID)"
