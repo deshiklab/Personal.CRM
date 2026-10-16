@@ -5,9 +5,21 @@ name: Build Android APK
 # in GitHub → Actions, then download the APK artifact.
 on:
   workflow_dispatch:
+    inputs:
+      publish_release:
+        description: 'Also publish the APK as a GitHub Release asset'
+        type: boolean
+        default: false
+      release_tag:
+        description: 'Release tag to publish under (when publishing)'
+        type: string
+        default: 'v0.1.0'
   push:
     branches: [main, master, 'arena/**']
     paths: ['src/**', 'public/**', 'index.html', 'package.json', 'package-lock.json', 'capacitor.config.json', 'android/**', '.github/workflows/android.yml']
+
+permissions:
+  contents: write
 
 jobs:
   apk:
@@ -99,3 +111,35 @@ jobs:
           name: personal-crm-android-release
           path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
+
+      # ── publish the APK as a GitHub Release asset (opt-in via workflow_dispatch) ──
+      - name: Publish APK to GitHub Release
+        if: github.event_name == 'workflow_dispatch' && format('{0}', inputs.publish_release) == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          TAG="${{ inputs.release_tag }}"
+          VER="$(node -p "require('./package.json').version")"
+          SHA1="$(keytool -list -keystore android/debug.keystore -alias androiddebugkey -storepass android 2>/dev/null | grep -i 'SHA1:' | head -1 | sed 's/.*SHA1: *//')"
+          mkdir -p release-assets
+          cp android/app/build/outputs/apk/debug/app-debug.apk "release-assets/personal-crm-${TAG}-debug.apk"
+          if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
+            cp android/app/build/outputs/apk/release/app-release.apk "release-assets/personal-crm-${TAG}-release.apk"
+          fi
+          {
+            echo "### Personal CRM ${VER} (${TAG})"
+            echo
+            echo "Fully client-side personal CRM: contacts, Keep-class notes, tasks & calendar, files with nearby transfer, knowledge base, real reminders. Works offline; installable as a PWA."
+            echo
+            echo "- **Live PWA:** https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+            echo "- **APK:** debug build below (install over the previous one — same debug keystore, so upgrades work). Android 7+."
+            echo "- **Signing SHA-1** (use this for the Google Cloud *Android OAuth client*, package \`com.bitscol.personalcrm\`): \`${SHA1:-see the 'Show signing SHA-1' step of this run}\`"
+            echo
+            echo "Built from \`${GITHUB_SHA::7}\` on \`${GITHUB_REF_NAME}\`."
+          } > /tmp/notes.md
+          gh release create "$TAG" release-assets/*.apk \
+            --target "$GITHUB_SHA" \
+            --title "Personal CRM ${VER} (${TAG})" \
+            --notes-file /tmp/notes.md \
+            --latest || { gh release upload "$TAG" release-assets/*.apk --clobber; gh release edit "$TAG" --notes-file /tmp/notes.md; }
