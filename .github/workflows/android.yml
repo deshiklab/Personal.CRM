@@ -112,15 +112,24 @@ jobs:
           path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
 
-      # ── publish the APK as a GitHub Release asset (opt-in via workflow_dispatch) ──
+      # ── publish the APK as a GitHub Release asset ──
+      # Two ways to trigger:
+      #   • Actions → "Build Android APK" → Run workflow → tick "publish_release"
+      #   • a commit whose message starts with `release: <tag>` (e.g. `release: v0.1.0`)
       - name: Publish APK to GitHub Release
-        if: github.event_name == 'workflow_dispatch' && format('{0}', inputs.publish_release) == 'true'
+        if: >-
+          (github.event_name == 'workflow_dispatch' && format('{0}', inputs.publish_release) == 'true') ||
+          (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release:'))
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          TAG="${{ inputs.release_tag }}"
           VER="$(node -p "require('./package.json').version")"
+          TAG="${{ inputs.release_tag }}"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            TAG="$(printf '%s' "${{ github.event.head_commit.message }}" | head -1 | sed -E 's/^release:[[:space:]]*//; s/[[:space:]].*$//')"
+          fi
+          [ -n "$TAG" ] || TAG="v$VER"
           SHA1="$(keytool -list -keystore android/debug.keystore -alias androiddebugkey -storepass android 2>/dev/null | grep -i 'SHA1:' | head -1 | sed 's/.*SHA1: *//')"
           mkdir -p release-assets
           cp android/app/build/outputs/apk/debug/app-debug.apk "release-assets/personal-crm-${TAG}-debug.apk"
