@@ -122,16 +122,20 @@ jobs:
           (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release:'))
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
         run: |
-          set -e
+          set +e   # bookkeeping must not fail the build; verified explicitly at the end
           VER="$(node -p "require('./package.json').version")"
-          TAG="${{ inputs.release_tag }}"
+          TAG="v$VER"
           if [ "${{ github.event_name }}" = "push" ]; then
-            TAG="$(printf '%s' "${{ github.event.head_commit.message }}" | head -1 | sed -E 's/^release:[[:space:]]*//; s/[[:space:]].*$//')"
+            MSG_TAG="$(printf '%s' "${{ github.event.head_commit.message }}" | head -1 | sed -E 's/^release:[[:space:]]*//; s/[[:space:]].*$//')"
+            [ -n "$MSG_TAG" ] && TAG="$MSG_TAG"
+          else
+            [ -n "${{ inputs.release_tag }}" ] && TAG="${{ inputs.release_tag }}"
           fi
-          [ -n "$TAG" ] || TAG="v$VER"
           # keytool -v prints "SHA1: …"; non-verbose prints "Certificate fingerprint (SHA-1): …"
           SHA1="$(keytool -list -v -keystore android/debug.keystore -alias androiddebugkey -storepass android 2>/dev/null | grep -iE 'SHA-?1\)?:' | head -1 | sed -E 's/.*SHA-?1\)?:[[:space:]]*//')"
+          echo "tag=$TAG version=$VER sha1=${SHA1:-<none>}"
           mkdir -p release-assets
           cp android/app/build/outputs/apk/debug/app-debug.apk "release-assets/personal-crm-${TAG}-debug.apk"
           if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
@@ -148,8 +152,24 @@ jobs:
             echo
             echo "Built from \`${GITHUB_SHA::7}\` on \`${GITHUB_REF_NAME}\`."
           } > /tmp/notes.md
-          gh release create "$TAG" release-assets/*.apk \
-            --target "$GITHUB_SHA" \
-            --title "Personal CRM ${VER} (${TAG})" \
-            --notes-file /tmp/notes.md \
-            --latest || { gh release upload "$TAG" release-assets/*.apk --clobber; gh release edit "$TAG" --notes-file /tmp/notes.md; }
+          if gh release view "$TAG" --json tagName > /dev/null 2>&1; then
+            echo "release $TAG exists → refreshing assets + notes"
+            gh release upload "$TAG" release-assets/*.apk --clobber; echo "upload_exit=$?"
+            gh release edit "$TAG" --title "Personal CRM ${VER} (${TAG})" --notes-file /tmp/notes.md; echo "edit_exit=$?"
+          else
+            echo "creating release $TAG"
+            gh release create "$TAG" release-assets/*.apk \
+              --target "$GITHUB_SHA" \
+              --title "Personal CRM ${VER} (${TAG})" \
+              --notes-file /tmp/notes.md \
+              --latest; echo "create_exit=$?"
+          fi
+          echo "--- release state:"
+          gh release view "$TAG" --json tagName,assets --jq '{tag:.tagName,assets:[.assets[]|{name:.name,size:.size}]}'
+          # fail the job only when the APK asset is genuinely missing from the release
+          if gh release view "$TAG" --json assets --jq '.assets[].name' | grep -q "^personal-crm-${TAG}-debug\.apk$"; then
+            echo "verified: APK asset present on $TAG"
+          else
+            echo "::error::APK asset missing from release $TAG"
+            exit 1
+          fi
