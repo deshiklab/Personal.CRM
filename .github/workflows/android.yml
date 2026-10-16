@@ -169,8 +169,9 @@ jobs:
             # Releases in this repo are IMMUTABLE: assets can neither be replaced (--clobber
             # → HTTP 422 "Cannot delete asset from an immutable release") nor added.
             # Notes edits are still allowed, so refresh those and leave the APK alone.
-            echo "release $TAG already carries the APK (id $BEFORE_ID) and is immutable → refreshing notes only"
-            run_cmd "release edit" gh release edit "$TAG" --title "Personal CRM ${VER} (${TAG})" --notes-file /tmp/notes.md
+            # Notes are left alone on purpose: the APK cannot change, so rewriting the notes would
+            # claim a build provenance ("Built from <sha>") that the asset does not have.
+            echo "release $TAG already carries the APK (id $BEFORE_ID) and is immutable → nothing to publish"
             echo "::notice::Release $TAG is immutable and already has personal-crm-${TAG}-debug.apk — bump package.json version (or commit 'release: <new-tag>') to publish a new build."
           else
             echo "creating release $TAG"
