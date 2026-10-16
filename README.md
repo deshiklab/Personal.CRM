@@ -3,7 +3,7 @@
 A complete, offline-first **personal relationship manager** — contacts, kanban tasks, calendar, notes, groups, analytics, and **real third-party bridges** (webhooks, vCard, ICS, Gmail) — in a single React app that **runs with zero backend**.
 
 - **Try instantly:** download [`demo-standalone.html`](demo-standalone.html) → double-click → the whole app runs from one file. No install, no server.
-- **Live demo:** https://deshiklab.github.io/Personal.CRM/ *(once Pages is enabled — 2 clicks, see [Deployment](#-deployment))*
+- **Live demo:** https://deshiklab.github.io/Personal.CRM/ *(auto-deployed on every push — see [Deployment](#-deployment))*
 - **Run the source:** `npm install && npm run dev` → http://localhost:5173
 
 All data lives in your browser's `localStorage` — nothing ever leaves your machine unless you explicitly wire up a bridge.
@@ -87,7 +87,7 @@ scope), **Calendar** and **Contacts** import (read-only). No servers, no trackin
 
 | Step | Detail |
 |---|---|
-| 1 · Get the APK | Easiest: GitHub → **Actions → Build Android APK → Run workflow** → download the `personal-crm-android-debug` artifact. Or locally: `npm install && npm run android:sync && npm run android:open` (Android Studio) → ▶ Run |
+| 1 · Get the APK | Easiest: **Releases** → latest → `personal-crm-<tag>-debug.apk`. Or Actions → **Build Android APK** → download the `personal-crm-android-debug` artifact. Or locally: `npm install && npm run android:sync && npm run android:open` (Android Studio) → ▶ Run |
 | 2 · Google setup | Follow the SAME in-app guide (**Settings → Google hub**) — on Android it adds one step: create an **Android OAuth client** with package `com.bitscol.personalcrm` + this SHA-1 (the repo's shared debug keystore): `DE:E4:74:EA:F9:4A:35:E7:16:16:95:48:1F:88:0B:39:F0:B2:B0:2E` |
 | 3 · Install & connect | Allow “install unknown apps” on the phone → Settings → Google hub → paste your Web Client ID → **Connect** → the native Google account picker appears |
 | 4 · First-run permissions | The app asks for: **contacts** (phone import/export), **notifications** (reminders fire with the app closed), **vibrate**, **boot-completed** (reminders survive reboots), **camera** (photo attachments) — every native feature has a web fallback if you decline |
@@ -134,12 +134,29 @@ Reset everything to the fresh sample state: **Settings → Reset to sample datas
 
 ## 🚀 Deployment
 
-### Easiest (recommended): GitHub Pages
-1. Make the repo **public** *(Settings → General → Danger Zone)*
-2. **Settings → Pages** → Source: *Deploy from a branch* → `gh-pages` · `/ (root)` → Save
-3. Live at `https://<you>.github.io/Personal.CRM/` in ~60s
+### Easiest (recommended): GitHub Pages — now fully automatic
+**Live:** https://deshiklab.github.io/Personal.CRM/
 
-The `gh-pages` branch already contains the single-file build (CI-free). Rebuild after edits: `npm run build && cp dist/index.html index.html` on that branch.
+The **Deploy GitHub Pages** workflow (`.github/workflows/deploy-pages.yml`) runs on every push
+that touches `src/`, `public/`, `index.html`, `package.json`, `vite.config.js` or the workflow
+itself: `npm run build` → publish `dist/` to the `gh-pages` deploy branch
+(`peaceiris/actions-gh-pages`, force-orphan) → Pages serves it in ~60s. Nothing to do by hand;
+the deploy branch is written by CI only, all development stays on the working branch.
+
+The app is fully relative (`base: './'` + HashRouter), so it works at the `/Personal.CRM/`
+subpath with no rewrite rules — and as an installable PWA (manifest + `sw.js` are published
+alongside the single-file bundle).
+
+### APK: automatic build + GitHub Release
+The **Build Android APK** workflow (`.github/workflows/android.yml`) builds a debug APK on every
+relevant push (and on demand) and uploads it as the `personal-crm-android-debug` artifact.
+To publish a release, either:
+- **Actions → Build Android APK → Run workflow** → tick *publish_release* (+ optional tag), or
+- push a commit whose message starts with `release: <tag>` (e.g. `release: v0.1.0`)
+
+The release carries `personal-crm-<tag>-debug.apk` (+ a signed `…-release.apk` when the keystore
+secrets exist) and the notes include the live PWA link plus the signing SHA-1 for the Google Cloud
+Android OAuth client.
 
 ### Alternative hosts
 - **Netlify Drop:** [app.netlify.com/drop](https://app.netlify.com/drop) → drag the repo's `crm-deploy.zip` (or the `dist/` folder)
