@@ -1,0 +1,44 @@
+name: Deploy GitHub Pages
+
+# Builds the PWA (single-file app + service worker + manifest + icons) and
+# publishes dist/ to the gh-pages branch — the repo's Pages source (legacy
+# branch build). The app is fully relative (base './', HashRouter), so it
+# works at https://<user>.github.io/<repo>/. The deploy branch is written
+# by CI only (force-orphan); all development happens on the working branch.
+on:
+  push:
+    branches: [main, master, 'arena/**']
+    paths: ['src/**', 'public/**', 'index.html', 'package.json', 'package-lock.json', 'vite.config.js', '.github/workflows/deploy-pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy-pages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install JS deps
+        run: npm ci || npm install
+
+      - name: Build PWA
+        run: npm run build
+
+      - name: Publish to gh-pages (Pages deploy branch)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          force_orphan: true
+          cname: ''
