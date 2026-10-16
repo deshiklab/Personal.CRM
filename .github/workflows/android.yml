@@ -163,13 +163,15 @@ jobs:
             return 0
           }
           asset_id() { gh release view "$TAG" --json assets --jq ".assets[] | select(.name==\"personal-crm-${TAG}-debug.apk\") | .id" 2>/dev/null | head -1; }
-          run_cmd "gh auth status" gh auth status
           BEFORE_ID="$(asset_id)"
           echo "asset id before: ${BEFORE_ID:-<none>}"
           if [ -n "$BEFORE_ID" ]; then
-            echo "release $TAG exists → refreshing assets + notes"
-            run_cmd "release upload" gh release upload "$TAG" release-assets/*.apk --clobber
+            # Releases in this repo are IMMUTABLE: assets can neither be replaced (--clobber
+            # → HTTP 422 "Cannot delete asset from an immutable release") nor added.
+            # Notes edits are still allowed, so refresh those and leave the APK alone.
+            echo "release $TAG already carries the APK (id $BEFORE_ID) and is immutable → refreshing notes only"
             run_cmd "release edit" gh release edit "$TAG" --title "Personal CRM ${VER} (${TAG})" --notes-file /tmp/notes.md
+            echo "::notice::Release $TAG is immutable and already has personal-crm-${TAG}-debug.apk — bump package.json version (or commit 'release: <new-tag>') to publish a new build."
           else
             echo "creating release $TAG"
             run_cmd "release create" gh release create "$TAG" release-assets/*.apk --target "$GITHUB_SHA" --title "Personal CRM ${VER} (${TAG})" --notes-file /tmp/notes.md --latest
@@ -177,13 +179,9 @@ jobs:
           AFTER_ID="$(asset_id)"
           echo "asset id after: ${AFTER_ID:-<none>}"
           gh release view "$TAG" --json tagName,assets --jq '{tag:.tagName,assets:[.assets[]|{name:.name,size:.size,id:.id}]}' 2>&1
-          # ── verification: the APK must exist, and on the update path it must be a NEW asset ──
+          # ── verification: the release must carry the APK asset ──
           if [ -z "$AFTER_ID" ]; then
             echo "::error::APK asset missing from release $TAG"
-            exit 1
-          fi
-          if [ -n "$BEFORE_ID" ] && [ "$BEFORE_ID" = "$AFTER_ID" ]; then
-            echo "::error::APK asset on release $TAG was NOT replaced (id $AFTER_ID unchanged) — the upload did not take effect"
             exit 1
           fi
           echo "verified: APK asset present on $TAG (id $AFTER_ID)"

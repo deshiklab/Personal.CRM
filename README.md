@@ -158,6 +158,11 @@ The release carries `personal-crm-<tag>-debug.apk` (+ a signed `…-release.apk`
 secrets exist) and the notes include the live PWA link plus the signing SHA-1 for the Google Cloud
 Android OAuth client.
 
+> **Releases in this repo are immutable** — GitHub rejects replacing an asset (`HTTP 422 · Cannot
+> delete asset from an immutable release`). So a tag publishes its APK exactly once; to ship a new
+> build, bump `version` in `package.json` (or commit `release: v0.1.1`). Re-running an existing tag
+> only refreshes the release notes and prints a notice — it never rewrites the APK.
+
 ### Alternative hosts
 - **Netlify Drop:** [app.netlify.com/drop](https://app.netlify.com/drop) → drag the repo's `crm-deploy.zip` (or the `dist/` folder)
 - **Vercel / Cloudflare Pages:** New project → import this repo (build command `npm run build`, output `dist`)
